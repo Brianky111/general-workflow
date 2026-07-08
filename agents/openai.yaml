@@ -1,0 +1,7 @@
+interface:
+  display_name: "General Workflow"
+  short_description: "Route staged agent development workflows"
+  default_prompt: "Use $general-workflow to inspect the repository, detect the current workflow stage, and continue from the right document."
+
+policy:
+  allow_implicit_invocation: true
