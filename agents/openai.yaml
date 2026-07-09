@@ -1,7 +1,7 @@
 interface:
   display_name: "General Workflow"
-  short_description: "Route staged agent development workflows"
-  default_prompt: "Use $general-workflow to inspect the repository, detect the current workflow stage, and continue from the right document."
+  short_description: "Route workflow and orchestrate executors"
+  default_prompt: "Use $general-workflow to inspect the repository, detect the current workflow stage, keep the main thread as orchestrator, and delegate scoped execution to subagents when useful."
 
 policy:
   allow_implicit_invocation: true
