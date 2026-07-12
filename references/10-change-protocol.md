@@ -10,6 +10,7 @@ Handle requirement, contract, fixture, or external-behavior changes without sile
 - External service behavior drifts.
 - Implementation proves the contract is wrong or incomplete.
 - Tests reveal a missing scenario that changes accepted behavior.
+- Similarity triage in `02-requirements-capture.md` classifies a new request as a revision of an existing feature's confirmed requirement.
 
 ## Actions
 

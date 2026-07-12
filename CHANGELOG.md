@@ -2,6 +2,15 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.3.0 - 2026-07-12
+
+New mechanism (extends beyond the v3.8 source document): one-requirement-one-doc-set as an explicit organizing instinct, plus similarity triage for incoming requests.
+
+- `SKILL.md`: operating rule — every incoming request lands in exactly one document set (new folder, merge into an unconfirmed sibling, or change-protocol revision of a confirmed one); splitting inside a folder is fine, a second folder for the same behavior never is.
+- `02-requirements-capture.md`: Similarity Triage section — scan `requirements-index.md` and existing feature goals/scenarios before creating any folder; classify new/merge/revision; when uncertain, stop and ask the user with a fixed shape (similarity points, the case for merging, the case for revising, plus a new-feature option); record the outcome in `requirements-index.md`.
+- `00-progress-router.md`: similarity-triage routing row and tie breaker.
+- `10-change-protocol.md`: entry condition for triage-classified revisions.
+
 ## 0.2.2 - 2026-07-12
 
 Forward-tested the installed skill with Codex CLI on three live scenarios (mid-workflow takeover, refactor in a plain repo, trivial task in a bare repo). Triggering, stage routing, progressive loading (3 files per run), gate discipline, and the kickoff guard all behaved as designed.

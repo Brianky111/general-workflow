@@ -14,6 +14,7 @@ Read `references/00-progress-router.md` before reading any other reference file.
 ## Operating Rules
 
 - Inspect repository evidence before choosing a stage: `docs/`, feature folders, status files, PR/CI notes, tests, and recent diffs when available.
+- Treat one requirement = one feature folder = one document set as the organizing instinct. Route every incoming request into exactly one set: a new folder, a merge into an unconfirmed sibling feature, or a change-protocol revision of a confirmed one. Splitting docs inside a folder is fine; a second folder for the same behavior never is. When merge versus revision is unclear, ask the user with the similarity points and the case for each option (see `02-requirements-capture.md`).
 - Treat refactor, cleanup, rewrite, restructure, or simplification requests as workflow work, not simple code edits. Before editing code, read `references/00-refactor-intake.md`, recertify requirements/contracts/plans, and classify pure refactor versus behavior or architecture change.
 - Treat the current conversation as the orchestrator. It owns stage routing, scope, task decomposition, subagent prompts, integration, conflict resolution, final verification, and user communication.
 - Treat subagents as executors. When execution is delegated, the main thread must not concurrently implement the same scope; it should coordinate, monitor, integrate, and verify. The main thread may do local execution only for tiny tasks, immediate unblockers, integration glue, final fixes after executor output, or when delegation is unavailable/unsafe; record the reason.
@@ -37,7 +38,7 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `00-feature-grading-and-splitting.md`: decide standard/lightweight path and whether to split large contracts.
 - `00-governance-ci-hooks.md`: set or audit document governance, CI gates, hooks, and scheduled checks.
 - `01-project-identification.md`: classify new project, old project, or new module in old project.
-- `02-requirements-capture.md`: preserve raw request and produce structured requirements.
+- `02-requirements-capture.md`: preserve raw request, triage similar requirements (merge/revise/new), and produce structured requirements.
 - `03-requirements-clarification.md`: surface ambiguities and record decisions.
 - `03-ambiguity-audit.md`: run the independent ambiguity audit before a human gate.
 - `04-interface-contract.md`: define external behavior, data models, invariants, and scenarios.
