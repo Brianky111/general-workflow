@@ -23,7 +23,10 @@ There is no application build system in this checkout. Useful local checks:
 Get-ChildItem -Force
 Select-String -Path *.md -Pattern '^#{1,4}\s+'
 git diff --check
+python scripts/check_consistency.py
 ```
+
+`check_consistency.py` must pass (0 errors) after any change to `SKILL.md` or `references/`.
 
 After a skill folder exists, validate it with the Skill Creator validator:
 
@@ -43,7 +46,7 @@ Validate three things before review: frontmatter loads, instructions are concise
 
 ## Commit & Pull Request Guidelines
 
-No Git history is available in this checkout. Use clear Conventional Commit-style messages such as `docs(skill): refine trigger guidance`, `feat(skill): add validation script`, or `test(skill): add forward-test prompt`. Pull requests should summarize the skill behavior change, list affected files, include validation commands run, and note any trigger behavior changes.
+Follow the existing Conventional Commit style visible in `git log`, with messages such as `docs(skill): refine trigger guidance`, `feat(skill): add validation script`, or `test(skill): add forward-test prompt`. Pull requests should summarize the skill behavior change, list affected files, include validation commands run, and note any trigger behavior changes.
 
 ## Security & Configuration Tips
 
