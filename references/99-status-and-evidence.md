@@ -83,9 +83,15 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 }
 ```
 
-`99-进度.md` fixed shape per module section:
+`99-进度.md` opens with a feature-level summary, then one fixed-shape section per module:
 
 ```markdown
+## 全局
+- 阶段：<当前阶段>
+- 文档集缺失：<对照文档集清单列出，无则写“无”>
+- 阻塞：<待确认反问 / 外部依赖 / 无>
+- 下一步：<一句话>
+
 ## <模块名>
 - 状态：todo / red / green / review / done / blocked
 - 负责人：<agent-id 或分支名>

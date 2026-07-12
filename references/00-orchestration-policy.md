@@ -34,7 +34,7 @@ Choose the lightest mode that preserves correctness:
 2. Decide whether executor help changes correctness, coverage, or throughput.
 3. If delegating, write a small execution brief:
    - objective;
-   - context manifest: the exact files to load, each with a one-line reason;
+   - context manifest for bounded tasks (exact files to load, each with a one-line reason), or a search scope for discovery tasks (paths, globs, or subsystems the executor may search);
    - allowed write paths, or `report only`;
    - prohibited paths and behaviors;
    - required output evidence;
@@ -56,16 +56,17 @@ Choose the lightest mode that preserves correctness:
 You are an executor in an orchestrated workflow. The main thread owns scope, integration, and final acceptance.
 
 Task: <one concrete objective>
-Context manifest (load these and nothing else):
+Context manifest (bounded tasks — load these and nothing else):
 - <file or doc path> — <why this task needs it>
-- <file or doc path> — <why this task needs it>
+Search scope (discovery tasks — search freely inside, report anything outside):
+- <paths, globs, or subsystems>
 May edit: <paths or "none, report only">
 Must not edit: <paths/behaviors>
 Preserve: <contracts, public behavior, tests, data shape>
 Return: <diff summary, commands, evidence, blockers, risks>
 ```
 
-Executors read only the manifest plus their own write paths. Do not paste conversation history into the brief — the manifest files carry the context. If an executor finds the manifest insufficient, it stops and reports what is missing; it does not browse the repository on its own.
+Bounded (worker/review) executors read only the manifest plus their own write paths. Discovery executors — conflict scans, code mapping, risk scans, anti-hardcoding sampling, adversarial probing — get a declared search scope instead of a closed file list: they search freely inside it and report, rather than act on, anything found outside. Do not paste conversation history into the brief — the manifest or scope carries the context. An executor that finds its manifest or scope insufficient stops and reports what is missing; it does not silently expand its own scope.
 
 ## Output
 

@@ -15,7 +15,7 @@ Expose ambiguity before contracts or implementation begin.
 2. Ask only intent-level questions; do not outsource implementation design to the user. Technical choices are the agent's, recorded in `## 决策记录`.
 3. For each question, explain the risk of leaving it unresolved.
 4. For each question, provide 2-3 candidate answers, consequences, and one recommendation.
-5. After answers arrive, write them back into the body, then move each answered question with its conclusion into the `## 决策记录` section as a numbered decision (`D1`, `D2`..., with date/source) so contracts, plans, and the change protocol can cite it by ID.
+5. After answers arrive, write them back into the body, then move each answered question with its conclusion into the `## 决策记录` section as a numbered decision (`D1`, `D2`..., with date/source) so contracts, plans, and the change protocol can cite it by ID. Legacy decision records without IDs get `D` numbers assigned on first touch — append IDs in place, never reorder existing entries.
 6. If an answer creates new scenarios, add them to the numbered S/E/B lists.
 
 ## Question Template

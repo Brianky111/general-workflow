@@ -34,6 +34,8 @@ When the classification is uncertain, stop and ask the user with this shape — 
 - 【答复】：
 ```
 
+This question is a hard stop presented in the conversation — no feature folder exists yet to hold it. When the project keeps `docs/requirements-index.md`, park the pending decision in its holding area so the open question survives the session and later agents can find it.
+
 Record the outcome in `docs/requirements-index.md` (merged into X / revision of X / new feature Y) so later agents can trace the mapping.
 
 Hard rules: never let two document sets describe the same behavior, and never silently rewrite an accepted requirement — merges append, revisions go through the change protocol.

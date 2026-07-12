@@ -2,6 +2,17 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.4.1 - 2026-07-13
+
+Self-review of the 0.3.x/0.4.0 additions found six issues, two of them regressions of the same classes fixed earlier (over-broad rule, always-true router condition).
+
+- Context manifests now bind bounded (worker/review) executors only; discovery tasks — conflict scans, code mapping, sampling, adversarial probing — get a declared search scope instead of a closed file list (`00-orchestration-policy.md`).
+- Visual-track-only features no longer loop at the red-tests router row and can enter implementation without a test phase (`00-progress-router.md`, `08-implementation.md`).
+- The similarity-triage question now has a home: hard stop in conversation, parked in `requirements-index.md`'s holding area when the file exists (`02-requirements-capture.md`).
+- `99-进度.md` gained the feature-level `## 全局` section the document-set mirror rule assumed (`99-status-and-evidence.md`).
+- Lightweight features' merged contract+planning gate is now acknowledged in both gate sections — no double human pass (`04-interface-contract.md`, `06-planning.md`).
+- Legacy decision records get `D` IDs on first touch, append-only (`03-requirements-clarification.md`).
+
 ## 0.4.0 - 2026-07-13
 
 Five mechanisms adopted from a comparative study of Superpowers, GSD, and Trellis.

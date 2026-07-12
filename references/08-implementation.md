@@ -6,7 +6,7 @@ Make red tests pass while staying inside the accepted contract and plan.
 
 ## Entry Conditions
 
-- Red tests exist and fail for the expected reason, or the batch is a pure refactor recertified through `00-refactor-intake.md` with existing green tests as protection evidence.
+- Red tests exist and fail for the expected reason, the batch is a pure refactor recertified through `00-refactor-intake.md` with existing green tests as protection evidence, or the module is visual-track (no test phase; evidence is screenshots or previews at acceptance).
 - The implementation scope is clear.
 - For refactor work, requirements, contracts, and plan have been recertified through `00-refactor-intake.md`.
 - If execution is orchestrated through subagents, the plan defines executor write sets and the main thread is not implementing the same assigned scope.
@@ -19,7 +19,7 @@ Make red tests pass while staying inside the accepted contract and plan.
 4. Avoid silent fallback, broad catch blocks, hidden defaults, or unrecorded assumptions.
 5. If this scope was assigned to an executor, do not implement it in the main thread. Monitor, integrate, or verify instead.
 6. In orchestrated work, executors edit only assigned write sets and progress sections; the main thread owns integration and final verification.
-7. Run the red tests until green, then run broader regression checks. Pure refactor batches have no red phase: keep the protection suite green throughout.
+7. Run the red tests until green, then run broader regression checks. Pure refactor batches have no red phase: keep the protection suite green throughout. Visual-track modules deliver screenshots or preview links instead of tests and wait for human-eye acceptance.
 8. Update status/progress with evidence, not with unsupported completion claims.
 
 Read `07-anti-cheat-and-red-replay.md` if a green implementation requires changing tests, fixtures, public signatures, or contract assumptions.

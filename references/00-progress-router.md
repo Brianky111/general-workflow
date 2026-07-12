@@ -37,9 +37,9 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Contract uses external service examples, protocol samples, or mock data without matching captures in `docs/features/<feature>/fixtures/contract/` | Fixtures and probes | `04-fixtures-and-probes.md` |
 | Existing code may overlap or contradict the contract, and `01-代码冲突与重叠.md` is missing or does not cover the contract | Conflict scan | `05-conflict-scan.md` |
 | Contract/conflict notes exist but no implementation plan | Planning | `06-planning.md` |
-| Plan exists but no failing target tests are proven, and the batch is not a pure refactor | Red tests | `07-red-tests.md` |
+| Plan assigns red/green modules whose failing target tests are not yet proven, and the batch is not a pure refactor | Red tests | `07-red-tests.md` |
 | Test/implementation commits need audit or red proof is suspect | Anti-cheat/red replay | `07-anti-cheat-and-red-replay.md` |
-| Red tests exist and implementation is incomplete, or refactor intake classified the batch as pure refactor | Implementation | `08-implementation.md` |
+| Red tests exist and implementation is incomplete, refactor intake classified the batch as pure refactor, or the remaining modules are visual-track only | Implementation | `08-implementation.md` |
 | Implementation exists but evidence is incomplete | Review and verification | `09-review-and-verification.md` |
 | One module claims done but independent review is missing | Module initial review | `09-module-initial-review.md` |
 | All modules pass review but end-to-end evidence is missing | Integration acceptance | `09-integration-acceptance.md` |

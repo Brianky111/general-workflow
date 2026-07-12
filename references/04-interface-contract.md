@@ -29,6 +29,8 @@ Create or update `docs/features/<feature>/01-接口.md` and optional `interfaces
 
 The contract is a document-PR human gate. Before user review, always route the draft through `03-ambiguity-audit.md` — the audit is an unconditional second net, not a fallback for known problems. Merge preconditions: the audit report is attached and the `## 待确认反问` section is empty.
 
+For lightweight features this gate merges with the planning gate into one document-PR review of `00-功能.md` (see `00-feature-grading-and-splitting.md`); run the audit and checklist once against that file.
+
 Offer the user this review checklist:
 
 1. Is every field's meaning understandable in plain language?
