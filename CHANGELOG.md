@@ -2,6 +2,13 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.5.0 - 2026-07-13
+
+Two more mechanisms adopted from Trellis, adapted to this skill's evidence philosophy.
+
+- Session binding (one session, one scope): a conversation claims a feature or executor scope by writing the `owner` field in `status.json` and `99-进度.md` — repo-visible evidence, not a runtime file; scopes with fresh owner evidence are not claimed; stale takeover needs user confirmation and a handoff note; switching features requires closing out through the router; cross-feature parallelism means parallel sessions (`00-orchestration-policy.md`, `SKILL.md`).
+- Role-isolated trio as the default for non-trivial module batches: read-only research executor → worker executor (keeps commit rights — red/green commit order and purity are the anti-cheat audit surface, deliberately unlike Trellis) → independent check executor; findings re-checked after fixes; no executor implements and reviews the same scope; the reviewer is never the implementer (`00-orchestration-policy.md`, `09-module-initial-review.md`).
+
 ## 0.4.1 - 2026-07-13
 
 Self-review of the 0.3.x/0.4.0 additions found six issues, two of them regressions of the same classes fixed earlier (over-broad rule, always-true router condition).

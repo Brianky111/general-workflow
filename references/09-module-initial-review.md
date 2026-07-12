@@ -9,6 +9,7 @@ Run an independent module-level review after CI mechanics pass.
 - A module claims green or done.
 - Target tests pass.
 - The module has not received independent review evidence.
+- The reviewer is independent: never the executor who implemented the module.
 
 ## Three Judgments
 

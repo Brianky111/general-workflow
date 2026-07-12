@@ -28,6 +28,18 @@ Choose the lightest mode that preserves correctness:
 | Worker executor | A module, layer, test file, probe, or fixture can be edited independently | Assign exact read/write boundaries and pause same-scope implementation locally |
 | Adversarial executor | Security, authorization, protocol, migration, concurrency, weak tests, or high-cost failure risk | Ask for counterexamples, missed cases, and evidence gaps; keep final judgment in main thread. For adversarial-tier modules, the attack executor reads only the contract, never the implementation |
 
+For a non-trivial module batch, default to a role-isolated trio rather than one do-everything executor: a read-only research executor gathers facts and risks first, a worker executor implements inside its write set under red/green discipline (it keeps commit rights — commit order and purity are what the anti-cheat audit inspects), and an independent check executor verifies the result against the contract and evidence. Findings route back to the worker or a fix executor and are re-checked. The same executor never both implements and reviews one scope; the worker never self-certifies.
+
+## Session Binding
+
+One session, one scope. A conversation binds to a single feature — or a single executor scope inside it — at a time:
+
+- Claim a scope before editing it: record the owner (agent id or branch name) in the module's `status.json` entry and its `99-进度.md` section.
+- Do not claim a scope whose owner has fresh evidence (recent commits, CI runs, progress updates); coordinate through the user instead.
+- Taking over a stale scope requires the user's confirmation and a handoff note in the progress section.
+- Switching features mid-session requires closing out first: update progress and status, then re-enter through the router.
+- Parallelism across features means parallel sessions, each with its own binding — never one session interleaving several features.
+
 ## Orchestrator Procedure
 
 1. Select the workflow stage first; do not route to orchestration only because tools exist.
