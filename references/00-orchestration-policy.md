@@ -36,6 +36,7 @@ One session, one scope. A conversation binds to a single feature — or a single
 
 - Claim a scope before editing it: record the owner (agent id or branch name) in the module's `status.json` entry and its `99-进度.md` section.
 - Do not claim a scope whose owner has fresh evidence (recent commits, CI runs, progress updates); coordinate through the user instead.
+- When the user's own request collides with a fresh claim, surface the collision first — owner, evidence freshness, work in progress — before starting; the user may not know the scope is taken.
 - Taking over a stale scope requires the user's confirmation and a handoff note in the progress section.
 - Switching features mid-session requires closing out first: update progress and status, then re-enter through the router.
 - Parallelism across features means parallel sessions, each with its own binding — never one session interleaving several features.

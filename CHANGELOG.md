@@ -2,6 +2,13 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.5.1 - 2026-07-13
+
+Two refinements from forward-testing session binding (an agent reviewing a freshly claimed module surfaced both).
+
+- Session binding: when the user's own request collides with a fresh claim, surface the collision (owner, freshness, work in progress) before starting — the user may not know the scope is taken (`00-orchestration-policy.md`).
+- Review evidence now has a machine-checkable home: `status.json` modules gained optional `reviewer` / `reviewEvidence` fields, `99-进度.md` sections gained a 审查 line, consistency rules require `reviewEvidence` for `done` and `reviewer != owner`, and module initial review records both on pass (`99-status-and-evidence.md`, `09-module-initial-review.md`).
+
 ## 0.5.0 - 2026-07-13
 
 Two more mechanisms adopted from Trellis, adapted to this skill's evidence philosophy.

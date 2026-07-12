@@ -77,6 +77,8 @@ State files must not contain secrets, account credentials, tokens, or full sensi
       "contract": "01-接口.md#<模块名>",
       "redEvidence": "<ci-run-or-commit>",
       "greenEvidence": "<ci-run-or-commit>",
+      "reviewer": "<agent-id, optional until review>",
+      "reviewEvidence": "<report-path-or-ci, optional until review>",
       "next": "<下一步一句话>"
     }
   }
@@ -98,6 +100,7 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 - 合同：<01-接口.md#锚点 或 interfaces/<模块名>.md>
 - 红证据：<CI 链接或 commit；无则写“无”>
 - 绿证据：<CI 链接或 commit；无则写“无”>
+- 审查：<初审报告或 CI 链接；无则写“无”>
 - 阻塞：<待确认反问 / 失败测试 / 外部依赖 / 无>
 - 下一步：<一句话>
 ```
@@ -107,7 +110,8 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 - `pendingQuestions` must equal unresolved `【答复】：` entries.
 - `requirementsConfirmedAt` and `contractsFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
 - Existing projects must have a conflict report with concrete scan conclusions.
-- A module cannot be `done` without contract reference, red evidence, green evidence, and review/integration evidence.
+- A module cannot be `done` without contract reference, red evidence, green evidence, and `reviewEvidence` pointing to a review report or CI run.
+- `reviewer`, when present, must differ from the module's `owner`: the reviewer is never the implementer.
 - Status may lag behind reality, but it must not run ahead of evidence.
 - Parallel agents edit only their own module section of `99-进度.md`; cross-module status writes must preserve other modules' fields.
 

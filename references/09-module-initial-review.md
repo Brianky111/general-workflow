@@ -21,7 +21,7 @@ Run an independent module-level review after CI mechanics pass.
 
 Write a concise Chinese review report. Every conclusion needs evidence: file path and line number, command output, or CI link.
 
-On pass, update `status.json` and the module's section of `99-进度.md` with the review evidence, then return to the router.
+On pass, record `reviewer` and `reviewEvidence` in the module's `status.json` entry and the 审查 line of its `99-进度.md` section, then return to the router.
 
 ## Stop Conditions
 
