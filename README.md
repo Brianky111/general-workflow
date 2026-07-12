@@ -10,6 +10,18 @@ The skill helps Codex:
 - keep the main conversation as the orchestrator while subagents act as scoped executors;
 - handle refactors, implementation, review, verification, and change recovery without reading the full source workflow every time.
 
+## Workflow overview
+
+Every request enters through the progress router, which scans repository evidence and routes to one of four paths. Refactors never become features; similar requirements are triaged (merge / revise / new) before any folder is created:
+
+![请求入口与路由](docs/images/routing-map.svg)
+
+A feature request runs the single-feature pipeline (incremental mode). Amber boxes are human gates; after every stage the agent returns to the router. In blueprint mode the first three segments run as batches over all features with three batch reviews before parallel implementation:
+
+![单功能主管线](docs/images/feature-pipeline.svg)
+
+The numbered document set (`00-…` to `99-…`) doubles as the user's dashboard: requirement docs show whether intent was captured, contract/plan docs show what will be built, and `99-进度.md` plus the document-set checklist show progress and gaps.
+
 ## Repository layout
 
 ```text
