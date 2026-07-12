@@ -65,7 +65,7 @@ In orchestrated mode, the current conversation is the orchestrator. It may inspe
 
 - If multiple stages match, choose the earliest incomplete gate.
 - If the user explicitly asks for a later-stage task, still check earlier gates for blockers and report any missing prerequisite.
-- If refactor is requested, run refactor intake before code changes even when the repository appears to be at implementation or review.
+- If refactor is requested, run refactor intake before code changes even when the repository appears to be at implementation or review. Never record the refactor as a new feature or requirement.
 - If an incoming request resembles an existing feature, run the similarity triage in `02-requirements-capture.md` before creating any new feature folder: one requirement owns one document set.
 - If refactor intake classified the batch as pure refactor, skip `07-red-tests.md`: route to `08-implementation.md` with the existing green tests as protection evidence.
 - If local subagent tools are present, make an orchestration decision after stage selection. Do not treat tool availability alone as a stage or as permission for the main thread and executors to work on the same scope in parallel.

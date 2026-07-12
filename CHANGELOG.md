@@ -2,6 +2,14 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.3.2 - 2026-07-12
+
+Refactors are no longer capturable as features.
+
+- `00-refactor-intake.md`: "Not a Feature" rule — no feature folder, `00-原始需求.md`, or roster entry for a refactor; documentation home is the owning feature's `02-规划.md` preflight (one per affected feature for cross-cutting refactors) or the change protocol. The missing-requirements branch backfills docs for the touched behavior, never records the refactor itself.
+- `02-requirements-capture.md`: entry guard — refactor requests route to intake; a backfilled folder is named after the behavior, not the refactor.
+- `SKILL.md` / router: the refactor rules state the same invariant.
+
 ## 0.3.1 - 2026-07-12
 
 The numbered document set (00-… through 99-…) is now explicitly the user's dashboard.

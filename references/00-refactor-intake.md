@@ -4,6 +4,10 @@
 
 Prevent refactor requests from skipping product intent. Reconfirm requirements and contracts before code changes, then classify whether the work can stay behavior-preserving.
 
+## Not a Feature
+
+A refactor is work on existing behavior, never a requirement of its own. Do not create a feature folder, `00-原始需求.md`, or a `requirements-index.md` entry for a refactor request. Its documentation home is the owning feature's `02-规划.md` refactor preflight — for a refactor spanning several features, one preflight per affected feature — or `10-change-protocol.md` when behavior changes. If the touched behavior has no feature docs at all, what may be backfilled through `02-requirements-capture.md` is the existing behavior being protected; the feature is that behavior, not the refactor.
+
 ## Entry Conditions
 
 - The user asks to refactor, clean up, rewrite, restructure, simplify, `重构`, or `整理`.
@@ -26,7 +30,7 @@ Classify the requested work before implementation:
 
 - **Pure refactor:** no change to public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Tests and contracts stay unchanged. Do not write new red tests for a pure refactor: proceed to `08-implementation.md` with the existing green tests as protection evidence.
 - **Behavior-affecting refactor:** any of the above might change, or layer/module boundaries need to move. Route to `10-change-protocol.md` level A before coding.
-- **Missing or stale requirements:** accepted requirements, contracts, or plan cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `04-interface-contract.md`, `06-planning.md`, or `99-status-and-evidence.md` before coding.
+- **Missing or stale requirements:** accepted requirements, contracts, or plan cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `04-interface-contract.md`, `06-planning.md`, or `99-status-and-evidence.md` before coding — to backfill docs for the existing behavior being touched, never to record the refactor itself as a requirement.
 
 Every refactor target must trace to a requirement scenario, contract method/invariant, documented conflict, or explicit planning item. Do not justify refactor solely from code aesthetics.
 

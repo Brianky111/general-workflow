@@ -9,6 +9,8 @@ Preserve the user's original request and convert it into structured, reviewable 
 - The feature has user intent but lacks `00-原始需求.md` or `00-整理后需求.md`.
 - The request is scattered across chat, issue text, screenshots, or existing notes.
 
+Refactor, cleanup, or restructure requests are not requirements — route them to `00-refactor-intake.md` instead. Capture here only the existing behavior a refactor must preserve, when that behavior's feature docs are missing; the feature folder is named after the behavior, never after the refactor.
+
 ## Similarity Triage
 
 One requirement owns exactly one feature folder and one document set. Before creating any new folder, scan `docs/requirements-index.md`, the goals and numbered scenarios of existing `docs/features/*/00-整理后需求.md` (or `00-功能.md`), and the glossary for features that overlap the incoming request.
