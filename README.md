@@ -112,3 +112,7 @@ python "<path-to-skill-creator>\scripts\quick_validate.py" $dst
 - Do not duplicate long workflow text across files.
 - Update `agents/openai.yaml` when the trigger behavior or default prompt changes.
 - Do not store secrets, credentials, private host details, or project-specific business data in the skill.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
