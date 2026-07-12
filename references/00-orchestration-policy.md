@@ -26,7 +26,7 @@ Choose the lightest mode that preserves correctness:
 | Direct execution | Tiny task, no useful split, local blocker, subagents unavailable, or merge risk exceeds value | Execute locally and record the reason if the task is non-trivial |
 | Read-only executor | Requirements audit, code mapping, test review, diff review, risk scan, or external-behavior check | Delegate the investigation, then wait or do only non-overlapping orchestration work |
 | Worker executor | A module, layer, test file, probe, or fixture can be edited independently | Assign exact read/write boundaries and pause same-scope implementation locally |
-| Adversarial executor | Security, authorization, protocol, migration, concurrency, weak tests, or high-cost failure risk | Ask for counterexamples, missed cases, and evidence gaps; keep final judgment in main thread |
+| Adversarial executor | Security, authorization, protocol, migration, concurrency, weak tests, or high-cost failure risk | Ask for counterexamples, missed cases, and evidence gaps; keep final judgment in main thread. For adversarial-tier modules, the attack executor reads only the contract, never the implementation |
 
 ## Orchestrator Procedure
 

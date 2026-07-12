@@ -13,12 +13,7 @@ Find where the desired contract overlaps, contradicts, or can reuse existing cod
 
 1. Search for existing routes, components, services, models, tests, and docs related to the feature.
 2. Compare existing behavior against the contract.
-3. Classify each finding:
-   - reuse as-is,
-   - extend existing code,
-   - modify existing behavior,
-   - refactor before implementation,
-   - build from scratch.
+3. For each finding, record the difference between current and target behavior plus 2-3 candidate directions. Do not decide the handling here: reuse/modify/refactor/rebuild decisions belong to the conflict-handling table in `06-planning.md`, after the contract gate.
 4. Check at least:
    - public APIs, commands, events, routes, components, and config entries,
    - data models, persistence, cache, serialization formats,
@@ -29,7 +24,16 @@ Find where the desired contract overlaps, contradicts, or can reuse existing cod
 
 ## Output
 
-Create or update `docs/features/<feature>/01-代码冲突与重叠.md`; use `conflicts/<module>.md` only when the list is large.
+Create or update `docs/features/<feature>/01-代码冲突与重叠.md`; use `conflicts/<module>.md` only when the list is large, keeping the summary file as the index of all `C` IDs and their status.
+
+Start the file with a summary section:
+
+```markdown
+## 总结
+- 扫描结论：无冲突 / 有冲突 / 有功能重叠 / 需要补充探针
+- 是否阻塞接口确认：是 / 否
+- 需要主导者理解的关键风险：<一两句>
+```
 
 Use this item shape:
 
@@ -45,6 +49,12 @@ Use this item shape:
 - 给主导者的解释：<不用代码术语也能理解的说明>
 - 留给规划层：待决策；候选方向可写 2-3 个，但不在本层拍板
 ```
+
+## Hard Rules
+
+- An old project with no conflict report, or one containing only vague statements, is incomplete; push it back.
+- Every conflict item must point at concrete code locations.
+- Conflicts discovered later must be recorded back into this file before planning consumes them.
 
 ## Stop Conditions
 

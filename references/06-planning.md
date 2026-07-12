@@ -14,16 +14,17 @@ Convert the contract and conflict scan into an implementation plan that preserve
 
 1. Re-read accepted requirements, contracts, conflict scan, and status evidence before choosing strategy. Do not plan from code shape alone.
 2. If any module might need refactor, or the user asked for refactor/cleanup/rewrite/restructure/simplification, read `00-refactor-intake.md` and add the refactor preflight before coding.
-3. Choose implementation strategy for each module: reuse, extend, modify, refactor, or create.
+3. Choose the implementation strategy for each module, with stated reasons:
    - from scratch,
    - modify existing code,
    - reuse and extend,
    - refactor before implementing,
    - strangler/side-by-side replacement.
-4. Define validation strength:
-   - standard: normal unit/integration coverage,
-   - enhanced: boundary/property/regression coverage,
-   - adversarial: fuzzing, mutation, or external-protocol probes.
+4. Assign each module a track, then a tier for red/green modules. The agent proposes tier and reasons; the user confirms or overrides at the planning gate:
+   - **Visual track:** pure presentation (layout, styling, interaction feel). No filler snapshot tests; deliver screenshots or previews, pass human-eye acceptance at integration, then record the visual regression baseline.
+   - **Red/green standard tier:** example-based red/green tests covering numbered S/E/B scenarios.
+   - **Red/green enhanced tier:** standard, plus property tests targeting `P` invariants, plus a pairwise combination table (PICT-style generation from the parameter matrix, covering all two-parameter interactions).
+   - **Red/green adversarial tier:** enhanced, plus an independent attack agent that reads only the contract, never the implementation (three-way independence between test writer, implementer, and attacker), plus a mutation-testing pass threshold.
 5. Identify test files to add before implementation.
 6. List expected evidence: commands, screenshots, CI, probes, or logs.
 7. If local subagent tools are available and the work is non-trivial, read `00-orchestration-policy.md` and design executor scopes. The main thread remains the orchestrator and must not implement a scope assigned to an executor.
@@ -61,8 +62,14 @@ Read `00-feature-grading-and-splitting.md` for feature-level path. At module lev
 
 ## Output
 
-Create or update `docs/features/<feature>/02-规划.md`.
+Create or update `docs/features/<feature>/02-规划.md` (or the plan section of `00-功能.md` for lightweight features), written in Chinese.
+
+## Planning Gate
+
+The plan is a document-PR human gate. After the plan doc is complete, stop and ask the user to review the conflict-handling table, implementation strategy decisions, layer walkthrough, and track/tier assignments. Do not write tests or implementation in the same run.
+
+Once approved, the plan freezes. Generate all code stubs from the frozen contracts (signatures plus Chinese comments plus `throw new Error('尚未实现')`; CI compares doc and stub signatures), then route to `07-red-tests.md`. Modules may now be implemented in parallel by executors.
 
 ## Stop Conditions
 
-Stop if requirements/contracts cannot be recertified, or if the plan requires scope expansion, architectural tradeoffs, or contract changes.
+Stop if requirements/contracts cannot be recertified, if the plan requires scope expansion, architectural tradeoffs, or contract changes, and always at the planning gate before any test or implementation work.
