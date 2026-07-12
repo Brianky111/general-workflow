@@ -2,6 +2,13 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.3.1 - 2026-07-12
+
+The numbered document set (00-… through 99-…) is now explicitly the user's dashboard.
+
+- `99-status-and-evidence.md`: Document Set Checklist — every numbered doc, the stage that produces it, the user question it answers (需求是否符合预期 / 进度如何 / 还差哪些), and its done-criteria; progress reports go against this checklist, not from memory.
+- `SKILL.md`: operating rule for keeping the set complete and current as part of the deliverable; the Default Response Shape now includes document-set status (existing docs, missing docs, next unpassed gate).
+
 ## 0.3.0 - 2026-07-12
 
 New mechanism (extends beyond the v3.8 source document): one-requirement-one-doc-set as an explicit organizing instinct, plus similarity triage for incoming requests.

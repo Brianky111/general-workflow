@@ -7,9 +7,30 @@ Keep handoff state synchronized with real evidence. Status files help navigation
 ## Entry Conditions
 
 - Router evidence conflicts.
-- User asks what remains.
+- User asks whether the requirement matches their expectations, how far the work has progressed, or what is still missing.
 - Work is being handed off between agents.
 - Progress/status files are missing or stale.
+
+## Document Set Checklist
+
+One requirement owns one numbered document set. The numbers are the user's dashboard: each document answers one question the user cares about, and the missing ones are exactly "还差哪些". Report progress against this checklist, not from memory.
+
+| Document | Produced by | Answers for the user | Done when |
+|---|---|---|---|
+| `00-项目识别.md` | Project identification | 这是新项目还是改旧项目，判断有没有依据 | Four fixed sections filled |
+| `00-原始需求.md` | Requirements capture | 我的原话有没有被完整封存、未被改写 | Raw words preserved, append-only |
+| `00-整理后需求.md` | Capture + clarification | 需求是否符合我的预期（编号场景 = 我的意图） | Questions answered, user confirmed, `requirementsConfirmedAt` set |
+| `01-接口.md` / `interfaces/*.md` | Interface contract | 行为合同是不是我要的行为 | Ambiguity audit attached, user approved, `contractsFrozenAt` set |
+| `01-代码冲突与重叠.md` / `conflicts/*.md` | Conflict scan (old projects) | 与现有代码的冲突讲清楚了没有 | `## 总结` filled, every C-ID concrete |
+| `fixtures/` | Probes | 外部数据是真的还是编的 | Contract examples trace to probe captures |
+| `02-规划.md` | Planning | 怎么实现、冲突怎么处理、验证多严 | Every C-ID consumed, user approved the plan gate |
+| tests + implementation | Red tests + implementation | 做出来的东西有没有证据 | Red-then-green evidence in CI |
+| review + integration reports | Module review + acceptance | 有没有人独立查过、整体跑通没有 | Reports with evidence, scenarios green, human-eye pass |
+| `99-进度.md` + `status.json` | Every stage | 进度如何、还差哪些、卡在哪 | Mirrors the rows above with evidence links |
+
+Lightweight features merge the requirement, contract, and plan rows into sections of `00-功能.md`; the questions and done-criteria stay the same.
+
+When reporting, list each row as present / in progress / missing, name the next unpassed gate, and mirror the missing list in `99-进度.md`.
 
 ## Actions
 
