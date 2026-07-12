@@ -73,6 +73,7 @@ Get-ChildItem -Force
 Select-String -Path *.md -Pattern '^#{1,4}\s+'
 git diff --check
 python scripts/check_consistency.py
+$env:PYTHONUTF8 = 1   # required on GBK-default Windows: quick_validate.py reads UTF-8 files without declaring an encoding
 python "<path-to-skill-creator>\scripts\quick_validate.py" (git rev-parse --show-toplevel)
 ```
 

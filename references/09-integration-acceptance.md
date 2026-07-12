@@ -22,7 +22,7 @@ Verify the feature as a whole after modules pass review.
 
 Integration report, scenario regression evidence, and UI/human acceptance evidence where applicable.
 
-All scenarios green plus human-eye acceptance means the feature is complete: update `status.json` and `99-进度.md`, confirm the passed scenarios are captured as automated regression in CI, report completion to the user with the evidence summary, and stop. This is the workflow's terminal state.
+All scenarios green plus human-eye acceptance means the feature is complete: update `status.json` and `99-进度.md`, confirm the passed scenarios are captured as automated regression in CI where feasible (visual-track scenarios record visual baselines instead), report completion to the user with the evidence summary, and stop. This is the workflow's terminal state.
 
 ## Stop Conditions
 

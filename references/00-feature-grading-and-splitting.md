@@ -12,6 +12,8 @@ Choose workflow weight and document granularity before writing detailed contract
 
 ## Feature Path
 
+Grading applies to incremental mode only; blueprint batches advance all features together without grading (see `00-pacing-mode.md`).
+
 - **Standard path:** default. Complete the full stage sequence: identification and requirements (`01`/`02`/`03`), contract and conflict scan (`04`/`05`), planning (`06`), red tests and implementation (`07`/`08`), review, module review, and integration acceptance (`09`).
 - **Lightweight path:** allowed only when all are true:
   - no new external dependency,

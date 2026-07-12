@@ -24,10 +24,10 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Evidence | Current stage | Read next |
 |---|---|---|
 | New repository lacks architecture, glossary, governance, or workflow state, and the user has confirmed adopting this workflow | Project kickoff | `00-project-kickoff.md` |
-| Workflow docs exist but no pacing mode is recorded, or `workflow-state.json` `mode` is `blueprint` | Pacing mode | `00-pacing-mode.md` |
+| Workflow docs exist but no pacing mode is recorded, or `mode` is `blueprint` and the current batch gate for the work at hand is unverified | Pacing mode | `00-pacing-mode.md` |
 | Feature size/path is unclear | Feature grading | `00-feature-grading-and-splitting.md` |
 | User asks to refactor/cleanup/restructure/rewrite/simplify, or a plan selects refactor-before-implementation | Refactor intake | `00-refactor-intake.md` |
-| Governance or CI strength is questioned, or a PR touches guarded docs, fixtures, CI config, or audit scripts | Governance audit | `00-governance-ci-hooks.md` |
+| Governance or CI strength is questioned, or a change weakens the guardrails themselves (CI workflows, hooks, audit scripts, CODEOWNERS) or edits existing fixtures against append-only rules | Governance audit | `00-governance-ci-hooks.md` |
 | No feature folder or no project classification | Project identification | `01-project-identification.md` |
 | Raw request exists but no structured requirement | Requirements capture | `02-requirements-capture.md` |
 | Structured requirement has unresolved questions | Clarification gate | `03-requirements-clarification.md` |
@@ -45,7 +45,7 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Reproducible bug, property-test seed, fuzz failure, or mutant survivor exists | Counterexample recovery | `10-counterexample-recovery.md` |
 | Requirement/contract drift or external behavior changed | Change protocol | `10-change-protocol.md` |
 | Status, progress, and evidence disagree | State reconciliation | `99-status-and-evidence.md` |
-| Integration acceptance passed, scenarios are captured in regression, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, report completion, and stop |
+| Integration acceptance passed, regression capture per the integration report is complete, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, report completion, and stop |
 
 ## Orchestration Overlay
 

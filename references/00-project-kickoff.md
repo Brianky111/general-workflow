@@ -51,12 +51,13 @@ Instantiate these project-level parameters before feature work; unanswered items
 - [ ] lightweight-path criteria: what counts as lightweight here
 - [ ] raw-requirement preservation: how user words/attachments enter `00-原始需求.md`; append-only or not
 - [ ] conflict-scan scope: which directories, entries, historical features, tests, and configs old-project scans must cover
-- [ ] contract split thresholds: when `01-接口.md` splits into `interfaces/<module>.md` (module count, line count, parallelism, external protocol, reuse)
+- [ ] implementation-strategy decision template: criteria for from-scratch / modify existing / reuse-and-extend / refactor-then-implement / strangler replacement
+- [ ] contract split thresholds: when `01-接口.md` splits into `interfaces/<module>.md` and when `conflicts/<module>.md` splits alongside (module count, line count, parallelism, external protocol, reuse)
 - [ ] fixture freshness cadence: per external-system change speed
 - [ ] visual-track form: screenshots / local preview / recording; visual-regression baseline management
 - [ ] question-answer channel: batch in-doc, PR comments, or chat-then-write-back — pick one and fix it
 - [ ] hooks policy: enable `core.hooksPath scripts/hooks` or not; which checks warn vs block
-- [ ] state-file policy: enable `workflow-state.json` / `status.json` or not; schema fields and evidence-link format
+- [ ] state-file policy: enable `workflow-state.json` / `status.json` or not; schema fields, status enums, and evidence-link format
 - [ ] parallelism: single serial agent, or multi-agent per module after freeze
 - [ ] initial-review strictness: small projects may drop the anti-hardcoding sample, never the evidence rule
 

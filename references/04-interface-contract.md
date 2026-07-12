@@ -38,7 +38,7 @@ Offer the user this review checklist:
 5. Do raw external-system fields appear only in adapter-layer docs?
 6. Are existing-code conflicts and overlaps clearly explained: current behavior, target behavior, risk, and why the decision is deferred to planning?
 
-Merge freezes the contract. Then generate code stubs from the doc (signatures plus Chinese comments plus `throw new Error('尚未实现')`); CI owns doc-vs-stub signature comparison. Questions raised before the freeze go to the question list; questions raised after the freeze go to `10-change-protocol.md`.
+Merge freezes the contract. Code stubs are generated after the planning gate — `06-planning.md` owns that instruction; CI owns doc-vs-stub signature comparison. Questions raised before the freeze go to the question list; questions raised after the freeze go to `10-change-protocol.md`.
 
 ## Stop Conditions
 

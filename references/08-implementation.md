@@ -19,7 +19,7 @@ Make red tests pass while staying inside the accepted contract and plan.
 4. Avoid silent fallback, broad catch blocks, hidden defaults, or unrecorded assumptions.
 5. If this scope was assigned to an executor, do not implement it in the main thread. Monitor, integrate, or verify instead.
 6. In orchestrated work, executors edit only assigned write sets and progress sections; the main thread owns integration and final verification.
-7. Run the red tests until green, then run broader regression checks.
+7. Run the red tests until green, then run broader regression checks. Pure refactor batches have no red phase: keep the protection suite green throughout.
 8. Update status/progress with evidence, not with unsupported completion claims.
 
 Read `07-anti-cheat-and-red-replay.md` if a green implementation requires changing tests, fixtures, public signatures, or contract assumptions.

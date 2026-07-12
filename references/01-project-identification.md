@@ -12,10 +12,10 @@ Decide whether the work is a new project, an old project, or a new module inside
 ## Actions
 
 1. Inspect repository structure, package manifests, existing docs, and obvious entry points.
-2. Classify the work as:
-   - `new-project`: no existing behavior to preserve.
-   - `old-project`: existing behavior may be affected.
-   - `new-module-in-old-project`: new area, but shared conventions still apply.
+2. Classify the work using the same tokens as `status.json`'s `projectType` enum:
+   - `new`: new project, no existing behavior to preserve.
+   - `existing`: old project, existing behavior may be affected.
+   - `new-module-in-existing`: new area in an old project, but shared conventions still apply.
 3. Record relevant files and areas that the interface/conflict stages must revisit.
 4. Avoid making final conflict conclusions here.
 

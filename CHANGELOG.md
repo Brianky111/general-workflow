@@ -2,6 +2,20 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.2.1 - 2026-07-12
+
+Round-2 review of the 0.2.0 changes themselves (adversarial diff review plus fidelity spot checks).
+
+- Router: pacing-mode row gained a completion predicate (it was always-true in blueprint mode); governance-audit row narrowed to guardrail-weakening changes (it previously matched every document PR); closeout row defers regression capture to the integration report.
+- `00-pacing-mode.md`: re-entry exit added (recorded mode no longer loops back into mode selection); blueprint batches skip grading; conflict reports also cover new modules in old projects; state-file-less projects record mode in kickoff notes.
+- `06-planning.md`: planning gate routes pure refactors to implementation, not red tests; stubs generate for new methods/modules only and never overwrite existing code. `04-interface-contract.md` now defers the stub instruction to planning.
+- `03-requirements-clarification.md`: questions go into the document being closed out (requirement, contract, or `00-功能.md`), not always `00-整理后需求.md`; self-proof rule moved to Hard Stop. `02-requirements-capture.md` closes every draft through clarification unconditionally.
+- `01-project-identification.md`: classification tokens aligned with `status.json`'s `projectType` enum.
+- `00-project-kickoff.md`: restored the implementation-strategy-template checklist item; split-threshold and state-file items complete again.
+- `08-implementation.md`: pure refactors keep the protection suite green throughout (no red phase).
+- `10-change-protocol.md`: restored the probe exception and level B's merge-on-green-CI rule.
+- README: documented `PYTHONUTF8=1` for `quick_validate.py` on GBK-default Windows.
+
 ## 0.2.0 - 2026-07-12
 
 Fixes from a multi-dimension review (trigger metadata, router state machine, source-document fidelity, engineering hygiene).

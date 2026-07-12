@@ -31,6 +31,6 @@ Write concise Chinese requirement docs under `docs/features/<feature>/`.
 
 ## Stop Conditions
 
-If requirements contain unresolved intent questions, route to `03-requirements-clarification.md` before writing contracts or tests.
+Close every draft through `03-requirements-clarification.md` — ask-back alignment is mandatory even when no questions were detected — then route to `03-ambiguity-audit.md` before human confirmation.
 
-Before human confirmation, route to `03-ambiguity-audit.md`.
+Do not write contracts or tests while intent questions remain unresolved.

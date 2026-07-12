@@ -7,11 +7,11 @@ Expose ambiguity before contracts or implementation begin.
 ## Entry Conditions
 
 - `00-整理后需求.md` contains assumptions, TBD markers, contradictory scenarios, or user-facing behavior that is not decided.
-- A requirement or contract draft is being closed out. Ask-back alignment is a mandatory closing step for every draft, not a fallback for detected problems: declaring "no questions" requires per-category self-proof (normal/error/boundary scenarios, field meanings, failure semantics — why each has nothing left to ask), which the user may reject.
+- A requirement or contract draft is being closed out. Ask-back alignment is a mandatory closing step for every draft, not a fallback for detected problems.
 
 ## Actions
 
-1. Write questions into the `## 待确认反问` section of `00-整理后需求.md`, numbered Q1, Q2..., ordered by how blocking they are, grouped by scenario, field, or workflow step.
+1. Write questions into the `## 待确认反问` section of the document being closed out (`00-整理后需求.md`, `01-接口.md` or `interfaces/*.md`, or `00-功能.md` for lightweight features), numbered Q1, Q2..., ordered by how blocking they are, grouped by scenario, field, or workflow step.
 2. Ask only intent-level questions; do not outsource implementation design to the user. Technical choices are the agent's, recorded in `## 决策记录`.
 3. For each question, explain the risk of leaving it unresolved.
 4. For each question, provide 2-3 candidate answers, consequences, and one recommendation.
@@ -32,9 +32,11 @@ Expose ambiguity before contracts or implementation begin.
 
 After writing a pending-question list, stop the current run. Do not continue to interface, planning, tests, or implementation until answers are recorded and the pending list is cleared.
 
+Declaring "no questions" requires per-category self-proof — why the normal/error/boundary scenarios, field meanings, and failure semantics each have nothing left to ask. The user may reject the claim.
+
 ## Output
 
-Update `00-整理后需求.md` with:
+Update the document being closed out with:
 
 - the `## 待确认反问` section (pending questions with the `【答复】：` marker; consistency checks count unresolved `【答复】：` entries, so keep the marker exact),
 - the `## 决策记录` section (answered questions and agent-made technical decisions),
