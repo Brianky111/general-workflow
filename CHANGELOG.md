@@ -2,6 +2,16 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.4.0 - 2026-07-13
+
+Five mechanisms adopted from a comparative study of Superpowers, GSD, and Trellis.
+
+- Decision coverage gate (from GSD): answered questions become numbered `D` decisions (`03-requirements-clarification.md`); the ambiguity audit flags decisions with no landing clause (`03-ambiguity-audit.md`); contract clauses cite the `D` IDs they implement (`04-interface-contract.md`); the planning gate blocks on unconsumed decisions like unconsumed `C` conflicts (`06-planning.md`).
+- Executor context manifest (from Trellis/GSD): the orchestration brief lists exact files with reasons; executors read only the manifest plus their write paths, never pasted history, and report back instead of browsing when it falls short (`00-orchestration-policy.md`).
+- Rationalization table (from Superpowers): seven predictable excuses with rebuttals added to `07-anti-cheat-and-red-replay.md`.
+- Model tiering (from Superpowers/GSD): briefs assign a model tier by task nature — cheap for mechanical, default for implementation, strongest for architecture/security/adversarial review; reviewers never below default (`00-orchestration-policy.md`).
+- Lessons pass (from Trellis): feature closeout proposes promoting what worked into project-level docs — glossary, architecture, CI gates, tuning checklist (`09-integration-acceptance.md`).
+
 ## 0.3.2 - 2026-07-12
 
 Refactors are no longer capturable as features.

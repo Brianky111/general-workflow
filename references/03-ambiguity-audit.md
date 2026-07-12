@@ -24,6 +24,7 @@ Use an independent pass when possible. The auditor should read only the draft do
 - Defaults, nulls, limits, and extreme inputs are defined.
 - Draft statements do not conflict with each other or with shared models.
 - Every behavior traces to raw requirements, scenario IDs, or decision records; untraceable behavior becomes a question.
+- Every `D` decision record lands in the draft: a behavior-affecting decision with no corresponding clause or scenario is a finding, not a formality.
 
 ## Triage
 

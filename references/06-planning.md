@@ -68,6 +68,8 @@ Create or update `docs/features/<feature>/02-规划.md` (or the plan section of 
 
 The plan is a document-PR human gate. After the plan doc is complete, stop and ask the user to review the conflict-handling table, implementation strategy decisions, layer walkthrough, and track/tier assignments. Do not write tests or implementation in the same run.
 
+The gate also checks decision coverage: every `D` decision recorded in the requirement and contract docs must be traceable to a contract clause or a plan item. An unconsumed behavior-affecting decision pushes the plan back, the same way an unconsumed `C` conflict ID does.
+
 Once approved, the plan freezes. Generate code stubs from the frozen contracts for new methods and modules only (signatures plus Chinese comments plus `throw new Error('尚未实现')`); never overwrite existing implementations. CI compares doc and stub signatures. Then route to `07-red-tests.md`; batches classified as pure refactor by `00-refactor-intake.md` route to `08-implementation.md` instead. Modules may now be implemented in parallel by executors.
 
 ## Stop Conditions

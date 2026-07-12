@@ -34,11 +34,12 @@ Choose the lightest mode that preserves correctness:
 2. Decide whether executor help changes correctness, coverage, or throughput.
 3. If delegating, write a small execution brief:
    - objective;
-   - evidence to read;
+   - context manifest: the exact files to load, each with a one-line reason;
    - allowed write paths, or `report only`;
    - prohibited paths and behaviors;
    - required output evidence;
-   - handoff location.
+   - handoff location;
+   - model tier, when the platform supports it: mechanical or repetitive work → fast cheap tier; standard implementation → default tier; architecture, security, protocol, or adversarial review → strongest tier. Reviewers never below the default tier.
 4. After launching executors, do not implement their assigned scope locally. The main thread may:
    - inspect state needed for coordination;
    - prepare or update orchestration docs;
@@ -55,12 +56,16 @@ Choose the lightest mode that preserves correctness:
 You are an executor in an orchestrated workflow. The main thread owns scope, integration, and final acceptance.
 
 Task: <one concrete objective>
-Read: <docs/code/tests to inspect>
+Context manifest (load these and nothing else):
+- <file or doc path> — <why this task needs it>
+- <file or doc path> — <why this task needs it>
 May edit: <paths or "none, report only">
 Must not edit: <paths/behaviors>
 Preserve: <contracts, public behavior, tests, data shape>
 Return: <diff summary, commands, evidence, blockers, risks>
 ```
+
+Executors read only the manifest plus their own write paths. Do not paste conversation history into the brief — the manifest files carry the context. If an executor finds the manifest insufficient, it stops and reports what is missing; it does not browse the repository on its own.
 
 ## Output
 

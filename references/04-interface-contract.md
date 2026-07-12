@@ -16,7 +16,7 @@ Define the behavior the code must satisfy before implementation begins.
 3. Add a data model table: `| 字段 | 中文含义 | 示例值 | 来源 | 必填 |`, followed by one complete JSON example.
 4. For every method, answer four fixed questions: purpose, input example, output example, and failure behavior with explicit loud/silent declaration.
 5. Write invariants as `P1`, `P2` statements that hold for all inputs; enhanced/adversarial modules must have them.
-6. Map every acceptance scenario to contract behavior and include one end-to-end scenario walkthrough using the same example data.
+6. Map every acceptance scenario to contract behavior and include one end-to-end scenario walkthrough using the same example data. Cite the `D` decision IDs each clause implements; every behavior-affecting decision must be traceable to a clause.
 7. Add glossary increments for new domain terms.
 8. If external systems are involved, read `04-fixtures-and-probes.md` before inventing examples.
 9. For large features, read `00-feature-grading-and-splitting.md`, then split module contracts under `interfaces/<module>.md` and keep `01-接口.md` as the index.
