@@ -6,7 +6,7 @@ Make red tests pass while staying inside the accepted contract and plan.
 
 ## Entry Conditions
 
-- Red tests exist and fail for the expected reason.
+- Red tests exist and fail for the expected reason, or the batch is a pure refactor recertified through `00-refactor-intake.md` with existing green tests as protection evidence.
 - The implementation scope is clear.
 - For refactor work, requirements, contracts, and plan have been recertified through `00-refactor-intake.md`.
 - If execution is orchestrated through subagents, the plan defines executor write sets and the main thread is not implementing the same assigned scope.

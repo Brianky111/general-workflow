@@ -1,6 +1,6 @@
 ---
 name: general-workflow
-description: Guide agent-led software work through a staged, document-governed general development workflow with progress detection, on-demand reference loading, and orchestrated subagent execution. Use when Codex needs to pick up an existing feature workflow, create requirements/contracts/plans/tests, continue TDD implementation, handle refactor or cleanup work with requirements recertification, coordinate subagents as executors while the main thread stays the orchestrator, run verification, or handle workflow changes without reading a full process manual up front.
+description: Guide agent-led software work through a staged, document-governed general development workflow with progress detection, on-demand reference loading, and orchestrated subagent execution. Use when kicking off a new project with architecture and governance docs, picking up or continuing an existing feature workflow, creating requirements/contracts/plans/tests, continuing TDD implementation, handling refactor or cleanup work with requirements recertification, coordinating subagents as executors while the main thread stays the orchestrator, running verification, or handling workflow changes without reading a full process manual up front. Typical triggers include 新项目开工, 接手/继续开发, 重构/整理, kickoff, take over, resume implementation, refactor, verify, and change requests.
 ---
 
 # General Workflow
@@ -20,16 +20,20 @@ Read `references/00-progress-router.md` before reading any other reference file.
 - At planning, refactor, implementation, and review stages, read `references/00-orchestration-policy.md` when local subagent tools exist and the task is non-trivial, separable, risky, or validation-heavy.
 - Load one stage reference at a time. Do not read all files in `references/` unless the user explicitly asks for a full audit or migration.
 - Load support references only when the selected stage asks for them or the evidence triggers their topic.
+- After completing a stage's Output, return to `references/00-progress-router.md` and re-select the stage, unless the current reference names an explicit next file.
 - If evidence is contradictory, read `references/99-status-and-evidence.md`, reconcile the state, then return to the router.
 - If a stage requires user confirmation, stop at the gate and report the exact decision needed.
 - Treat the original workflow document, if present, as source material only. Prefer the split reference documents for execution.
 
 ## Reference Map
 
+This map is an index for discovery only. Stage selection must go through `00-progress-router.md`.
+
 - `00-progress-router.md`: determine current stage and next document.
 - `00-orchestration-policy.md`: keep the main thread as orchestrator and use subagents as scoped executors.
 - `00-refactor-intake.md`: re-check requirements before refactoring and classify behavior risk.
 - `00-project-kickoff.md`: initialize architecture, glossary, governance, and workflow state.
+- `00-pacing-mode.md`: choose blueprint or incremental pacing and follow blueprint batch gates.
 - `00-feature-grading-and-splitting.md`: decide standard/lightweight path and whether to split large contracts.
 - `00-governance-ci-hooks.md`: set or audit document governance, CI gates, hooks, and scheduled checks.
 - `01-project-identification.md`: classify new project, old project, or new module in old project.

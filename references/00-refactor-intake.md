@@ -15,7 +15,7 @@ Prevent refactor requests from skipping product intent. Reconfirm requirements a
 Before touching code, re-read the smallest current evidence set:
 
 - project docs: `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`;
-- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`;
+- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, or `00-功能.md` for lightweight features (its sections replace the separate requirement/contract/plan docs);
 - state and evidence: `status.json`, `99-进度.md`, `docs/workflow-state.json`, tests, recent diffs, PR notes, CI, and review comments.
 
 Verify that `requirementsConfirmedAt` and `contractsFrozenAt`, when present, point to a PR, commit, tag, or other concrete approval evidence. Status text alone is not enough.
@@ -24,7 +24,7 @@ Verify that `requirementsConfirmedAt` and `contractsFrozenAt`, when present, poi
 
 Classify the requested work before implementation:
 
-- **Pure refactor:** no change to public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Tests and contracts stay unchanged.
+- **Pure refactor:** no change to public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Tests and contracts stay unchanged. Do not write new red tests for a pure refactor: proceed to `08-implementation.md` with the existing green tests as protection evidence.
 - **Behavior-affecting refactor:** any of the above might change, or layer/module boundaries need to move. Route to `10-change-protocol.md` level A before coding.
 - **Missing or stale requirements:** accepted requirements, contracts, or plan cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `04-interface-contract.md`, `06-planning.md`, or `99-status-and-evidence.md` before coding.
 
