@@ -2,6 +2,12 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.2.2 - 2026-07-12
+
+Forward-tested the installed skill with Codex CLI on three live scenarios (mid-workflow takeover, refactor in a plain repo, trivial task in a bare repo). Triggering, stage routing, progressive loading (3 files per run), gate discipline, and the kickoff guard all behaved as designed.
+
+- `00-refactor-intake.md`: codified the fallback the refactor scenario exposed — in repositories that never adopted this workflow, treat current public interfaces, observed behavior, and green tests as the protection contract instead of routing to requirements capture; add characterization tests or stop when no protection exists.
+
 ## 0.2.1 - 2026-07-12
 
 Round-2 review of the 0.2.0 changes themselves (adversarial diff review plus fidelity spot checks).

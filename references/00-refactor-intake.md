@@ -30,6 +30,8 @@ Classify the requested work before implementation:
 
 Every refactor target must trace to a requirement scenario, contract method/invariant, documented conflict, or explicit planning item. Do not justify refactor solely from code aesthetics.
 
+In a repository that never adopted this workflow (no workflow docs exist), do not create workflow docs uninvited: treat the current public interfaces, observed behavior, and green test suite as the protection contract, state that substitution in the report, and require the protection suite to stay green throughout. If no protection tests exist for the touched behavior, add characterization tests first or stop and ask the user.
+
 ## Plan Update
 
 Add or update a refactor preflight section in `02-规划.md`:
