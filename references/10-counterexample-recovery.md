@@ -26,3 +26,11 @@ Turn every reproducible failure into a permanent regression guard.
 - If the failure violates an implementation detail but the contract is right, use `10-change-protocol.md` level B.
 - If the failure proves an invariant or contract is wrong, escalate to level A.
 - If the failure is not reproducible and has no seed, record it in the progress observation area. A second similar occurrence upgrades it to mandatory debt.
+
+## Output
+
+The minimized counterexample stored under `fixtures/counterexamples/`, a regression test tagged `反例#N` with red-then-green evidence, and updated status/progress entries. Then return to the router.
+
+## Stop Conditions
+
+Stop if the failure cannot be minimized or reproduced deterministically, or if fixing it would require changing a frozen contract without an approved change proposal.

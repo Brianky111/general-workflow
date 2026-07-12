@@ -35,3 +35,11 @@ Only two paths are valid:
 
 1. fix the implementation,
 2. use `10-change-protocol.md` to change the contract.
+
+## Output
+
+An audit conclusion with evidence: commit order and path purity verified (commit hashes), red replay result (CI link or command output), and any violations found with the rule each one breaks. Then return to the router.
+
+## Stop Conditions
+
+Stop and report to the user if a violation is confirmed (implementation-first history, weakened tests, hardcoded answers, or bypassed stops); do not silently repair audit findings.

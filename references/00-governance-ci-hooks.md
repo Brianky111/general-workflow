@@ -48,3 +48,14 @@ Local hooks are early feedback only; CI must repeat the checks.
 - fixture freshness probes compare external reality with `fixtures/contract/`,
 - nightly fuzz/property testing records seeds,
 - mutation testing exposes weak assertions.
+
+## Output
+
+- For kickoff: governance configuration, CI gate definitions, hook scripts, and state files initialized from `99-status-and-evidence.md` shapes, with the chosen gates listed in the kickoff notes.
+- For an audit: a short report naming each expected gate as present, weakened, or missing, with evidence, plus fixes or a follow-up list.
+
+Configuration is complete when every gate this project selected is enforced by CI (not only by local hooks) and a deliberately failing example is caught. Then return to the router.
+
+## Stop Conditions
+
+Stop for user confirmation before weakening or removing an existing gate, and when branch protection or CODEOWNERS is unavailable and the tag-based fallback must be accepted.

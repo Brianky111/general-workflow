@@ -21,12 +21,12 @@ Decide whether the work is a new project, an old project, or a new module inside
 
 ## Output
 
-Create or update `docs/features/<feature>/00-项目识别.md` with:
+Create or update `docs/features/<feature>/00-项目识别.md` in Chinese, using these fixed section names (downstream agents and template checks depend on them):
 
-- conclusion,
-- evidence read,
-- areas requiring later code scan,
-- explicit non-goals for this stage.
+- `## 结论` — the classification and its basis,
+- `## 已读资料` — evidence read,
+- `## 后续接口层必须检查的区域` — areas requiring later code scan,
+- `## 本层不做` — explicit non-goals for this stage.
 
 ## Stop Conditions
 

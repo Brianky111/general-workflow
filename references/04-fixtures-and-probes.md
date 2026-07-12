@@ -12,9 +12,11 @@ Prevent imagined external data from becoming contracts, mocks, or tests.
 
 ## Fixture Areas
 
-- `fixtures/contract/`: reviewed probe captures used as contract evidence.
-- `fixtures/counterexamples/`: minimized failing inputs; append-only unless change protocol approves edits.
-- `fixtures/generated/`: refresh reports or reproducible caches; never the only contract source.
+All fixture directories live under the feature folder: `docs/features/<feature>/fixtures/`. Other references may use the short form `fixtures/...`; this file owns the authoritative location.
+
+- `docs/features/<feature>/fixtures/contract/`: reviewed probe captures used as contract evidence.
+- `docs/features/<feature>/fixtures/counterexamples/`: minimized failing inputs; append-only unless change protocol approves edits.
+- `docs/features/<feature>/fixtures/generated/`: refresh reports or reproducible caches; never the only contract source.
 
 ## Probe Rules
 

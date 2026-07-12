@@ -20,6 +20,8 @@ Run an independent module-level review after CI mechanics pass.
 
 Write a concise Chinese review report. Every conclusion needs evidence: file path and line number, command output, or CI link.
 
+On pass, update `status.json` and the module's section of `99-进度.md` with the review evidence, then return to the router.
+
 ## Stop Conditions
 
 No evidence means not reviewed. If coverage or assertion strength fails, route back to `07-red-tests.md` or `08-implementation.md`.
