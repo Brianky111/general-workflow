@@ -10,10 +10,10 @@ Inspect, when available:
 - whether a local multi-agent/subagent tool is present in the active tool list
 - module boundaries, executor-sized tasks, independent review tasks, and any work that can safely be delegated
 - `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`, `docs/domain-models.md`
-- `docs/features/<module>/00-模块概述.md` for module boundaries
-- `docs/features/<feature>/00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md` (feature folders live under their module: `docs/features/<module>/<feature>/`)
-- `docs/features/<feature>/use-cases/*.md`, `interfaces/*.md`, and `conflicts/*.md` for split use cases and contracts
-- `docs/workflow-state.json` (including its `mode` field), `docs/features/<feature>/status.json`
+- `docs/<module>/00-模块概述.md` for module boundaries
+- the feature's active round `docs/<module>/<feature>/<round>/`: `00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md`; `archive/` holds past rounds' frozen truth
+- the round's `use-cases/*.md`, `interfaces/*.md`, and `conflicts/*.md` for split use cases and contracts
+- `docs/workflow-state.json` (including its `mode` field), `docs/<module>/<feature>/status.json` (including `activeRound`)
 - tests, recent diffs, PR descriptions, CI results, and review comments
 
 Do not assume status files are authoritative. Prefer Git/PR/CI/test evidence when they conflict.
@@ -35,7 +35,7 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Structured requirement has unresolved questions | Clarification gate | `03-requirements-clarification.md` |
 | Requirement or contract draft needs independent cold-read before approval | Ambiguity audit | `03-ambiguity-audit.md` |
 | Requirement is accepted but no behavior contract exists | Interface contract | `04-interface-contract.md` |
-| Contract uses external service examples, protocol samples, or mock data without matching captures in `docs/features/<feature>/fixtures/contract/` | Fixtures and probes | `04-fixtures-and-probes.md` |
+| Contract uses external service examples, protocol samples, or mock data without matching captures in `docs/<module>/<feature>/fixtures/contract/` | Fixtures and probes | `04-fixtures-and-probes.md` |
 | Existing code may overlap or contradict the contract, and `01-代码冲突与重叠.md` is missing or does not cover the contract | Conflict scan | `05-conflict-scan.md` |
 | Contract/conflict notes exist but no implementation plan | Planning | `06-planning.md` |
 | Plan assigns red/green modules whose failing target tests are not yet proven, and the batch is not a pure refactor | Red tests | `07-red-tests.md` |
@@ -47,7 +47,7 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Reproducible bug, property-test seed, fuzz failure, or mutant survivor exists | Counterexample recovery | `10-counterexample-recovery.md` |
 | Requirement/contract drift or external behavior changed | Change protocol | `10-change-protocol.md` |
 | Status, progress, and evidence disagree | State reconciliation | `99-status-and-evidence.md` |
-| Integration acceptance passed, regression capture per the integration report is complete, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, report completion, and stop |
+| Integration acceptance passed, regression capture per the integration report is complete, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, archive the round, report completion, and stop |
 
 ## Orchestration Overlay
 

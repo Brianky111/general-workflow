@@ -17,9 +17,9 @@ One requirement owns exactly one feature folder and one document set. Before cre
 
 Classify the relationship:
 
-- **New requirement:** no meaningful overlap in actors, scenarios, or data. Create a new feature folder.
-- **Merge:** the request belongs inside an existing feature's boundary — same behavior area, would share the contract or modules, a separate folder would duplicate docs — and that feature's requirement is **not yet confirmed**. Append the new words to that feature's `00-原始需求.md` and extend its scenarios; do not create a second folder.
-- **Revision:** the request changes or extends a requirement that is **already confirmed** (or a frozen contract). Route to `10-change-protocol.md` for that feature; do not create a second folder.
+- **New requirement:** no meaningful overlap in actors, scenarios, or data. Create a new feature folder with its first round, `01-初建`.
+- **Merge:** the request belongs inside an existing feature's boundary — same behavior area, would share the contract or modules, a separate folder would duplicate docs — and that feature's requirement is **not yet confirmed**. Append the new words to the active round's `00-原始需求.md` and extend its scenarios; do not create a second folder.
+- **Revision:** the request changes or extends a requirement that is **already confirmed** (or a frozen contract). Route to `10-change-protocol.md`, which opens a new change round in that feature; never a second feature folder.
 
 When the classification is uncertain, stop and ask the user with this shape — always list the similarity points and argue each option:
 
@@ -60,7 +60,7 @@ Hard rules: never let two document sets describe the same behavior, and never si
 
 ## Output
 
-Write concise Chinese requirement docs under `docs/features/<feature>/`.
+Write concise Chinese requirement docs in the feature's active round, `docs/<module>/<feature>/<round>/`.
 
 ## Stop Conditions
 

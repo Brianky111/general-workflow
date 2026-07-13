@@ -23,7 +23,7 @@ Define the behavior the code must satisfy before implementation begins.
 
 ## Output
 
-Create or update `docs/features/<feature>/01-接口.md` and optional `interfaces/*.md`, written in Chinese. For lightweight features, write the contract as a module-sectioned part of `00-功能.md` instead of a separate file.
+Create or update the active round's `docs/<module>/<feature>/<round>/01-接口.md` and optional `interfaces/*.md`, written in Chinese. For lightweight features, write the contract as a module-sectioned part of `00-功能.md` instead of a separate file. A revision round writes the complete contract after the change, never a delta.
 
 ## Contract Gate
 

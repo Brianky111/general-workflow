@@ -2,6 +2,15 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.7.0 - 2026-07-13
+
+Change rounds: each add/remove/modify of a feature gets its own numbered document set, archived on acceptance. The `docs/features/` path segment is gone — the canonical tree is `docs/<module>/<feature>/<NN>-<round>/`.
+
+- `00-business-taxonomy.md`: round directories (`01-初建`, `02-<slug>`...) hold the full 00-99 set per change; each round's contract is complete, never a delta, so the newest archived round is the feature's current truth; level B/C work stays inside the active round; `fixtures/` and `status.json` sit at feature level across rounds — counterexamples are permanent regression assets that tests reference by path, so they never move with an archive.
+- `status.json` gained `activeRound` with consistency rules (must point to an existing round; archived rounds are read-only — corrections open a new round).
+- Change protocol level A opens a round; similarity-triage revision opens a round; integration acceptance archives the round at closeout; the document-set checklist applies to the active round.
+- All `docs/features/<feature>/` path references swept to the new canonical forms.
+
 ## 0.6.1 - 2026-07-13
 
 - Code homes nest under their module as the canonical form — `src/<module>/<feature>/` mirrors `docs/features/<module>/<feature>/`; a project that flattens one tree flattens both (`00-business-taxonomy.md`, `00-project-kickoff.md`).

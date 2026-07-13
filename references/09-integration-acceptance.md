@@ -22,7 +22,7 @@ Verify the feature as a whole after modules pass review.
 
 Integration report, scenario regression evidence, and UI/human acceptance evidence where applicable.
 
-All scenarios green plus human-eye acceptance means the feature is complete: update `status.json` and `99-进度.md`, confirm the passed scenarios are captured as automated regression in CI where feasible (visual-track scenarios record visual baselines instead), report completion to the user with the evidence summary, and stop. This is the workflow's terminal state.
+All scenarios green plus human-eye acceptance means the round is complete: update `status.json` and `99-进度.md`, confirm the passed scenarios are captured as automated regression in CI where feasible (visual-track scenarios record visual baselines instead), move the round directory into `archive/` and clear `activeRound` (fixtures stay at feature level), report completion to the user with the evidence summary, and stop. This is the workflow's terminal state.
 
 Before stopping, run a lessons pass: propose which insights from this feature deserve promotion to project-level docs — glossary terms, architecture notes, new CI gates or hooks, template or tuning-checklist updates. Record what the user accepts through governed doc PRs. Failures already have their own loop through `10-counterexample-recovery.md`; this pass promotes what worked.
 

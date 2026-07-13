@@ -21,7 +21,7 @@ Decide whether the work is a new project, an old project, or a new module inside
 
 ## Output
 
-Create or update `docs/features/<feature>/00-项目识别.md` in Chinese, using these fixed section names (downstream agents and template checks depend on them):
+Create or update `docs/<module>/<feature>/<round>/00-项目识别.md` in Chinese, using these fixed section names (downstream agents and template checks depend on them):
 
 - `## 结论` — the classification and its basis,
 - `## 已读资料` — evidence read,

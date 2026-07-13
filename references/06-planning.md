@@ -62,7 +62,7 @@ Read `00-feature-grading-and-splitting.md` for feature-level path. At module lev
 
 ## Output
 
-Create or update `docs/features/<feature>/02-规划.md` (or the plan section of `00-功能.md` for lightweight features), written in Chinese.
+Create or update the active round's `docs/<module>/<feature>/<round>/02-规划.md` (or the plan section of `00-功能.md` for lightweight features), written in Chinese.
 
 ## Planning Gate
 

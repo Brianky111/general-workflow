@@ -38,7 +38,8 @@ Instantiate these project-level parameters before feature work; unanswered items
 
 - [ ] layers: add/remove/rename per the four architecture questions
 - [ ] feature code-home template: which layers each feature's code directory contains, and where the shared kernel lives
-- [ ] module grouping: which business modules structure the roster and the `docs/features/<module>/` directories, and the threshold below which a tiny project may flatten
+- [ ] module grouping: which business modules structure the roster and the `docs/<module>/` directories, and the threshold below which a tiny project may flatten
+- [ ] change-round convention: round slug naming, and which level-B/C work may stay inside the active round instead of opening one
 - [ ] use-case split threshold: when scenario groups move from `00-整理后需求.md` into `use-cases/*.md` files
 - [ ] pacing mode: blueprint or incremental this cycle; blueprint scope goes to `requirements-index.md`
 - [ ] project identification criteria: what counts as new project / old project / new module in old project

@@ -13,7 +13,7 @@ Keep handoff state synchronized with real evidence. Status files help navigation
 
 ## Document Set Checklist
 
-One requirement owns one numbered document set. The numbers are the user's dashboard: each document answers one question the user cares about, and the missing ones are exactly "还差哪些". Report progress against this checklist, not from memory.
+One change round owns one numbered document set; the checklist applies to the feature's active round, and archived rounds hold completed sets. The numbers are the user's dashboard: each document answers one question the user cares about, and the missing ones are exactly "还差哪些". Report progress against this checklist, not from memory.
 
 | Document | Produced by | Answers for the user | Done when |
 |---|---|---|---|
@@ -57,12 +57,13 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 }
 ```
 
-`docs/features/<feature>/status.json` minimum fields:
+`docs/<module>/<feature>/status.json` minimum fields (feature level, spans rounds):
 
 ```json
 {
   "schema": 1,
   "feature": "<功能名>",
+  "activeRound": "<NN>-<round>，无进行中轮次则为空",
   "projectType": "new|existing|new-module-in-existing",
   "phase": "identification|requirements|interfaces|planning|red|green|review|integration|done|blocked",
   "gate": "open|waiting-human|approved|blocked",
@@ -112,12 +113,13 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 - Existing projects must have a conflict report with concrete scan conclusions.
 - A module cannot be `done` without contract reference, red evidence, green evidence, and `reviewEvidence` pointing to a review report or CI run.
 - `reviewer`, when present, must differ from the module's `owner`: the reviewer is never the implementer.
+- `activeRound`, when set, must point to an existing round directory; archived rounds are read-only history — corrections open a new round.
 - Status may lag behind reality, but it must not run ahead of evidence.
 - Parallel agents edit only their own module section of `99-进度.md`; cross-module status writes must preserve other modules' fields.
 
 ## Output
 
-Update `docs/workflow-state.json`, `docs/features/<feature>/status.json`, or `99-进度.md` if the target project uses them; create them from the shapes above when the project adopted this workflow but the files are missing.
+Update `docs/workflow-state.json`, `docs/<module>/<feature>/status.json`, or the active round's `99-进度.md` if the target project uses them; create them from the shapes above when the project adopted this workflow but the files are missing.
 
 ## Stop Conditions
 

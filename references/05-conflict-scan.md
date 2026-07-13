@@ -24,7 +24,7 @@ Find where the desired contract overlaps, contradicts, or can reuse existing cod
 
 ## Output
 
-Create or update `docs/features/<feature>/01-代码冲突与重叠.md`; use `conflicts/<module>.md` only when the list is large, keeping the summary file as the index of all `C` IDs and their status.
+Create or update the active round's `docs/<module>/<feature>/<round>/01-代码冲突与重叠.md`; use `conflicts/<sub>.md` only when the list is large, keeping the summary file as the index of all `C` IDs and their status.
 
 Start the file with a summary section:
 
