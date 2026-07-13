@@ -13,7 +13,7 @@ Refactor, cleanup, or restructure requests are not requirements — route them t
 
 ## Similarity Triage
 
-One requirement owns exactly one feature folder and one document set. Before creating any new folder, scan `docs/requirements-index.md`, the goals and numbered scenarios of existing `docs/features/*/00-整理后需求.md` (or `00-功能.md`), and the glossary for features that overlap the incoming request.
+One requirement owns exactly one feature folder and one document set. Before creating any new folder, scan `docs/requirements-index.md`, the module overviews (`00-模块概述.md`), the goals and numbered scenarios of existing feature `00-整理后需求.md` (or `00-功能.md`) files, and the glossary for features that overlap the incoming request. Place the request on the business hierarchy per `00-business-taxonomy.md`: module-sized requests split first; use-case-sized requests merge.
 
 Classify the relationship:
 
@@ -44,6 +44,7 @@ Hard rules: never let two document sets describe the same behavior, and never si
 
 1. Copy the original request into `00-原始需求.md`; append rather than rewrite when possible.
 2. Draft `00-整理后需求.md` with:
+   - the parent module (`所属模块`) at the head, per `00-business-taxonomy.md`,
    - goal and non-goals,
    - actors or users,
    - numbered acceptance scenarios,
@@ -53,6 +54,7 @@ Hard rules: never let two document sets describe the same behavior, and never si
    - `S1`, `S2` for normal paths,
    - `E1`, `E2` for error paths,
    - `B1`, `B2` for boundary cases.
+   When the scenario list outgrows one review pass, split use cases into `use-cases/UC<n>-<slug>.md` per `00-business-taxonomy.md`, keeping the roster in `00-整理后需求.md` as the index.
 4. Propose standard or lightweight path; read `00-feature-grading-and-splitting.md` if the path or document granularity is unclear.
 5. Mark unclear items as questions; do not silently choose product behavior.
 

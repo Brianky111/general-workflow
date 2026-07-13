@@ -10,8 +10,9 @@ Inspect, when available:
 - whether a local multi-agent/subagent tool is present in the active tool list
 - module boundaries, executor-sized tasks, independent review tasks, and any work that can safely be delegated
 - `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`, `docs/domain-models.md`
-- `docs/features/<feature>/00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md`
-- `docs/features/<feature>/interfaces/*.md` and `conflicts/*.md` for split contracts
+- `docs/features/<module>/00-模块概述.md` for module boundaries
+- `docs/features/<feature>/00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md` (feature folders live under their module: `docs/features/<module>/<feature>/`)
+- `docs/features/<feature>/use-cases/*.md`, `interfaces/*.md`, and `conflicts/*.md` for split use cases and contracts
 - `docs/workflow-state.json` (including its `mode` field), `docs/features/<feature>/status.json`
 - tests, recent diffs, PR descriptions, CI results, and review comments
 

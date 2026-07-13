@@ -19,7 +19,7 @@ A refactor is work on existing behavior, never a requirement of its own. Do not 
 Before touching code, re-read the smallest current evidence set:
 
 - project docs: `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`;
-- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, or `00-功能.md` for lightweight features (its sections replace the separate requirement/contract/plan docs);
+- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `use-cases/*.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, or `00-功能.md` for lightweight features (its sections replace the separate requirement/contract/plan docs);
 - state and evidence: `status.json`, `99-进度.md`, `docs/workflow-state.json`, tests, recent diffs, PR notes, CI, and review comments.
 
 Verify that `requirementsConfirmedAt` and `contractsFrozenAt`, when present, point to a PR, commit, tag, or other concrete approval evidence. Status text alone is not enough.

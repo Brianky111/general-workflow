@@ -2,6 +2,16 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.6.0 - 2026-07-13
+
+Business taxonomy with physical arrangement, and per-feature code homes — the requirements tree and the code tree mirror each other, bridged by the contract.
+
+- New `references/00-business-taxonomy.md`: the 产品/模块/功能特性/使用场景/子功能/任务 hierarchy is arranged physically with granularity decreasing by depth — modules and features are directories (`docs/features/<module>/<feature>/`, module overview in `00-模块概述.md`), use cases and sub-features are files (`use-cases/UC<n>-*.md` and `interfaces/*.md`, both split-on-size with the parent doc as index), tasks are tracked entries (`status.json` modules, `99-进度.md` sections). One requirement one doc set unchanged; tiny projects may flatten.
+- Use-case splitting mirrors the contract-split idiom: inline `S/E/B` groups until triggers fire, then one file per use case with the roster staying in `00-整理后需求.md` so the user still confirms a single scenario list.
+- Placement rules: module-sized requests split before capture; use-case-sized requests merge via similarity triage; use cases outgrowing their feature get promoted; every feature declares `所属模块`.
+- Code layout: every feature gets one code home decided at kickoff and recorded in `architecture.md` (default `src/features/<feature>/` with api/application/domain/infrastructure/models/tests, adjusted by the four layer questions; large codebases nest `<module>/<feature>` too); the plan's method-assignment table maps methods to concrete code-home paths; shared code lives in a declared shared kernel.
+- Wiring: router evidence scan covers module overviews and split use cases; capture scans module overviews in triage and owns the use-case split trigger; refactor intake recertifies `use-cases/*.md`; kickoff gains code-home, module-grouping, and use-case-threshold tuning items; the document-set checklist covers split use cases.
+
 ## 0.5.1 - 2026-07-13
 
 Two refinements from forward-testing session binding (an agent reviewing a freshly claimed module surfaced both).

@@ -19,7 +19,7 @@ One requirement owns one numbered document set. The numbers are the user's dashb
 |---|---|---|---|
 | `00-项目识别.md` | Project identification | 这是新项目还是改旧项目，判断有没有依据 | Four fixed sections filled |
 | `00-原始需求.md` | Requirements capture | 我的原话有没有被完整封存、未被改写 | Raw words preserved, append-only |
-| `00-整理后需求.md` | Capture + clarification | 需求是否符合我的预期（编号场景 = 我的意图） | Questions answered, user confirmed, `requirementsConfirmedAt` set |
+| `00-整理后需求.md` (+ `use-cases/*.md` after splitting) | Capture + clarification | 需求是否符合我的预期（编号场景 = 我的意图） | Questions answered, user confirmed, `requirementsConfirmedAt` set |
 | `01-接口.md` / `interfaces/*.md` | Interface contract | 行为合同是不是我要的行为 | Ambiguity audit attached, user approved, `contractsFrozenAt` set |
 | `01-代码冲突与重叠.md` / `conflicts/*.md` | Conflict scan (old projects) | 与现有代码的冲突讲清楚了没有 | `## 总结` filled, every C-ID concrete |
 | `fixtures/` | Probes | 外部数据是真的还是编的 | Contract examples trace to probe captures |

@@ -14,6 +14,8 @@ Choose workflow weight and document granularity before writing detailed contract
 
 Grading applies to incremental mode only; blueprint batches advance all features together without grading (see `00-pacing-mode.md`).
 
+Whether the request is a feature at all — or a module that should split into several features, or a use case that belongs inside an existing one — is decided first, per `00-business-taxonomy.md`. That file also owns requirement-level use-case splitting; this file owns contract-level splitting.
+
 - **Standard path:** default. Complete the full stage sequence: identification and requirements (`01`/`02`/`03`), contract and conflict scan (`04`/`05`), planning (`06`), red tests and implementation (`07`/`08`), review, module review, and integration acceptance (`09`).
 - **Lightweight path:** allowed only when all are true:
   - no new external dependency,

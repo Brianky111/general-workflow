@@ -14,7 +14,7 @@ Read `references/00-progress-router.md` before reading any other reference file.
 ## Operating Rules
 
 - Inspect repository evidence before choosing a stage: `docs/`, feature folders, status files, PR/CI notes, tests, and recent diffs when available.
-- Treat one requirement = one feature folder = one document set as the organizing instinct. Route every incoming request into exactly one set: a new folder, a merge into an unconfirmed sibling feature, or a change-protocol revision of a confirmed one. Splitting docs inside a folder is fine; a second folder for the same behavior never is. When merge versus revision is unclear, ask the user with the similarity points and the case for each option (see `02-requirements-capture.md`).
+- Treat one requirement = one feature folder = one document set as the organizing instinct. Route every incoming request into exactly one set: a new folder, a merge into an unconfirmed sibling feature, or a change-protocol revision of a confirmed one. Splitting docs inside a folder is fine; a second folder for the same behavior never is. When merge versus revision is unclear, ask the user with the similarity points and the case for each option (see `02-requirements-capture.md`). Place each request on the business hierarchy — module above the feature, use cases and tasks inside it — per `references/00-business-taxonomy.md`.
 - The numbered series `00-…` through `99-…` is the user's dashboard: requirement docs show whether their intent was captured, contract/plan docs show what will be built, `99-进度.md` shows progress and gaps. Keep the set complete and current as part of the deliverable; report progress against the document-set checklist in `99-status-and-evidence.md`, not from memory.
 - Treat refactor, cleanup, rewrite, restructure, or simplification requests as workflow work, not simple code edits. Before editing code, read `references/00-refactor-intake.md`, recertify requirements/contracts/plans, and classify pure refactor versus behavior or architecture change. A refactor is never recorded as a feature or a new requirement: it documents into the owning feature's plan (重构复核) or the change protocol.
 - Treat the current conversation as the orchestrator. It owns stage routing, scope, task decomposition, subagent prompts, integration, conflict resolution, final verification, and user communication.
@@ -37,6 +37,7 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `00-refactor-intake.md`: re-check requirements before refactoring and classify behavior risk.
 - `00-project-kickoff.md`: initialize architecture, glossary, governance, and workflow state.
 - `00-pacing-mode.md`: choose blueprint or incremental pacing and follow blueprint batch gates.
+- `00-business-taxonomy.md`: place requests on the product/module/feature/use-case/sub-feature/task hierarchy and give each feature one code home.
 - `00-feature-grading-and-splitting.md`: decide standard/lightweight path and whether to split large contracts.
 - `00-governance-ci-hooks.md`: set or audit document governance, CI gates, hooks, and scheduled checks.
 - `01-project-identification.md`: classify new project, old project, or new module in old project.

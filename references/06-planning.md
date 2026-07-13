@@ -39,7 +39,7 @@ Consume every `C` conflict ID:
 | C1 | 修改现有代码 / 复用扩展 / 从零实现 / 延后并说明原因 | `<路径>` | <旧行为> | <目标改动> | S1/E1/P1 | <说明> |
 ```
 
-Map every method to a layer/module, then walk one numbered scenario through the layers. If layer boundaries need to change, route to `10-change-protocol.md` as a level-A change.
+Map every method to a layer/module and to its concrete path inside the feature's code home (the template recorded in `architecture.md`; see `00-business-taxonomy.md`), then walk one numbered scenario through the layers. If layer boundaries need to change, route to `10-change-protocol.md` as a level-A change.
 
 When orchestration is used, include an executor split table:
 
