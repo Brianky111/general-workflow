@@ -10,6 +10,7 @@ Turn every reproducible failure into a permanent regression guard.
 - Fuzzing finds an input.
 - Mutation testing leaves a surviving mutant.
 - Integration scenario fails.
+- Completeness audit finds a reproducible contract, connection, persistence, UI-state, or cross-feature failure.
 - Production or user bug has reproducible steps.
 
 ## Rules

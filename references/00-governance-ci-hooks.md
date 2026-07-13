@@ -13,7 +13,7 @@ Set mechanical guardrails so workflow discipline does not depend on agent memory
 ## Document Governance
 
 - Keep docs and code in the same repository and branch timeline.
-- Governed docs include architecture, shared models, requirements, contracts, conflict records, module interfaces, and planning docs.
+- Governed docs include architecture, shared models, requirements, contracts, conflict records, module interfaces, planning docs, test matrices, integration reports, and completeness audits.
 - State files (`workflow-state.json`, feature `status.json`, `99-进度.md`) are navigation mirrors, not approval evidence.
 - Protect guardrail files too: CI workflows, lint configs, audit scripts, and CODEOWNERS.
 - If PR protection is unavailable, use approval tags and diff against the last approved tag as a weaker fallback.
@@ -32,7 +32,10 @@ Add gates appropriate to the stack:
 - pending-question and ambiguity-audit checks,
 - commit message format,
 - status consistency,
-- unit/property/integration/visual regression tests.
+- domain/use-case/frontend unit and component tests,
+- adapter integration, runtime contract, cross-feature workflow, and browser E2E tests,
+- selected property/mutation/fuzz/security/accessibility/visual-regression checks,
+- Feature Test Matrix checks for blank/GAP/planned cells, unknown test IDs, unsupported PASS claims, coverage/evidence-register disagreement, and feature-completeness evidence.
 
 ## Hooks
 

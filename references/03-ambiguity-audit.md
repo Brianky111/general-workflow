@@ -18,11 +18,12 @@ Use an independent pass when possible. The auditor should read only the draft do
 
 - Every explicit raw requirement appears in the structured draft.
 - Terms are defined and consistent with `glossary.md`.
-- Normal, error, and boundary scenario categories are not silently empty.
+- Normal, error, and boundary scenario categories are not silently empty; applicable permission, illegal-state, concurrency/duplicate, dependency-failure, retry/recovery, refresh/persistence, UI-state, and cross-feature cases are accounted for.
 - Branches are closed: if a case is mentioned, its behavior is specified.
 - Vague quantities or degree words are quantified or questioned.
 - Defaults, nulls, limits, and extreme inputs are defined.
 - Draft statements do not conflict with each other or with shared models.
+- Frontend/backend schemas agree on units, casing, enums, nullability, errors, and retry semantics; cross-feature ownership and event timing are not implicit.
 - Every behavior traces to raw requirements, scenario IDs, or decision records; untraceable behavior becomes a question.
 - Every `D` decision record lands in the draft: a behavior-affecting decision with no corresponding clause or scenario is a finding, not a formality.
 

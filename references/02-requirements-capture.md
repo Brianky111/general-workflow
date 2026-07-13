@@ -48,12 +48,15 @@ Hard rules: never let two document sets describe the same behavior, and never si
    - goal and non-goals,
    - actors or users,
    - numbered acceptance scenarios,
+   - touched UI surfaces and user-visible states,
+   - affected upstream/downstream features and ownership expectations,
    - data or UI terms that need a glossary entry,
    - assumptions separated from confirmed facts.
 3. Add numbered acceptance scenarios:
    - `S1`, `S2` for normal paths,
    - `E1`, `E2` for error paths,
    - `B1`, `B2` for boundary cases.
+   Ensure the roster also covers applicable permission, illegal-state, concurrent/duplicate, dependency-failure, retry/recovery, refresh/persistence, UI-state, and cross-feature outcomes. Keep `S/E/B` IDs and add category tags rather than inventing colliding ID namespaces.
    When the scenario list outgrows one review pass, split use cases into `use-cases/UC<n>-<slug>.md` per `00-business-taxonomy.md`, keeping the roster in `00-整理后需求.md` as the index.
 4. Propose standard or lightweight path; read `00-feature-grading-and-splitting.md` if the path or document granularity is unclear.
 5. Mark unclear items as questions; do not silently choose product behavior.

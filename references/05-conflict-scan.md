@@ -17,7 +17,9 @@ Find where the desired contract overlaps, contradicts, or can reuse existing cod
 4. Check at least:
    - public APIs, commands, events, routes, components, and config entries,
    - data models, persistence, cache, serialization formats,
+   - frontend stores/query caches, runtime schemas, generated clients, and page state handling,
    - user flows, errors, state machines, permissions, feature flags,
+   - cross-feature calls, event handlers, ownership boundaries, and duplicate/idempotent processing,
    - external adapters, protocols, fixtures, and test doubles,
    - similar historical features.
 5. Note migration risks, compatibility risks, and duplicated concepts.

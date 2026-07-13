@@ -1,12 +1,15 @@
 # General Workflow Skill
 
-This repository develops the `general-workflow` Codex skill: a staged, document-governed workflow for agent-led software development.
+This repository develops the `general-workflow` Codex skill: a staged, document-governed workflow for delivering user-visible vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
 
 The skill helps Codex:
 
 - detect the current workflow stage from repository evidence;
 - load only the reference document needed for that stage;
 - preserve requirements, contracts, plans, tests, and evidence;
+- distinguish product/module/feature/use-case/task levels and map one feature across its full-stack code homes;
+- use a requirement-to-test matrix and behavior-sized red-green-refactor loops;
+- prove frontend/backend contracts, cross-feature effects, user flows, and final Definition of Done;
 - keep the main conversation as the orchestrator while subagents act as scoped executors;
 - handle refactors, implementation, review, verification, and change recovery without reading the full source workflow every time.
 
@@ -20,7 +23,7 @@ A feature request runs the single-feature pipeline (incremental mode). Amber box
 
 ![单功能主管线](docs/images/feature-pipeline.svg)
 
-The numbered document set (`00-…` to `99-…`) doubles as the user's dashboard: requirement docs show whether intent was captured, contract/plan docs show what will be built, and `99-进度.md` plus the document-set checklist show progress and gaps.
+The numbered document set (`00-…` to `99-…`) doubles as the user's dashboard: requirement docs show whether intent was captured, contract/plan docs show what will be built, the Feature Test Matrix in `02-测试矩阵.md` shows each scenario across Domain/Use Case/frontend/adapter/contract/feature-integration/cross-feature/E2E layers and resolves every test ID to execution evidence, and `09-完整性审计.md` decides whether the assembled feature is genuinely complete.
 
 ## Repository layout
 
@@ -73,8 +76,10 @@ The orchestration model is explicit:
 | `references/00-pacing-mode.md` | Choose blueprint or incremental pacing; blueprint batch gates. |
 | `references/00-refactor-intake.md` | Reconfirm requirements/contracts before refactor work. |
 | `references/06-planning.md` | Build implementation plans and executor scopes. |
+| `references/06-test-strategy.md` | Build the Feature Test Matrix coverage view and executable evidence register. |
 | `references/08-implementation.md` | Implement against frozen contracts and red tests. |
 | `references/09-review-and-verification.md` | Verify behavior, evidence, ownership, and acceptance. |
+| `references/09-feature-completeness.md` | Audit the test matrix and Definition of Done before closeout. |
 
 ## Validate
 
@@ -122,6 +127,7 @@ python "<path-to-skill-creator>\scripts\quick_validate.py" $dst
 - Keep `SKILL.md` concise; move stage details into `references/`.
 - Keep references one level deep and directly discoverable from `SKILL.md`.
 - Do not duplicate long workflow text across files.
+- Treat a Feature as a vertical user capability, not a synonym for one backend folder or one API endpoint.
 - Update `agents/openai.yaml` when the trigger behavior or default prompt changes.
 - Do not store secrets, credentials, private host details, or project-specific business data in the skill.
 

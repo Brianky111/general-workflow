@@ -9,7 +9,7 @@ Handle requirement, contract, fixture, or external-behavior changes without sile
 - User changes intent.
 - External service behavior drifts.
 - Implementation proves the contract is wrong or incomplete.
-- Tests reveal a missing scenario that changes accepted behavior.
+- Tests or the completeness audit reveal a missing scenario, UI state, cross-feature effect, or assembly contract that changes accepted behavior.
 - Similarity triage in `02-requirements-capture.md` classifies a new request as a revision of an existing feature's confirmed requirement.
 
 ## Actions
@@ -22,7 +22,7 @@ Handle requirement, contract, fixture, or external-behavior changes without sile
 
 ## Levels
 
-- **Level A: contract or architecture change.** Stop, write a change proposal, wait for approval, then open a new change round `<NN>-<slug>` in the feature folder (copy the previous round's contract forward and revise — see `00-business-taxonomy.md`), updating architecture/shared models/requirements/contracts/plans/tests/implementation in order.
+- **Level A: contract or architecture change.** Stop, write a change proposal, wait for approval, then open a new change round `<NN>-<slug>` in the feature folder (copy the previous round's contract forward and revise — see `00-business-taxonomy.md`), updating architecture/shared models/requirements/contracts/plans/test matrix/tests/implementation in order.
 - **Level B: bug fix or counterexample repayment.** First write a reproducing red test, then fix to green; the fix merges on green CI without a human gate. If the fix proves the contract is wrong, upgrade to level A.
 - **Level C: pure display adjustment.** Change only style, copy, or layout; use human visual acceptance and update visual baselines. Any logic change upgrades to B or A.
 

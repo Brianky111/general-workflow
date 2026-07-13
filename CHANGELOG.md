@@ -2,6 +2,18 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.8.0 - 2026-07-13
+
+Vertical full-stack feature delivery and evidence-based completeness replace the previous backend-shaped code-home and unit-green completion assumptions.
+
+- `00-business-taxonomy.md`: a Feature is now one user-visible vertical boundary with declared homes across frontend, runtime contracts, backend layers, adapters, cross-feature handlers, and E2E. The generic backend `models/` drawer is removed; DTOs, commands/results, domain objects, persistence records, and shared wire schemas live in their owning layers.
+- New `06-test-strategy.md` and per-round `02-测试矩阵.md`: a canonical Feature Test Matrix coverage view maps every scenario/invariant across Domain, Use Case, frontend, adapter/repository, contract, feature-integration, cross-feature, E2E, and adversarial layers; a linked evidence register resolves stable test IDs to files, commands/environments, fixtures/seeds, assertions, owners, and proof. Blank cells, bare checkmarks, unknown IDs, and unsupported PASS claims are forbidden.
+- TDD now runs as behavior-sized red -> green -> refactor micro-batches; router, planning, red-test, implementation, and anti-cheat rules all track evidence per batch.
+- `04-interface-contract.md` now contracts the whole slice: UI states, runtime schemas, state machines, events, ownership, idempotency, and downstream effects, not just HTTP methods.
+- `09-integration-acceptance.md` now verifies real-layer contracts, persistence after reload, cross-feature effects, UI failure/retry states, accessibility, and critical browser paths.
+- New `09-feature-completeness.md` and per-round `09-完整性审计.md`: integration green is no longer terminal. Closeout requires a reconciled test matrix and evidence-backed Definition of Done before archiving.
+- Progress/status schemas, governance, blueprint pacing, refactor intake, change handling, UI metadata, README, and the pipeline diagram were updated for the new gates.
+
 ## 0.7.0 - 2026-07-13
 
 Change rounds: each add/remove/modify of a feature gets its own numbered document set, archived on acceptance. The `docs/features/` path segment is gone — the canonical tree is `docs/<module>/<feature>/<NN>-<round>/`.

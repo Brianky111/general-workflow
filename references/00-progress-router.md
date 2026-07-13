@@ -13,6 +13,8 @@ Inspect, when available:
 - `docs/<module>/00-模块概述.md` for module boundaries
 - the feature's active round `docs/<module>/<feature>/<round>/`: `00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md`; `archive/` holds past rounds' frozen truth
 - the round's `use-cases/*.md`, `interfaces/*.md`, and `conflicts/*.md` for split use cases and contracts
+- the round's `02-测试矩阵.md`, `09-集成验收.md`, and `09-完整性审计.md`
+- declared frontend, shared-contract, backend, adapter, and E2E code homes for the feature slice
 - `docs/workflow-state.json` (including its `mode` field), `docs/<module>/<feature>/status.json` (including `activeRound`)
 - tests, recent diffs, PR descriptions, CI results, and review comments
 
@@ -38,16 +40,19 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | Contract uses external service examples, protocol samples, or mock data without matching captures in `docs/<module>/<feature>/fixtures/contract/` | Fixtures and probes | `04-fixtures-and-probes.md` |
 | Existing code may overlap or contradict the contract, and `01-代码冲突与重叠.md` is missing or does not cover the contract | Conflict scan | `05-conflict-scan.md` |
 | Contract/conflict notes exist but no implementation plan | Planning | `06-planning.md` |
-| Plan assigns red/green modules whose failing target tests are not yet proven, and the batch is not a pure refactor | Red tests | `07-red-tests.md` |
+| Plan draft exists but `02-测试矩阵.md` is missing, its coverage view/evidence register is incomplete, a scenario/risk has `GAP` or blank cells, or an assembly-level check is absent | Feature Test Matrix | `06-test-strategy.md` |
+| Plan and test matrix exist but the planning gate is not approved | Planning gate | `06-planning.md` |
+| Plan assigns a next red/green micro-batch whose target failure is not yet proven, and the batch is not a pure refactor | Red tests | `07-red-tests.md` |
 | Test/implementation commits need audit or red proof is suspect | Anti-cheat/red replay | `07-anti-cheat-and-red-replay.md` |
 | Red tests exist and implementation is incomplete, refactor intake classified the batch as pure refactor, or the remaining modules are visual-track only | Implementation | `08-implementation.md` |
 | Implementation exists but evidence is incomplete | Review and verification | `09-review-and-verification.md` |
 | One module claims done but independent review is missing | Module initial review | `09-module-initial-review.md` |
-| All modules pass review but end-to-end evidence is missing | Integration acceptance | `09-integration-acceptance.md` |
+| All modules pass review but real-layer, cross-feature, contract, UI, or E2E evidence is missing | Integration acceptance | `09-integration-acceptance.md` |
+| Integration scenarios pass but the test matrix and Definition of Done have not received a final evidence audit | Feature completeness | `09-feature-completeness.md` |
 | Reproducible bug, property-test seed, fuzz failure, or mutant survivor exists | Counterexample recovery | `10-counterexample-recovery.md` |
 | Requirement/contract drift or external behavior changed | Change protocol | `10-change-protocol.md` |
 | Status, progress, and evidence disagree | State reconciliation | `99-status-and-evidence.md` |
-| Integration acceptance passed, regression capture per the integration report is complete, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, archive the round, report completion, and stop |
+| Feature completeness passed, required regression capture is complete, and status is consistent | Feature closeout | Sync state per `99-status-and-evidence.md`, archive the round, report completion, and stop |
 
 ## Orchestration Overlay
 
@@ -68,7 +73,8 @@ In orchestrated mode, the current conversation is the orchestrator. It may inspe
 - If the user explicitly asks for a later-stage task, still check earlier gates for blockers and report any missing prerequisite.
 - If refactor is requested, run refactor intake before code changes even when the repository appears to be at implementation or review. Never record the refactor as a new feature or requirement.
 - If an incoming request resembles an existing feature, run the similarity triage in `02-requirements-capture.md` before creating any new feature folder: one requirement owns one document set.
-- If refactor intake classified the batch as pure refactor, skip `07-red-tests.md`: route to `08-implementation.md` with the existing green tests as protection evidence.
+- If refactor intake classified the batch as pure refactor, skip `07-red-tests.md`: route to `08-implementation.md` with the existing green tests and test matrix as protection evidence.
+- Red/green work advances one behavior-sized micro-batch at a time. After one batch turns green and is refactored, return here: select `07-red-tests.md` for the next uncovered matrix row or review when every planned row is green.
 - If local subagent tools are present, make an orchestration decision after stage selection. Do not treat tool availability alone as a stage or as permission for the main thread and executors to work on the same scope in parallel.
 - If the repository has no workflow docs and the user has not asked for this workflow, do not bootstrap governance uninvited: confirm adoption first, and until then start with project identification and the minimum folder/doc structure the current task needs.
 

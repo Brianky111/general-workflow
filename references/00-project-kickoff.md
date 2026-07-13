@@ -14,6 +14,7 @@ Initialize the project-level documents and guardrails before feature work begins
 1. Create `docs/architecture.md` with:
    - layer map: layer name, one-line responsibility, forbidden actions,
    - dependency direction: lower layers must not know higher layers,
+   - vertical feature-slice map across frontend, shared contracts, backend, adapters, and E2E where applicable,
    - directory tree with one-line purpose per directory.
 2. Decide layers by need, not by template. Ask:
    - Is there an external system or third-party API? Add an adapter layer.
@@ -27,7 +28,7 @@ Initialize the project-level documents and guardrails before feature work begins
    - loud-failure questions for error handling.
 4. Initialize `docs/glossary.md`.
 5. Initialize `docs/requirements-index.md` as the project-level feature roster, grouped by business module per `00-business-taxonomy.md`: scope, grading, status, and a holding area for out-of-scope ideas.
-6. Decide the feature code-home template (default `src/<module>/<feature>/` with api/application/domain/infrastructure/models/tests, mirroring the docs tree and adjusted by the four questions above) and record it in `architecture.md`'s directory-structure section.
+6. Decide the vertical-slice code-home template and record it in `architecture.md`: one feature identity across each touched runtime, using the full-stack example in `00-business-taxonomy.md` when applicable. Do not create a generic backend `models/` drawer; assign each model to its owning layer.
 7. Read `00-pacing-mode.md` to choose blueprint or incremental pacing and record it in `docs/workflow-state.json`.
 8. Read `00-governance-ci-hooks.md` to set document governance, CI gates, hooks, and status files (state-file shapes live in `99-status-and-evidence.md`).
 9. Walk the tuning checklist below with the user and record the answers in kickoff notes or `architecture.md`.
@@ -37,7 +38,7 @@ Initialize the project-level documents and guardrails before feature work begins
 Instantiate these project-level parameters before feature work; unanswered items become silent defaults later:
 
 - [ ] layers: add/remove/rename per the four architecture questions
-- [ ] feature code-home template: which layers each feature's code directory contains, and where the shared kernel lives
+- [ ] vertical feature-slice template: frontend, shared runtime contracts, backend layers, adapters, E2E home, and shared-kernel ownership
 - [ ] module grouping: which business modules structure the roster and the `docs/<module>/` directories, and the threshold below which a tiny project may flatten
 - [ ] change-round convention: round slug naming, and which level-B/C work may stay inside the active round instead of opening one
 - [ ] use-case split threshold: when scenario groups move from `00-整理后需求.md` into `use-cases/*.md` files
@@ -46,10 +47,13 @@ Instantiate these project-level parameters before feature work; unanswered items
 - [ ] glossary: seed the domain terms
 - [ ] forbidden-words list: raw external-field blacklist when external systems exist
 - [ ] test framework and one-command run (Vitest / Jest / pytest ...)
+- [ ] frontend test stack: logic/component/page tests, browser E2E, accessibility, and visual-regression tools when UI exists
+- [ ] contract-test mechanism: shared runtime schema, OpenAPI validation, or consumer-driven contracts
 - [ ] property-testing and combination tools (fast-check / hypothesis; PICT or equivalent)
 - [ ] CI platform and gate scripts (PR gates, red-replay marking, commit-scope audit, status consistency, scheduled jobs)
 - [ ] governance switches: CODEOWNERS / branch protection, or the tag-based fallback
 - [ ] validation-strength thresholds: instantiate "high-cost decisions" as a concrete project list
+- [ ] feature Definition of Done: select the applicable checklist and evidence forms from `09-feature-completeness.md`
 - [ ] examples: fill every template placeholder with this project's domain content
 - [ ] mutation testing: schedule and survival-rate requirement
 - [ ] nightly fuzz budget: duration or iterations

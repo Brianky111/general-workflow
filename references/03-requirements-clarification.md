@@ -32,7 +32,7 @@ Expose ambiguity before contracts or implementation begin.
 
 After writing a pending-question list, stop the current run. Do not continue to interface, planning, tests, or implementation until answers are recorded and the pending list is cleared.
 
-Declaring "no questions" requires per-category self-proof — why the normal/error/boundary scenarios, field meanings, and failure semantics each have nothing left to ask. The user may reject the claim.
+Declaring "no questions" requires per-category self-proof — why normal/error/boundary, permission/state, concurrency/retry, recovery/persistence, UI, cross-feature scenarios, field meanings, and failure semantics each have nothing left to ask. The user may reject the claim.
 
 ## Output
 

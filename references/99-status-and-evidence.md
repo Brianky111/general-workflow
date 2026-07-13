@@ -24,11 +24,13 @@ One change round owns one numbered document set; the checklist applies to the fe
 | `01-代码冲突与重叠.md` / `conflicts/*.md` | Conflict scan (old projects) | 与现有代码的冲突讲清楚了没有 | `## 总结` filled, every C-ID concrete |
 | `fixtures/` | Probes | 外部数据是真的还是编的 | Contract examples trace to probe captures |
 | `02-规划.md` | Planning | 怎么实现、冲突怎么处理、验证多严 | Every C-ID consumed, user approved the plan gate |
-| tests + implementation | Red tests + implementation | 做出来的东西有没有证据 | Red-then-green evidence in CI |
-| review + integration reports | Module review + acceptance | 有没有人独立查过、整体跑通没有 | Reports with evidence, scenarios green, human-eye pass |
+| `02-测试矩阵.md` | Feature Test Matrix | 每条需求由哪层证明、组装后靠什么证明、证据在哪里 | Coverage view and evidence register agree; every cell is planned with a test ID, supported PASS, or explained N/A; no blanks/GAPs |
+| tests + implementation | Red tests + implementation | 每个行为是否真的走过红、绿、重构 | Per-micro-batch red/green evidence in CI and matrix links |
+| module review + `09-集成验收.md` | Review + acceptance | 零件和真实纵向切片是否都跑通 | Independent reports, runtime contracts, scenarios, reload/UI evidence green |
+| `09-完整性审计.md` | Feature completeness | 单测组装后功能是否真的完整 | Matrix reconciled, DoD passed, closure decision evidenced |
 | `99-进度.md` + `status.json` | Every stage | 进度如何、还差哪些、卡在哪 | Mirrors the rows above with evidence links |
 
-Lightweight features merge the requirement, contract, and plan rows into sections of `00-功能.md`; the questions and done-criteria stay the same.
+Lightweight features may merge requirement, contract, plan, and test-matrix rows into named sections of `00-功能.md`; the questions, assembly coverage, and done-criteria stay the same.
 
 When reporting, list each row as present / in progress / missing, name the next unpassed gate, and mirror the missing list in `99-进度.md`.
 
@@ -50,7 +52,7 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 {
   "schema": 1,
   "mode": "blueprint|incremental",
-  "currentGate": "kickoff|identification|requirements|interfaces|planning|implementation|review|integration|done|blocked",
+  "currentGate": "kickoff|identification|requirements|interfaces|planning|test-strategy|implementation|review|integration|completeness|done|blocked",
   "inScopeFeatures": ["<功能名>"],
   "lastApprovedRef": "<main-sha-or-approved-tag>",
   "pendingQuestions": 0
@@ -65,19 +67,33 @@ State files must not contain secrets, account credentials, tokens, or full sensi
   "feature": "<功能名>",
   "activeRound": "<NN>-<round>，无进行中轮次则为空",
   "projectType": "new|existing|new-module-in-existing",
-  "phase": "identification|requirements|interfaces|planning|red|green|review|integration|done|blocked",
+  "phase": "identification|requirements|interfaces|planning|test-strategy|red|green|review|integration|completeness|done|blocked",
   "gate": "open|waiting-human|approved|blocked",
   "pendingQuestions": 0,
   "requirementsConfirmedAt": "<pr-or-tag-or-main-sha>",
   "contractsFrozenAt": "<pr-or-tag-or-main-sha>",
+  "testStrategyFrozenAt": "<与规划门同一批准证据>",
   "conflictReport": "01-代码冲突与重叠.md",
+  "integrationEvidence": "<09-集成验收.md 或 CI/trace>",
+  "completenessEvidence": "<09-完整性审计.md，完成前可为空>",
   "modules": {
     "<模块名>": {
       "owner": "<agent-id-or-branch>",
       "status": "todo|red|green|review|done|blocked",
       "contract": "01-接口.md#<模块名>",
+      "testMatrix": "02-测试矩阵.md#<场景或模块>",
       "redEvidence": "<ci-run-or-commit>",
       "greenEvidence": "<ci-run-or-commit>",
+      "refactorEvidence": "<commit-or-diff-summary>",
+      "batches": {
+        "BATCH-01": {
+          "scenarios": ["S1"],
+          "status": "todo|red|green|refactored|blocked",
+          "redEvidence": "<ci-run-or-commit>",
+          "greenEvidence": "<ci-run-or-commit>",
+          "refactorEvidence": "<commit-or-diff-summary>"
+        }
+      },
       "reviewer": "<agent-id, optional until review>",
       "reviewEvidence": "<report-path-or-ci, optional until review>",
       "next": "<下一步一句话>"
@@ -99,8 +115,11 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 - 状态：todo / red / green / review / done / blocked
 - 负责人：<agent-id 或分支名>
 - 合同：<01-接口.md#锚点 或 interfaces/<模块名>.md>
+- 测试矩阵：<02-测试矩阵.md#锚点>
 - 红证据：<CI 链接或 commit；无则写“无”>
 - 绿证据：<CI 链接或 commit；无则写“无”>
+- 重构证据：<commit 或无行为变化的 diff/测试摘要；无则写“无”>
+- 微批次：<BATCH-ID -> 场景 IDs -> red/green/refactored/blocked -> 证据>
 - 审查：<初审报告或 CI 链接；无则写“无”>
 - 阻塞：<待确认反问 / 失败测试 / 外部依赖 / 无>
 - 下一步：<一句话>
@@ -109,11 +128,12 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 ## Consistency Rules
 
 - `pendingQuestions` must equal unresolved `【答复】：` entries.
-- `requirementsConfirmedAt` and `contractsFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
+- `requirementsConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
 - Existing projects must have a conflict report with concrete scan conclusions.
-- A module cannot be `done` without contract reference, red evidence, green evidence, and `reviewEvidence` pointing to a review report or CI run.
+- A module cannot be `done` without contract and test-matrix references, every planned micro-batch green/refactored with per-batch evidence, and `reviewEvidence` pointing to a review report or CI run.
+- A feature cannot be `done` without `integrationEvidence`, `completenessEvidence`, every required Feature Test Matrix coverage cell reconciled to supported `PASS` or accepted `N/A`, zero blank/`GAP`/`P:` coverage cells, and the completeness audit passing.
 - `reviewer`, when present, must differ from the module's `owner`: the reviewer is never the implementer.
-- `activeRound`, when set, must point to an existing round directory; archived rounds are read-only history — corrections open a new round.
+- `activeRound`, when set, must point to an existing round directory; archive it only after completeness passes. Archived rounds are read-only history — corrections open a new round.
 - Status may lag behind reality, but it must not run ahead of evidence.
 - Parallel agents edit only their own module section of `99-进度.md`; cross-module status writes must preserve other modules' fields.
 

@@ -1,6 +1,6 @@
 ---
 name: general-workflow
-description: Guide agent-led software work through a staged, document-governed general development workflow with progress detection, on-demand reference loading, and orchestrated subagent execution. Use when kicking off a new project with architecture and governance docs, picking up or continuing an existing feature workflow, creating requirements/contracts/plans/tests, continuing TDD implementation, handling refactor or cleanup work with requirements recertification, coordinating subagents as executors while the main thread stays the orchestrator, running verification, or handling workflow changes without reading a full process manual up front. Typical triggers include 新项目开工, 接手/继续开发, 重构/整理, kickoff, take over, resume implementation, refactor, verify, and change requests.
+description: Guide agent-led software work through a staged, document-governed workflow with progress detection, on-demand references, vertical full-stack feature slicing, test matrices, TDD, and evidence-based completion. Use when kicking off a project, decomposing modules/features/use cases, creating requirements/contracts/plans/tests, connecting UI/API/domain/infrastructure, continuing implementation, recertifying refactors, coordinating subagents, verifying cross-feature or E2E behavior, or handling changes. Typical triggers include 新项目开工, 功能拆分, 接手/继续开发, TDD, 重构/整理, verify, and change requests.
 ---
 
 # General Workflow
@@ -14,7 +14,7 @@ Read `references/00-progress-router.md` before reading any other reference file.
 ## Operating Rules
 
 - Inspect repository evidence before choosing a stage: `docs/`, feature folders, status files, PR/CI notes, tests, and recent diffs when available.
-- Treat one requirement = one feature folder = one document set as the organizing instinct. Route every incoming request into exactly one set: a new folder, a merge into an unconfirmed sibling feature, or a change-protocol revision of a confirmed one. Splitting docs inside a folder is fine; a second folder for the same behavior never is. When merge versus revision is unclear, ask the user with the similarity points and the case for each option (see `02-requirements-capture.md`). Place each request on the business hierarchy — module above the feature, use cases and tasks inside it — per `references/00-business-taxonomy.md`. Each add/remove/modify round on a feature gets its own numbered doc-set directory, archived on acceptance.
+- Treat one requirement = one feature boundary = one document set as the organizing instinct. A feature is a user-visible vertical slice that may cross frontend, shared contracts, backend, persistence, and cross-feature events; it is not synonymous with one backend directory. Route every incoming request into exactly one set: a new folder, a merge into an unconfirmed sibling feature, or a change-protocol revision of a confirmed one. Splitting docs inside a folder is fine; a second folder for the same behavior never is. When merge versus revision is unclear, ask the user with the similarity points and the case for each option (see `02-requirements-capture.md`). Place each request on the business hierarchy — module above the feature, use cases and tasks inside it — per `references/00-business-taxonomy.md`. Each add/remove/modify round on a feature gets its own numbered doc-set directory, archived only after integration and completeness acceptance.
 - The numbered series `00-…` through `99-…` is the user's dashboard: requirement docs show whether their intent was captured, contract/plan docs show what will be built, `99-进度.md` shows progress and gaps. Keep the set complete and current as part of the deliverable; report progress against the document-set checklist in `99-status-and-evidence.md`, not from memory.
 - Treat refactor, cleanup, rewrite, restructure, or simplification requests as workflow work, not simple code edits. Before editing code, read `references/00-refactor-intake.md`, recertify requirements/contracts/plans, and classify pure refactor versus behavior or architecture change. A refactor is never recorded as a feature or a new requirement: it documents into the owning feature's plan (重构复核) or the change protocol.
 - Treat the current conversation as the orchestrator. It owns stage routing, scope, task decomposition, subagent prompts, integration, conflict resolution, final verification, and user communication.
@@ -37,23 +37,25 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `00-refactor-intake.md`: re-check requirements before refactoring and classify behavior risk.
 - `00-project-kickoff.md`: initialize architecture, glossary, governance, and workflow state.
 - `00-pacing-mode.md`: choose blueprint or incremental pacing and follow blueprint batch gates.
-- `00-business-taxonomy.md`: place requests on the product/module/feature/use-case/sub-feature/task hierarchy and give each feature one code home.
+- `00-business-taxonomy.md`: place requests on the product/module/feature/use-case/sub-feature/task hierarchy and map one vertical feature slice across its declared code homes.
 - `00-feature-grading-and-splitting.md`: decide standard/lightweight path and whether to split large contracts.
 - `00-governance-ci-hooks.md`: set or audit document governance, CI gates, hooks, and scheduled checks.
 - `01-project-identification.md`: classify new project, old project, or new module in old project.
 - `02-requirements-capture.md`: preserve raw request, triage similar requirements (merge/revise/new), and produce structured requirements.
 - `03-requirements-clarification.md`: surface ambiguities and record decisions.
 - `03-ambiguity-audit.md`: run the independent ambiguity audit before a human gate.
-- `04-interface-contract.md`: define external behavior, data models, invariants, and scenarios.
+- `04-interface-contract.md`: define the full-stack behavior contract, UI states, schemas, state machines, events, invariants, and scenarios.
 - `04-fixtures-and-probes.md`: capture external data through probes and govern contract/counterexample fixtures.
 - `05-conflict-scan.md`: compare desired behavior with existing code and overlapping features.
 - `06-planning.md`: choose implementation strategy and validation strength.
-- `07-red-tests.md`: create and prove failing tests before implementation.
+- `06-test-strategy.md`: build the Feature Test Matrix coverage view and evidence register, then choose the smallest trustworthy layer for each scenario.
+- `07-red-tests.md`: execute one red step of a red-green-refactor micro-cycle and prove the expected failure.
 - `07-anti-cheat-and-red-replay.md`: enforce red-before-green, commit purity, and red replay rules.
 - `08-implementation.md`: implement against frozen contracts without weakening tests.
 - `09-review-and-verification.md`: verify behavior, evidence, UI, and regression scope.
 - `09-module-initial-review.md`: perform the independent module-level review.
-- `09-integration-acceptance.md`: run full integration, user-visible acceptance, and scenario regression capture.
+- `09-integration-acceptance.md`: run real-layer, cross-feature, UI, contract, and E2E acceptance.
+- `09-feature-completeness.md`: audit the test matrix and Definition of Done before closing and archiving a feature round.
 - `10-change-protocol.md`: handle contract, requirement, or external-behavior changes.
 - `10-counterexample-recovery.md`: turn reproducible failures into permanent regression tests.
 - `99-status-and-evidence.md`: maintain progress state and evidence links.

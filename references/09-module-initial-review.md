@@ -13,7 +13,7 @@ Run an independent module-level review after CI mechanics pass.
 
 ## Three Judgments
 
-1. **Coverage judgment:** compare method list, scenario IDs, and invariant IDs from the contract against tests; list uncovered items.
+1. **Coverage judgment:** compare method/message/UI-flow list, scenario IDs, invariant IDs, and Feature Test Matrix cells against the evidence register and actual tests; list unknown test IDs, unsupported `PASS`, uncovered rows, or wrongly layered cases.
 2. **Anti-hardcoding sample:** add or run one or two boundary examples outside the known fixtures.
 3. **Assertion-strength check:** ensure assertion strength matches the Chinese description. A test that says “should equal 20” but only asserts “greater than 0” is weak.
 

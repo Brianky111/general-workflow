@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prove the target behavior fails before implementation.
+Prove one behavior-sized target fails before implementing it. Repeat red -> green -> refactor for each planned micro-batch; do not accumulate the entire feature's red suite before writing any implementation.
 
 ## Entry Conditions
 
@@ -11,19 +11,22 @@ Prove the target behavior fails before implementation.
 
 ## Actions
 
-1. Add the smallest tests that encode the contract scenarios.
-2. Name assertions with scenario IDs (`S1`, `E1`, `B1`) and invariant IDs (`P1`) where applicable.
-3. Use `fixtures/contract/` for mocked external data and `fixtures/counterexamples/` for recovered failures.
-4. Run only the relevant tests first.
-5. Confirm failure reason matches the missing behavior or `尚未实现`, not setup breakage.
-6. Record commands, failing output summary, and seed/input values for reproducibility.
-7. Do not weaken existing tests or skip unrelated failures without explicit rationale.
+1. Select the next `P:<test-id>` cell or tightly related cells from the Feature Test Matrix; resolve the stable test ID through the evidence register and state the exact behavior and test layer.
+2. Add the smallest test that encodes the contract scenario. Name assertions with scenario IDs (`S1`, `E1`, `B1`) and invariant IDs (`P1`) where applicable.
+3. At the Domain layer, test rules, values, and legal/illegal state transitions without infrastructure.
+4. At the Use Case layer, test inputs/queries, result, required side effects, and forbidden side effects on failure. Prefer Fakes; use Stubs for fixed answers and Mocks/spies only for business-significant interactions or order.
+5. At the frontend layer, test user-observable behavior with semantic queries: validation, disabled/in-flight behavior, loading/success/error/retry states, and duplicate submission where applicable.
+6. At contract, adapter, cross-feature, or E2E layers, use the fixture/environment declared in the matrix and prove the connection itself is currently missing or wrong.
+7. Use `fixtures/contract/` for captured external data and `fixtures/counterexamples/` for recovered failures.
+8. Run only the relevant test first and confirm the failure matches the missing behavior or `尚未实现`, not setup breakage.
+9. Record command, failing output summary, seed/input, test ID, matrix row, and failure reason for reproducibility. Keep the cell planned until green; attach red evidence in the register or batch status.
+10. Do not weaken existing tests or skip unrelated failures without explicit rationale.
 
 Read `07-anti-cheat-and-red-replay.md` before committing red tests.
 
 ## Output
 
-Commit or record red-test evidence before implementation. Update progress/status docs with test paths and failure evidence.
+Commit or record red-test evidence before implementation. Update the matrix row and progress/status docs with test paths and failure evidence, then route this micro-batch to `08-implementation.md`.
 
 ## Stop Conditions
 

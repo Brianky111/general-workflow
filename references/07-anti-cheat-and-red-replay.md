@@ -13,6 +13,7 @@ Make test-first history auditable instead of relying on agent claims.
 ## Commit Discipline
 
 - Red-test commit comes before implementation commit.
+- Apply commit order per behavior-sized micro-batch; do not use one early trivial red commit to excuse later implementation-first batches.
 - Test commits may touch only test paths and may append new counterexamples.
 - Implementation commits normally must not touch tests, `fixtures/contract/`, or `fixtures/counterexamples/`.
 - Refactor commits must not change public signatures or tests.
@@ -37,6 +38,7 @@ Excuses are predictable; rebut them before they win. Following the letter of a r
 |---|---|
 | Too simple to need a test | Simple code breaks too; watching the test fail is what proves the test itself works |
 | Writing the test afterwards is the same | A test written after passes immediately, and an immediate pass proves nothing |
+| We already had one red commit for the feature | TDD evidence is per micro-batch; later behavior still needs its own expected red before green |
 | Deleting hours of work is wasteful | Sunk-cost fallacy; code that never went red-then-green is a liability, not an asset |
 | It's just a refactor, this tiny behavior tweak is fine | Changed behavior is not a refactor; route to the change protocol |
 | This case is flaky, skip it for now | Skip is cheating; fix the environment or stop and report |

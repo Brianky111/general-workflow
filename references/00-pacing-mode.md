@@ -22,9 +22,9 @@ Record the decision in `docs/workflow-state.json` as `"mode": "blueprint" | "inc
 Blueprint mode is a staged bulldozer, not a per-feature pipeline. Each stage completes for **all** in-scope features and passes a batch review gate before the next stage starts:
 
 1. **Requirements batch:** run the requirements stages for every feature, producing each feature's `00-项目识别.md`, `00-原始需求.md`, `00-整理后需求.md`, plus the `requirements-index.md` roster. After all drafts, the ambiguity audit cold-reads the whole set; genuine ambiguities and drafter-reported questions merge into **one consolidated question list grouped by feature**, answered by the user in one pass → requirements batch gate.
-2. **Interface batch:** run the contract stage for every feature (old projects and new modules in old projects also produce `01-代码冲突与重叠.md`). Shared entities live once in `domain-models.md`. After all drafts, the ambiguity audit also runs a **cross-contract consistency check**: same-named fields mean the same thing (against the glossary and shared models), no duplicate or conflicting methods, no local edits to shared models. → interface batch gate; passing it freezes **all contracts at once**.
-3. **Global planning:** run the planning stage for every feature in one pass → planning batch gate.
-4. Only then do implementation, review, and integration open, with multiple agents working in parallel by feature and module; each feature still passes its own integration acceptance gate.
+2. **Interface batch:** run the contract stage for every feature (old projects and new modules in old projects also produce `01-代码冲突与重叠.md`). Shared entities live once in `domain-models.md`. After all drafts, the ambiguity audit also runs a **cross-contract consistency check**: same-named fields mean the same thing (against the glossary and shared models), runtime schemas agree across producers/consumers, event/state ownership has no gaps or duplicate owners, no methods conflict, and no feature edits shared models locally. → interface batch gate; passing it freezes **all contracts at once**.
+3. **Global planning and test strategy:** run the implementation plan and `02-测试矩阵.md` for every feature in one pass, including contract, cross-feature, UI, and E2E assembly coverage → planning batch gate.
+4. Only then do implementation, review, integration, and completeness audit open, with multiple agents working in parallel by feature and module; each feature still passes its own integration and Definition of Done gates.
 
 Standing disciplines:
 
@@ -34,7 +34,7 @@ Standing disciplines:
 
 ## Incremental Mode Rules
 
-Run the single-feature loop: each feature passes stages from identification through integration acceptance on its own. Document granularity is identical to blueprint mode (one folder per feature); only the gate grouping differs.
+Run the single-feature loop: each feature passes stages from identification through completeness acceptance on its own. Document granularity is identical to blueprint mode (one folder per feature); only the gate grouping differs.
 
 ## Re-entry
 
