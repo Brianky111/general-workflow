@@ -13,7 +13,7 @@ docs/
 ├── domain-models.md
 ├── requirements-index.md            # 产品级总控台，按模块分节
 └── features/
-    └── <module>/                    # 大功能模块（订单、支付、退款...）
+    └── <module>/                    # 大功能模块（一个业务域一个目录）
         ├── 00-模块概述.md            # 模块职责、功能清单、跨功能共享决策
         └── <feature>/               # 功能特性 = 一个需求一套文档
             ├── 00-项目识别.md
@@ -76,7 +76,7 @@ src/features/<feature>/          # 大代码库可同样嵌套 <module>/<feature
 └── tests/           # 测试
 ```
 
-- The code-home name matches the doc-set folder: `docs/features/order/refund/` ↔ `src/features/refund/` (or `src/features/order/refund/` when the codebase nests modules too).
+- The code-home name matches the doc-set folder: `docs/features/<module>/<feature>/` ↔ `src/features/<feature>/` (or `src/features/<module>/<feature>/` when the codebase nests modules too).
 - The contract is the bridge between the two trees: use cases map to contract methods; the plan's method-assignment table maps every method to a concrete path inside the code home.
 - Cross-feature shared code lives outside feature homes as a shared kernel declared in `architecture.md`, never copied between features; shared entities stay in `domain-models.md`.
 
