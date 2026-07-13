@@ -2,6 +2,15 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.9.0 - 2026-07-14
+
+BDD behavior discovery is now a first-class stage between structured requirements and interface contracts.
+
+- New `03-bdd-example-mapping.md` and per-round `00-行为示例.md`: map each requirement scenario into observable `R/EX` Rules and concrete Given/When/Then examples, capture Questions before design, and review behavior through business, development, and test/risk lenses.
+- Standard features require the BDD gate; lightweight features embed a minimal BDD section, while pure refactors and level-B/C work reuse accepted examples unless a behavior gap appears. Markdown is the default; executable Gherkin remains an opt-in kickoff decision.
+- Router, blueprint pacing, clarification, ambiguity audit, interface contracts, conflict scans, planning, Feature Test Matrix, red tests, review, integration, completeness, change protocol, governance, and status schemas now trace `S/E/B -> R/EX -> contract -> test ID -> evidence`.
+- Feature Test Matrix rows now key on accepted BDD examples or invariants while preserving their upstream requirement scenario IDs.
+
 ## 0.8.0 - 2026-07-13
 
 Vertical full-stack feature delivery and evidence-based completeness replace the previous backend-shaped code-home and unit-green completion assumptions.

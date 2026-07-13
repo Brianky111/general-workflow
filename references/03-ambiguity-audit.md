@@ -6,7 +6,7 @@ Catch silent assumptions before human approval.
 
 ## Entry Conditions
 
-- Requirements or interface draft is ready for a gate.
+- Requirements, BDD behavior map, or interface draft is ready for a gate.
 - The author claims there are no pending questions.
 - A reviewer suspects missing scenarios, undefined terms, or invented details.
 
@@ -19,6 +19,8 @@ Use an independent pass when possible. The auditor should read only the draft do
 - Every explicit raw requirement appears in the structured draft.
 - Terms are defined and consistent with `glossary.md`.
 - Normal, error, and boundary scenario categories are not silently empty; applicable permission, illegal-state, concurrency/duplicate, dependency-failure, retry/recovery, refresh/persistence, UI-state, and cross-feature cases are accounted for.
+- Every requirement scenario maps to a BDD Rule/Example and every example traces back; no rule exists only because the implementation would be convenient.
+- Given states relevant preconditions, When contains one business trigger, and Then states observable outcomes plus forbidden side effects where applicable.
 - Branches are closed: if a case is mentioned, its behavior is specified.
 - Vague quantities or degree words are quantified or questioned.
 - Defaults, nulls, limits, and extreme inputs are defined.

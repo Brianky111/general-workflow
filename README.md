@@ -1,6 +1,6 @@
 # General Workflow Skill
 
-This repository develops the `general-workflow` Codex skill: a staged, document-governed workflow for delivering user-visible vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
+This repository develops the `general-workflow` Codex skill: a staged, document-governed workflow for discovering behavior with BDD and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
 
 The skill helps Codex:
 
@@ -8,6 +8,7 @@ The skill helps Codex:
 - load only the reference document needed for that stage;
 - preserve requirements, contracts, plans, tests, and evidence;
 - distinguish product/module/feature/use-case/task levels and map one feature across its full-stack code homes;
+- turn scenario rosters into BDD Rules, concrete Given/When/Then Examples, and explicit Questions before interface design;
 - use a requirement-to-test matrix and behavior-sized red-green-refactor loops;
 - prove frontend/backend contracts, cross-feature effects, user flows, and final Definition of Done;
 - keep the main conversation as the orchestrator while subagents act as scoped executors;
@@ -75,6 +76,7 @@ The orchestration model is explicit:
 | `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
 | `references/00-pacing-mode.md` | Choose blueprint or incremental pacing; blueprint batch gates. |
 | `references/00-refactor-intake.md` | Reconfirm requirements/contracts before refactor work. |
+| `references/03-bdd-example-mapping.md` | Map requirements into observable Rules, Examples, and Questions before contracts. |
 | `references/06-planning.md` | Build implementation plans and executor scopes. |
 | `references/06-test-strategy.md` | Build the Feature Test Matrix coverage view and executable evidence register. |
 | `references/08-implementation.md` | Implement against frozen contracts and red tests. |

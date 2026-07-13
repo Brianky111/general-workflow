@@ -14,6 +14,7 @@ Prove that each requirement is protected at the cheapest trustworthy layer and t
 ## Entry Conditions
 
 - The behavior contract and conflict scan exist.
+- The BDD behavior map is accepted and its `R/EX` traceability is current.
 - A plan draft exists or test scope must be decided before the planning gate.
 - `02-测试矩阵.md` is missing, stale, or does not include frontend, contract, cross-feature, or assembly risks that apply.
 
@@ -38,7 +39,7 @@ Choose only the layers needed for the risk; do not duplicate every scenario at e
 
 Treat `02-测试矩阵.md` as a feature-level artifact, not a list of test filenames. It contains two linked tables:
 
-1. **Coverage view:** one row per acceptance scenario or invariant, showing which test layer protects it.
+1. **Coverage view:** one row per accepted BDD example or invariant, showing which requirement scenario it serves and which test layer protects it.
 2. **Evidence register:** one row per test ID, showing where and how that test runs and where its evidence lives.
 
 ### Cell notation
@@ -53,29 +54,29 @@ Never use a bare checkmark: it cannot identify the test or prove that it ran. Ne
 ### Coverage view template
 
 ```markdown
-| 场景/不变量 | 用户可见结果与失败底线 | 风险标签 | Domain | Use Case | 前端 | Adapter/Repository | 契约 | Feature 集成 | 跨 Feature | E2E | 对抗/非功能 | 总状态 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| S1 正常提交 | 显示成功；刷新后仍正确 | UI, 契约, 持久化 | P:T-D-S1 | P:T-UC-S1 | P:T-FE-S1 | P:T-DB-S1 | P:T-CT-S1 | P:T-INT-S1 | N/A:无下游 | P:T-E2E-S1 | N/A:普通风险 | planned |
-| E1 非法状态 | 明确拒绝；不得写库或调用外部依赖 | 状态, 副作用 | P:T-D-E1 | P:T-UC-E1 | P:T-FE-E1 | N/A:调用前拒绝 | P:T-CT-E1 | P:T-INT-E1 | N/A:无事件 | N/A:边界下沉 | P:T-MUT-E1 | planned |
-| E2 依赖超时 | 显示可重试错误；不得报告成功 | 依赖故障, 恢复 | N/A:无领域规则 | P:T-UC-E2 | P:T-FE-E2 | P:T-AD-E2 | P:T-CT-E2 | P:T-INT-E2 | N/A:无完成事件 | N/A:Feature 集成覆盖 | P:T-FAULT-E2 | planned |
-| B1 重复提交 | 只产生一次业务结果 | 并发, 幂等 | P:T-D-B1 | P:T-UC-B1 | P:T-FE-B1 | P:T-DB-B1 | P:T-CT-B1 | P:T-INT-B1 | N/A:无下游 | P:T-E2E-B1 | P:T-CONC-B1 | planned |
-| S2 完成后更新关联功能 | 下游最终状态正确且重复事件无副作用 | 跨功能, 事件, 幂等 | P:T-EVT-S2 | P:T-PUB-S2 | P:T-FE-S2 | P:T-OUTBOX-S2 | P:T-EVENT-S2 | P:T-INT-S2 | P:T-XF-S2 | P:T-E2E-S2 | P:T-DUP-S2 | planned |
+| 行为示例/不变量 | 上游场景 | 用户可见结果与失败底线 | 风险标签 | Domain | Use Case | 前端 | Adapter/Repository | 契约 | Feature 集成 | 跨 Feature | E2E | 对抗/非功能 | 总状态 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| R1/EX1 正常提交 | S1 | 显示成功；刷新后仍正确 | UI, 契约, 持久化 | P:T-D-EX1 | P:T-UC-EX1 | P:T-FE-EX1 | P:T-DB-EX1 | P:T-CT-EX1 | P:T-INT-EX1 | N/A:无下游 | P:T-E2E-EX1 | N/A:普通风险 | planned |
+| R1/EX2 非法状态 | E1 | 明确拒绝；不得写库或调用外部依赖 | 状态, 副作用 | P:T-D-EX2 | P:T-UC-EX2 | P:T-FE-EX2 | N/A:调用前拒绝 | P:T-CT-EX2 | P:T-INT-EX2 | N/A:无事件 | N/A:边界下沉 | P:T-MUT-EX2 | planned |
+| R2/EX3 依赖超时 | E2 | 显示可重试错误；不得报告成功 | 依赖故障, 恢复 | N/A:无领域规则 | P:T-UC-EX3 | P:T-FE-EX3 | P:T-AD-EX3 | P:T-CT-EX3 | P:T-INT-EX3 | N/A:无完成事件 | N/A:Feature 集成覆盖 | P:T-FAULT-EX3 | planned |
+| R3/EX4 重复提交 | B1 | 只产生一次业务结果 | 并发, 幂等 | P:T-D-EX4 | P:T-UC-EX4 | P:T-FE-EX4 | P:T-DB-EX4 | P:T-CT-EX4 | P:T-INT-EX4 | N/A:无下游 | P:T-E2E-EX4 | P:T-CONC-EX4 | planned |
+| R4/EX5 完成后更新关联功能 | S2 | 下游最终状态正确且重复事件无副作用 | 跨功能, 事件, 幂等 | P:T-EVT-EX5 | P:T-PUB-EX5 | P:T-FE-EX5 | P:T-OUTBOX-EX5 | P:T-EVENT-EX5 | P:T-INT-EX5 | P:T-XF-EX5 | P:T-E2E-EX5 | P:T-DUP-EX5 | planned |
 ```
 
-The example is structural. Replace its generic behaviors and test IDs with the feature's accepted `S/E/B/P` roster. Do not copy layers that are genuinely absent; use an explained `N/A`.
+The example is structural. Replace it with the accepted `R/EX` examples and `P` invariants while retaining the upstream `S/E/B` link. Do not copy absent layers; use an explained `N/A`.
 
 ### Evidence register template
 
 ```markdown
 | 测试 ID | 覆盖场景 | 类型/层级 | 测试文件 | 命令与环境 | Fixture/seed | 关键断言 | 负责人 | 状态与证据 |
 |---|---|---|---|---|---|---|---|---|
-| T-UC-S1 | S1 | Use Case unit | `<path>` | `<command>` | `<factory/fake>` | 结果正确；保存一次 | `<owner>` | planned |
-| T-E2E-S1 | S1 | Browser E2E | `<path>` | `<command + env>` | `<seed>` | 成功后刷新仍正确 | `<owner>` | planned |
+| T-UC-EX1 | R1/EX1, S1 | Use Case unit | `<path>` | `<command>` | `<factory/fake>` | 结果正确；保存一次 | `<owner>` | planned |
+| T-E2E-EX1 | R1/EX1, S1 | Browser E2E | `<path>` | `<command + env>` | `<seed>` | 成功后刷新仍正确 | `<owner>` | planned |
 ```
 
 ## Build Procedure
 
-1. Create one coverage row for every numbered acceptance scenario and invariant. Include applicable tags such as `权限`, `状态`, `并发/幂等`, `依赖故障`, `恢复`, `UI`, and `跨功能`.
+1. Create one coverage row for every accepted BDD example and invariant. Preserve its upstream `S/E/B/D` trace and include applicable risk tags.
 2. Write the user-visible result and failure bottom line before assigning tests. Failure rows must name forbidden side effects, not only the expected error.
 3. Assign the lowest layer that can prove the rule precisely, then add a higher layer only when a connection itself can fail.
 4. Give every planned test a stable ID and add it to the evidence register. One test may cover multiple rows, but every relationship remains explicit.
@@ -90,7 +91,7 @@ The example is structural. Replace its generic behaviors and test IDs with the f
 
 The matrix is ready for planning approval only when:
 
-- every accepted scenario/invariant has exactly one coverage row;
+- every accepted `R/EX` example and `P` invariant has exactly one coverage row, and every `S/E/B` scenario reaches at least one row;
 - every row has a precise rule layer or an explained reason why only assembly behavior exists;
 - every connection risk has contract, adapter, cross-feature, integration, or E2E coverage;
 - every user-critical flow has E2E acceptance;

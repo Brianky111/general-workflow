@@ -1,6 +1,6 @@
 ---
 name: general-workflow
-description: Guide agent-led software work through a staged, document-governed workflow with progress detection, on-demand references, vertical full-stack feature slicing, test matrices, TDD, and evidence-based completion. Use when kicking off a project, decomposing modules/features/use cases, creating requirements/contracts/plans/tests, connecting UI/API/domain/infrastructure, continuing implementation, recertifying refactors, coordinating subagents, verifying cross-feature or E2E behavior, or handling changes. Typical triggers include 新项目开工, 功能拆分, 接手/继续开发, TDD, 重构/整理, verify, and change requests.
+description: Guide agent-led software work through a staged, document-governed workflow with progress detection, vertical full-stack feature slicing, BDD example mapping, test matrices, TDD, and evidence-based completion. Use when kicking off a project, decomposing modules/features/use cases, defining Given-When-Then behavior, creating requirements/contracts/plans/tests, connecting UI/API/domain/infrastructure, continuing implementation, recertifying refactors, verifying cross-feature or E2E behavior, or handling changes. Typical triggers include 新项目开工, 功能拆分, BDD, TDD, 接手/继续开发, 重构/整理, verify, and change requests.
 ---
 
 # General Workflow
@@ -42,6 +42,7 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `00-governance-ci-hooks.md`: set or audit document governance, CI gates, hooks, and scheduled checks.
 - `01-project-identification.md`: classify new project, old project, or new module in old project.
 - `02-requirements-capture.md`: preserve raw request, triage similar requirements (merge/revise/new), and produce structured requirements.
+- `03-bdd-example-mapping.md`: discover observable rules, examples, and questions with Given/When/Then before interface design.
 - `03-requirements-clarification.md`: surface ambiguities and record decisions.
 - `03-ambiguity-audit.md`: run the independent ambiguity audit before a human gate.
 - `04-interface-contract.md`: define the full-stack behavior contract, UI states, schemas, state machines, events, invariants, and scenarios.

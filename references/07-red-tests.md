@@ -12,7 +12,7 @@ Prove one behavior-sized target fails before implementing it. Repeat red -> gree
 ## Actions
 
 1. Select the next `P:<test-id>` cell or tightly related cells from the Feature Test Matrix; resolve the stable test ID through the evidence register and state the exact behavior and test layer.
-2. Add the smallest test that encodes the contract scenario. Name assertions with scenario IDs (`S1`, `E1`, `B1`) and invariant IDs (`P1`) where applicable.
+2. Add the smallest test that encodes one accepted `R/EX` behavior or `P` invariant. Include the upstream `S/E/B` ID in the test name or metadata for traceability.
 3. At the Domain layer, test rules, values, and legal/illegal state transitions without infrastructure.
 4. At the Use Case layer, test inputs/queries, result, required side effects, and forbidden side effects on failure. Prefer Fakes; use Stubs for fixed answers and Mocks/spies only for business-significant interactions or order.
 5. At the frontend layer, test user-observable behavior with semantic queries: validation, disabled/in-flight behavior, loading/success/error/retry states, and duplicate submission where applicable.

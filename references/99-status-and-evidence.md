@@ -4,6 +4,14 @@
 
 Keep handoff state synchronized with real evidence. Status files help navigation but are not the source of truth.
 
+## Contents
+
+- Document Set Checklist
+- Evidence reconciliation actions
+- Workflow and feature state-file shapes
+- Consistency rules
+- Output and stop conditions
+
 ## Entry Conditions
 
 - Router evidence conflicts.
@@ -20,6 +28,7 @@ One change round owns one numbered document set; the checklist applies to the fe
 | `00-项目识别.md` | Project identification | 这是新项目还是改旧项目，判断有没有依据 | Four fixed sections filled |
 | `00-原始需求.md` | Requirements capture | 我的原话有没有被完整封存、未被改写 | Raw words preserved, append-only |
 | `00-整理后需求.md` (+ `use-cases/*.md` after splitting) | Capture + clarification | 需求是否符合我的预期（编号场景 = 我的意图） | Questions answered, user confirmed, `requirementsConfirmedAt` set |
+| `00-行为示例.md` (+ detailed examples in `use-cases/*.md`) | BDD Example Mapping | 每条规则在具体前置条件和动作下应该表现出什么结果 | Every `S/E/B` maps to `R/EX`, questions empty, user confirmed, `behaviorExamplesConfirmedAt` set |
 | `01-接口.md` / `interfaces/*.md` | Interface contract | 行为合同是不是我要的行为 | Ambiguity audit attached, user approved, `contractsFrozenAt` set |
 | `01-代码冲突与重叠.md` / `conflicts/*.md` | Conflict scan (old projects) | 与现有代码的冲突讲清楚了没有 | `## 总结` filled, every C-ID concrete |
 | `fixtures/` | Probes | 外部数据是真的还是编的 | Contract examples trace to probe captures |
@@ -30,7 +39,7 @@ One change round owns one numbered document set; the checklist applies to the fe
 | `09-完整性审计.md` | Feature completeness | 单测组装后功能是否真的完整 | Matrix reconciled, DoD passed, closure decision evidenced |
 | `99-进度.md` + `status.json` | Every stage | 进度如何、还差哪些、卡在哪 | Mirrors the rows above with evidence links |
 
-Lightweight features may merge requirement, contract, plan, and test-matrix rows into named sections of `00-功能.md`; the questions, assembly coverage, and done-criteria stay the same.
+Lightweight features may merge requirement, BDD examples, contract, plan, and test-matrix rows into named sections of `00-功能.md`; the behavior questions, traceability, assembly coverage, and done-criteria stay the same.
 
 When reporting, list each row as present / in progress / missing, name the next unpassed gate, and mirror the missing list in `99-进度.md`.
 
@@ -52,7 +61,7 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 {
   "schema": 1,
   "mode": "blueprint|incremental",
-  "currentGate": "kickoff|identification|requirements|interfaces|planning|test-strategy|implementation|review|integration|completeness|done|blocked",
+  "currentGate": "kickoff|identification|requirements|bdd|interfaces|planning|test-strategy|implementation|review|integration|completeness|done|blocked",
   "inScopeFeatures": ["<功能名>"],
   "lastApprovedRef": "<main-sha-or-approved-tag>",
   "pendingQuestions": 0
@@ -67,10 +76,11 @@ State files must not contain secrets, account credentials, tokens, or full sensi
   "feature": "<功能名>",
   "activeRound": "<NN>-<round>，无进行中轮次则为空",
   "projectType": "new|existing|new-module-in-existing",
-  "phase": "identification|requirements|interfaces|planning|test-strategy|red|green|review|integration|completeness|done|blocked",
+  "phase": "identification|requirements|bdd|interfaces|planning|test-strategy|red|green|review|integration|completeness|done|blocked",
   "gate": "open|waiting-human|approved|blocked",
   "pendingQuestions": 0,
   "requirementsConfirmedAt": "<pr-or-tag-or-main-sha>",
+  "behaviorExamplesConfirmedAt": "<pr-or-tag-or-main-sha>",
   "contractsFrozenAt": "<pr-or-tag-or-main-sha>",
   "testStrategyFrozenAt": "<与规划门同一批准证据>",
   "conflictReport": "01-代码冲突与重叠.md",
@@ -128,10 +138,10 @@ State files must not contain secrets, account credentials, tokens, or full sensi
 ## Consistency Rules
 
 - `pendingQuestions` must equal unresolved `【答复】：` entries.
-- `requirementsConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
+- `requirementsConfirmedAt`, `behaviorExamplesConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
 - Existing projects must have a conflict report with concrete scan conclusions.
 - A module cannot be `done` without contract and test-matrix references, every planned micro-batch green/refactored with per-batch evidence, and `reviewEvidence` pointing to a review report or CI run.
-- A feature cannot be `done` without `integrationEvidence`, `completenessEvidence`, every required Feature Test Matrix coverage cell reconciled to supported `PASS` or accepted `N/A`, zero blank/`GAP`/`P:` coverage cells, and the completeness audit passing.
+- A feature cannot be `done` without accepted BDD evidence, `integrationEvidence`, `completenessEvidence`, every required Feature Test Matrix coverage cell reconciled to supported `PASS` or accepted `N/A`, zero blank/`GAP`/`P:` coverage cells, and the completeness audit passing.
 - `reviewer`, when present, must differ from the module's `owner`: the reviewer is never the implementer.
 - `activeRound`, when set, must point to an existing round directory; archive it only after completeness passes. Archived rounds are read-only history — corrections open a new round.
 - Status may lag behind reality, but it must not run ahead of evidence.

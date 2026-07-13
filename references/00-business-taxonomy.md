@@ -4,6 +4,14 @@
 
 Arrange requirements physically along the business hierarchy — product, module, feature, use case, sub-feature, task — and map every feature to one explicit vertical slice across the applications it touches. Each add/remove/modify round on a feature gets its own numbered document set, archived on completion, so the feature's history stays navigable and the active work is always one directory.
 
+## Contents
+
+- Canonical layout and change rounds
+- Level mapping and use-case splitting
+- Placement rules
+- Vertical feature slice and code layout
+- Output and stop conditions
+
 ## Canonical Layout
 
 ```text
@@ -21,6 +29,7 @@ docs/
         │   ├── 00-项目识别.md
         │   ├── 00-原始需求.md
         │   ├── 00-整理后需求.md      # 用例索引：编号场景清单
+        │   ├── 00-行为示例.md        # BDD Rule / Example / Question 与 Given-When-Then
         │   ├── use-cases/           # 使用场景（触发拆分后，每用例一档）
         │   ├── 01-接口.md            # 子功能索引（每轮为完整合同，非增量）
         │   ├── interfaces/<sub>.md  # 子功能合同
@@ -41,7 +50,7 @@ Path convention: round documents are written as `docs/<module>/<feature>/<round>
 
 - Every add/remove/modify of a feature opens a new round directory `<NN>-<round>` (two-digit sequence plus a short slug; the first is `01-初建`) holding its own numbered doc set. One round, one doc set — the one-requirement-one-doc-set instinct applied per change.
 - Rounds apply to requirement/contract-level work: the initial build, level-A changes, and similarity-triage revisions. Level B (bug fix / counterexample repayment) and level C (display tweaks) stay inside the active round — or, when no round is active, record into feature-level `fixtures/counterexamples/` and `status.json` without opening one.
-- Each round's `01-接口.md` is the **complete** contract after the change, never a delta: the newest archived round always holds the feature's current truth. A new round starts by copying the previous round's contract forward and revising it under the change protocol.
+- Each round's `00-行为示例.md` and `01-接口.md` are the **complete** accepted behavior map and contract after the change, never deltas. A new level-A round copies both forward, then revises requirements -> BDD examples -> contract in order; the newest archived round holds current truth.
 - On feature-completeness acceptance (terminal state), move the round directory into `archive/` and update `status.json`'s `activeRound` to empty. Archived rounds are read-only history; corrections open a new round.
 - `fixtures/` never moves with a round: counterexamples are append-only permanent regression assets, and tests reference their paths across rounds.
 
@@ -53,7 +62,7 @@ Path convention: round documents are written as `docs/<module>/<feature>/<round>
 | 大功能模块 Module | **directory** | `docs/<module>/` with `00-模块概述.md`; one roster section in `requirements-index.md` |
 | 功能特性 Feature | **directory** | `docs/<module>/<feature>/` — feature-level `status.json` and `fixtures/`, plus change rounds |
 | 变更轮 Round | **directory** | `docs/<module>/<feature>/<NN>-<round>/` — one doc set per add/remove/modify; archived on completion |
-| 使用场景 Use Case | **file** (split on size) | inline `S/E/B` scenario groups in the round's `00-整理后需求.md`; split into `use-cases/UC<n>-<slug>.md` when triggers fire, with the index keeping one line per scenario ID |
+| 使用场景 Use Case | **file** (split on size) | `S/E/B` roster in `00-整理后需求.md`, BDD `R/EX` map in `00-行为示例.md`; split detailed scenarios/examples into `use-cases/UC<n>-<slug>.md` when triggers fire, keeping both indexes authoritative |
 | 子功能 Sub-feature | **file** (split on size) | a module section of the round's `01-接口.md`; split into `interfaces/<sub>.md` per the contract split triggers |
 | 具体任务 Task | **entry** | a behavior-sized red/green/refactor batch: defined in `02-规划.md`, covered in `02-测试矩阵.md`, and tracked in `status.json` plus `99-进度.md` |
 
@@ -65,7 +74,7 @@ Mirror the contract-split idiom: keep use cases inline in `00-整理后需求.md
 - use cases with distinct actors or acceptance rhythms;
 - multiple agents drafting or clarifying use cases in parallel.
 
-After splitting, `00-整理后需求.md` stays the index: goals, non-goals, `## 待确认反问`, `## 决策记录`, and the full scenario roster (one line per `S/E/B` ID linking its use-case file). The user confirmation gate still confirms this single roster; detailed steps and data live in the use-case files. Never define the same scenario in two places.
+After splitting, `00-整理后需求.md` stays the requirement index and `00-行为示例.md` stays the Rule/Example index. Detailed scenarios and Given/When/Then examples live in the owning use-case file and are linked, never copied. The user confirmation gate confirms both indexes together.
 
 ## Placement Rules
 

@@ -11,12 +11,13 @@ Expose ambiguity before contracts or implementation begin.
 
 ## Actions
 
-1. Write questions into the `## 待确认反问` section of the document being closed out (`00-整理后需求.md`, `01-接口.md` or `interfaces/*.md`, or `00-功能.md` for lightweight features), numbered Q1, Q2..., ordered by how blocking they are, grouped by scenario, field, or workflow step.
+1. Write questions into the `## 待确认反问` section of the document being closed out (`00-整理后需求.md`, `00-行为示例.md`, `01-接口.md` or `interfaces/*.md`, or `00-功能.md` for lightweight features), numbered Q1, Q2..., ordered by how blocking they are, grouped by scenario, rule/example, field, or workflow step.
 2. Ask only intent-level questions; do not outsource implementation design to the user. Technical choices are the agent's, recorded in `## 决策记录`.
 3. For each question, explain the risk of leaving it unresolved.
 4. For each question, provide 2-3 candidate answers, consequences, and one recommendation.
 5. After answers arrive, write them back into the body, then move each answered question with its conclusion into the `## 决策记录` section as a numbered decision (`D1`, `D2`..., with date/source) so contracts, plans, and the change protocol can cite it by ID. Legacy decision records without IDs get `D` numbers assigned on first touch — append IDs in place, never reorder existing entries.
 6. If an answer creates new scenarios, add them to the numbered S/E/B lists.
+7. If an answer changes a BDD rule, Given, When, Then, forbidden side effect, or trace mapping, mark `00-行为示例.md` stale and return to `03-bdd-example-mapping.md` before audit.
 
 ## Question Template
 
@@ -40,7 +41,7 @@ Update the document being closed out with:
 
 - the `## 待确认反问` section (pending questions with the `【答复】：` marker; consistency checks count unresolved `【答复】：` entries, so keep the marker exact),
 - the `## 决策记录` section (answered questions and agent-made technical decisions),
-- revised acceptance scenarios.
+- revised acceptance scenarios and, when affected, a route to refresh `00-行为示例.md` before audit.
 
 ## Stop Conditions
 

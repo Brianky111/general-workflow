@@ -16,9 +16,9 @@ Check only applicable items, but require evidence or an explicit accepted `N/A` 
 
 ### Specification
 
-- User goal, non-goals, actors, normal/error/boundary scenarios, permissions, state transitions, concurrency/retry behavior, and recovery behavior are settled.
+- User goal, non-goals, actors, scenarios, BDD Rules/Examples, permissions, state transitions, concurrency/retry behavior, and recovery behavior are settled and mutually traceable.
 - UI states, public schemas, state machine, events, invariants, and cross-feature ownership are explicit in the contract.
-- Every scenario/invariant maps through the test matrix to implementation and evidence.
+- Every accepted BDD example/invariant maps through the test matrix to implementation and evidence; every requirement scenario reaches at least one accepted example.
 
 ### Backend and domain
 

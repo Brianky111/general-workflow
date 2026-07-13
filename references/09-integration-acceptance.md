@@ -13,7 +13,7 @@ Verify the real vertical feature slice and its cross-feature effects after modul
 
 1. Remove or bypass mocks where practical; run frontend, runtime contract, backend, persistence/adapters, and downstream handlers together.
 2. Validate producer/consumer schemas at runtime: fields, units, casing, enums, errors, and events.
-3. Execute every numbered acceptance scenario and every Feature Test Matrix cell assigned to contract, feature integration, cross-feature, or E2E coverage.
+3. Execute every accepted BDD example and every Feature Test Matrix cell assigned to contract, feature integration, cross-feature, or E2E coverage; summarize results under the upstream `S/E/B` scenario roster.
 4. Report each as `S1 -> pass/fail -> details + likely broken layer/module + suspected contract`.
 5. For UI flows, drive behavior from the user's entry point. Exercise applicable loading, empty, success, validation, permission, network/server error, retry, disabled/in-flight, and duplicate-submit states.
 6. Reload or start a new session after success to prove state is persisted/system truth, not only frontend memory.

@@ -42,6 +42,8 @@ Instantiate these project-level parameters before feature work; unanswered items
 - [ ] module grouping: which business modules structure the roster and the `docs/<module>/` directories, and the threshold below which a tiny project may flatten
 - [ ] change-round convention: round slug naming, and which level-B/C work may stay inside the active round instead of opening one
 - [ ] use-case split threshold: when scenario groups move from `00-整理后需求.md` into `use-cases/*.md` files
+- [ ] BDD form: Markdown Example Mapping by default; whether an executable Gherkin runner is justified, where `.feature` files live, and which artifact is authoritative
+- [ ] BDD depth: standard-path Rule/Example requirements and the minimum inline form for lightweight features
 - [ ] pacing mode: blueprint or incremental this cycle; blueprint scope goes to `requirements-index.md`
 - [ ] project identification criteria: what counts as new project / old project / new module in old project
 - [ ] glossary: seed the domain terms

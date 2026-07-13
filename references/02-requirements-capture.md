@@ -60,6 +60,7 @@ Hard rules: never let two document sets describe the same behavior, and never si
    When the scenario list outgrows one review pass, split use cases into `use-cases/UC<n>-<slug>.md` per `00-business-taxonomy.md`, keeping the roster in `00-整理后需求.md` as the index.
 4. Propose standard or lightweight path; read `00-feature-grading-and-splitting.md` if the path or document granularity is unclear.
 5. Mark unclear items as questions; do not silently choose product behavior.
+6. Keep this document at scenario-roster level. Do not expand Given/When/Then here; route the accepted-enough draft to `03-bdd-example-mapping.md` so rules, concrete examples, and new questions have one home.
 
 ## Output
 
@@ -67,6 +68,6 @@ Write concise Chinese requirement docs in the feature's active round, `docs/<mod
 
 ## Stop Conditions
 
-Close every draft through `03-requirements-clarification.md` — ask-back alignment is mandatory even when no questions were detected — then route to `03-ambiguity-audit.md` before human confirmation.
+Route every structured draft through `03-bdd-example-mapping.md`, then `03-requirements-clarification.md`. If answers change behavior, refresh the BDD map; then run `03-ambiguity-audit.md` before the user confirms the requirement roster and behavior examples together.
 
 Do not write contracts or tests while intent questions remain unresolved.

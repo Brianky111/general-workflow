@@ -12,7 +12,7 @@ Verify that the implementation satisfies the contract and did not weaken workflo
 ## Actions
 
 1. Re-run target tests and the broadest practical regression command.
-2. Compare implemented behavior to raw/structured requirements, contract scenarios, invariants, and every assigned Feature Test Matrix cell. Resolve each test ID through the evidence register and reject bare checkmarks or unsupported PASS claims.
+2. Compare implementation to raw/structured requirements, accepted BDD `R/EX` examples, contract clauses, invariants, and every assigned Feature Test Matrix cell. Reject changed Given/When/Then meaning, unknown test IDs, bare checkmarks, or unsupported PASS claims.
 3. Inspect diffs for test weakening, skipped cases, silent fallback, and unrelated scope.
 4. For refactors, verify public signatures, data semantics, error behavior, protocol behavior, authorization behavior, and user-visible outcomes did not drift unless `10-change-protocol.md` approved it.
 5. For orchestrated work, verify the main thread acted as orchestrator: executor scopes were explicit, the main thread did not implement the same delegated scope concurrently, and final acceptance is based on local evidence.

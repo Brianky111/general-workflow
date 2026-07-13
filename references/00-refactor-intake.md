@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prevent refactor requests from skipping product intent or protection evidence. Reconfirm requirements, contracts, and the relevant test matrix before code changes, then classify whether the work can stay behavior-preserving.
+Prevent refactor requests from skipping product intent or protection evidence. Reconfirm requirements, accepted BDD examples, contracts, and the relevant test matrix before code changes, then classify whether the work can stay behavior-preserving.
 
 ## Not a Feature
 
@@ -19,18 +19,18 @@ A refactor is work on existing behavior, never a requirement of its own. Do not 
 Before touching code, re-read the smallest current evidence set:
 
 - project docs: `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`;
-- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `use-cases/*.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, `02-测试矩阵.md`, or `00-功能.md` for lightweight features (its sections replace the separate requirement/contract/plan/matrix docs);
+- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `00-行为示例.md`, `use-cases/*.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, `02-测试矩阵.md`, or `00-功能.md` for lightweight features;
 - state and evidence: `status.json`, `99-进度.md`, `docs/workflow-state.json`, tests, recent diffs, PR notes, CI, and review comments.
 
-Verify that `requirementsConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt`, when present, point to a PR, commit, tag, or other concrete approval evidence. Status text alone is not enough.
+Verify that `requirementsConfirmedAt`, `behaviorExamplesConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt`, when present, point to concrete approval evidence. Status text alone is not enough.
 
 ## Classification
 
 Classify the requested work before implementation:
 
-- **Pure refactor:** no change to public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Tests and contracts stay unchanged. Do not write new red tests for a pure refactor: proceed to `08-implementation.md` with the existing green tests as protection evidence.
+- **Pure refactor:** no change to accepted BDD examples, public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Behavior maps, tests, and contracts stay unchanged. Do not write new red tests for a pure refactor: proceed to `08-implementation.md` with the existing green tests as protection evidence.
 - **Behavior-affecting refactor:** any of the above might change, or layer/module boundaries need to move. Route to `10-change-protocol.md` level A before coding.
-- **Missing or stale prerequisites:** accepted requirements, contracts, plan, or test matrix cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `04-interface-contract.md`, `06-planning.md`, `06-test-strategy.md`, or `99-status-and-evidence.md` before coding — to backfill protection for the existing behavior being touched, never to record the refactor itself as a requirement.
+- **Missing or stale prerequisites:** accepted requirements, BDD examples, contracts, plan, or test matrix cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `03-bdd-example-mapping.md`, `04-interface-contract.md`, `06-planning.md`, `06-test-strategy.md`, or `99-status-and-evidence.md` before coding.
 
 Every refactor target must trace to a requirement scenario, contract method/invariant, documented conflict, or explicit planning item. Do not justify refactor solely from code aesthetics.
 
@@ -46,6 +46,7 @@ Add or update a refactor preflight section in `02-规划.md`:
 | 项 | 证据 | 结论 |
 |---|---|---|
 | 需求复核 | `<文档/PR/commit/tag>` | <已确认 / 缺失 / 需变更> |
+| BDD 行为复核 | `<R/EX 与确认证据>` | <保持不变 / 缺失 / 需变更协议> |
 | 合同复核 | `<接口/不变量/场景>` | <保持不变 / 需变更协议> |
 | 测试矩阵 | `<02-测试矩阵.md#行>` | <覆盖充分 / 缺口回到测试策略> |
 | 保护行为 | S1/E1/P1... | <测试或人工证据> |
@@ -66,4 +67,4 @@ If local subagent tools are available and the refactor is non-trivial, read `00-
 
 ## Stop Conditions
 
-Stop before coding if accepted requirements or contracts cannot be recertified, behavior might change without a level-A proposal, public signatures or tests would need edits, or independent review reports contradict the refactor classification.
+Stop before coding if accepted requirements, BDD examples, or contracts cannot be recertified, behavior might change without a level-A proposal, public signatures or tests would need edits, or independent review reports contradict the refactor classification.

@@ -12,6 +12,7 @@ Inspect, when available:
 - `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`, `docs/domain-models.md`
 - `docs/<module>/00-模块概述.md` for module boundaries
 - the feature's active round `docs/<module>/<feature>/<round>/`: `00-*.md`, `01-*.md`, `02-*.md`, `99-进度.md`; `archive/` holds past rounds' frozen truth
+- the round's `00-行为示例.md` or lightweight `## BDD 行为示例`, including `R/EX` traceability and pending questions
 - the round's `use-cases/*.md`, `interfaces/*.md`, and `conflicts/*.md` for split use cases and contracts
 - the round's `02-测试矩阵.md`, `09-集成验收.md`, and `09-完整性审计.md`
 - declared frontend, shared-contract, backend, adapter, and E2E code homes for the feature slice
@@ -20,7 +21,7 @@ Inspect, when available:
 
 Do not assume status files are authoritative. Prefer Git/PR/CI/test evidence when they conflict.
 
-For lightweight features, the matching sections inside `00-功能.md` count as the structured requirement, contract, and plan artifacts when the table below asks whether those exist.
+For lightweight features, the matching sections inside `00-功能.md` count as the structured requirement, BDD behavior map, contract, test matrix, and plan artifacts when the table below asks whether those exist.
 
 ## Stage Selection Table
 
@@ -34,9 +35,11 @@ For lightweight features, the matching sections inside `00-功能.md` count as t
 | No feature folder or no project classification | Project identification | `01-project-identification.md` |
 | New request overlaps or resembles an existing feature's requirement | Similarity triage | `02-requirements-capture.md` |
 | Raw request exists but no structured requirement | Requirements capture | `02-requirements-capture.md` |
-| Structured requirement has unresolved questions | Clarification gate | `03-requirements-clarification.md` |
-| Requirement or contract draft needs independent cold-read before approval | Ambiguity audit | `03-ambiguity-audit.md` |
-| Requirement is accepted but no behavior contract exists | Interface contract | `04-interface-contract.md` |
+| Structured requirement exists but the standard-path BDD map is missing/stale, or the lightweight BDD section is absent | BDD Example Mapping | `03-bdd-example-mapping.md` |
+| Requirement or BDD map has unresolved questions | Clarification gate | `03-requirements-clarification.md` |
+| Requirement, BDD map, or contract draft needs independent cold-read before approval | Ambiguity audit | `03-ambiguity-audit.md` |
+| Requirement and BDD drafts are audit-clean but `requirementsConfirmedAt` or `behaviorExamplesConfirmedAt` evidence is missing | Requirement/BDD human gate | `03-bdd-example-mapping.md` |
+| Requirement and behavior examples are accepted but no behavior contract exists | Interface contract | `04-interface-contract.md` |
 | Contract uses external service examples, protocol samples, or mock data without matching captures in `docs/<module>/<feature>/fixtures/contract/` | Fixtures and probes | `04-fixtures-and-probes.md` |
 | Existing code may overlap or contradict the contract, and `01-代码冲突与重叠.md` is missing or does not cover the contract | Conflict scan | `05-conflict-scan.md` |
 | Contract/conflict notes exist but no implementation plan | Planning | `06-planning.md` |
@@ -73,6 +76,7 @@ In orchestrated mode, the current conversation is the orchestrator. It may inspe
 - If the user explicitly asks for a later-stage task, still check earlier gates for blockers and report any missing prerequisite.
 - If refactor is requested, run refactor intake before code changes even when the repository appears to be at implementation or review. Never record the refactor as a new feature or requirement.
 - If an incoming request resembles an existing feature, run the similarity triage in `02-requirements-capture.md` before creating any new feature folder: one requirement owns one document set.
+- If clarification changes an accepted rule, example, precondition, outcome, or failure bottom line, route back to `03-bdd-example-mapping.md` before ambiguity audit or contract work.
 - If refactor intake classified the batch as pure refactor, skip `07-red-tests.md`: route to `08-implementation.md` with the existing green tests and test matrix as protection evidence.
 - Red/green work advances one behavior-sized micro-batch at a time. After one batch turns green and is refactored, return here: select `07-red-tests.md` for the next uncovered matrix row or review when every planned row is green.
 - If local subagent tools are present, make an orchestration decision after stage selection. Do not treat tool availability alone as a stage or as permission for the main thread and executors to work on the same scope in parallel.

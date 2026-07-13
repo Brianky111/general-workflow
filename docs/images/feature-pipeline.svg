@@ -1,6 +1,6 @@
 <svg width="680" viewBox="0 0 680 760" xmlns="http://www.w3.org/2000/svg" role="img">
 <title>general-workflow 单功能主管线</title>
-<desc>从项目识别、需求、反问审计、需求确认，经全栈合同、探针、冲突扫描、合同冻结，到规划与测试矩阵、红绿重构、初审、集成验收、完整性审计直至功能完成的蛇形流程，底部为反例回收、变更协议和进度仪表盘三条支路。</desc>
+<desc>从项目识别、需求、BDD 示例映射、反问审计、需求与行为确认，经全栈合同、探针、冲突扫描、合同冻结，到规划与测试矩阵、红绿重构、初审、集成验收、完整性审计直至功能完成的蛇形流程。</desc>
 <style>
 .th{font:500 14px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
 .ts{font:400 12px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
@@ -18,11 +18,11 @@
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <g class="purple"><rect x="40" y="40" width="160" height="56" rx="4"/><text class="th" x="120" y="61" text-anchor="middle" dominant-baseline="central">01 识别</text><text class="ts" x="120" y="79" text-anchor="middle" dominant-baseline="central">新旧项目判断</text></g>
 <g class="purple"><rect x="260" y="40" width="160" height="56" rx="4"/><text class="th" x="340" y="61" text-anchor="middle" dominant-baseline="central">02 需求</text><text class="ts" x="340" y="79" text-anchor="middle" dominant-baseline="central">封存原话 · 整理场景</text></g>
-<g class="purple"><rect x="480" y="40" width="160" height="56" rx="4"/><text class="th" x="560" y="61" text-anchor="middle" dominant-baseline="central">03 反问 · 审计</text><text class="ts" x="560" y="79" text-anchor="middle" dominant-baseline="central">硬停点 · 独立冷读</text></g>
+<g class="purple"><rect x="480" y="40" width="160" height="56" rx="4"/><text class="th" x="560" y="61" text-anchor="middle" dominant-baseline="central">03 BDD · 反问 · 审计</text><text class="ts" x="560" y="79" text-anchor="middle" dominant-baseline="central">Example Mapping · 冷读</text></g>
 <line class="arr" x1="200" y1="68" x2="250" y2="68" marker-end="url(#arrow)"/>
 <line class="arr" x1="420" y1="68" x2="470" y2="68" marker-end="url(#arrow)"/>
 <line class="arr" x1="560" y1="96" x2="560" y2="126" marker-end="url(#arrow)"/>
-<g class="amber"><rect x="480" y="136" width="160" height="56" rx="4"/><text class="th" x="560" y="157" text-anchor="middle" dominant-baseline="central">需求确认</text><text class="ts" x="560" y="175" text-anchor="middle" dominant-baseline="central">场景 = 我的意图</text></g>
+<g class="amber"><rect x="480" y="136" width="160" height="56" rx="4"/><text class="th" x="560" y="157" text-anchor="middle" dominant-baseline="central">需求与行为确认</text><text class="ts" x="560" y="175" text-anchor="middle" dominant-baseline="central">场景 · Rule · Example</text></g>
 <g class="purple"><rect x="260" y="136" width="160" height="56" rx="4"/><text class="th" x="340" y="157" text-anchor="middle" dominant-baseline="central">04 接口合同</text><text class="ts" x="340" y="175" text-anchor="middle" dominant-baseline="central">四问 · 不变量 · 示例</text></g>
 <g class="purple"><rect x="40" y="136" width="160" height="56" rx="4"/><text class="th" x="120" y="157" text-anchor="middle" dominant-baseline="central">04 探针实录</text><text class="ts" x="120" y="175" text-anchor="middle" dominant-baseline="central">外部数据不许编</text></g>
 <line class="arr" x1="480" y1="164" x2="430" y2="164" marker-end="url(#arrow)"/>

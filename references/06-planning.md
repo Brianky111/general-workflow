@@ -12,7 +12,7 @@ Convert the full-stack contract and conflict scan into an implementation plan pl
 
 ## Actions
 
-1. Re-read accepted requirements, contracts, conflict scan, and status evidence before choosing strategy. Do not plan from code shape alone.
+1. Re-read accepted requirements, BDD Rule/Examples, contracts, conflict scan, and status evidence before choosing strategy. Do not plan from code shape alone.
 2. If any module might need refactor, or the user asked for refactor/cleanup/rewrite/restructure/simplification, read `00-refactor-intake.md` and add the refactor preflight before coding.
 3. Choose the implementation strategy for each module, with stated reasons:
    - from scratch,
@@ -40,7 +40,7 @@ Consume every `C` conflict ID:
 | C1 | 修改现有代码 / 复用扩展 / 从零实现 / 延后并说明原因 | `<路径>` | <旧行为> | <目标改动> | S1/E1/P1 | <说明> |
 ```
 
-Map every method/message/UI flow to a layer/module and to its concrete path inside the feature's declared code homes (the vertical-slice map recorded in `architecture.md`; see `00-business-taxonomy.md`). Include frontend, shared runtime contract, backend application/domain, adapter/persistence, downstream handlers, and E2E paths when applicable. Walk one numbered scenario through the entire slice. If layer boundaries or ownership need to change, route to `10-change-protocol.md` as a level-A change.
+Map every method/message/UI flow to its `R/EX` behaviors, layer/module, and concrete path inside the feature's declared code homes. Include frontend, shared runtime contract, application/domain, adapter/persistence, downstream handlers, and E2E paths when applicable. Walk one accepted example through the entire slice. If boundaries or ownership need to change, route to `10-change-protocol.md` level A.
 
 When orchestration is used, include an executor split table:
 
@@ -69,7 +69,7 @@ Create or update the active round's `docs/<module>/<feature>/<round>/02-规划.m
 
 The plan is a document-PR human gate. After the plan and Feature Test Matrix are complete, stop and ask the user to review the conflict-handling table, implementation strategy decisions, full-slice walkthrough, track/tier assignments, coverage cells, stable test IDs, evidence-register execution details, and assembly-test choices. Do not write tests or implementation in the same run.
 
-The gate also checks decision coverage: every `D` decision recorded in the requirement and contract docs must be traceable to a contract clause or a plan item. An unconsumed behavior-affecting decision pushes the plan back, the same way an unconsumed `C` conflict ID does.
+The gate also checks coverage: every `D` decision and accepted `R/EX` behavior must trace to a contract clause, plan item, and Feature Test Matrix row. An unconsumed decision, example, or `C` conflict ID pushes the plan back.
 
 For lightweight features this gate merges with the contract gate into the single `00-功能.md` document-PR review; do not run a second human pass.
 
