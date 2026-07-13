@@ -2,6 +2,11 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.6.1 - 2026-07-13
+
+- Code homes nest under their module as the canonical form — `src/<module>/<feature>/` mirrors `docs/features/<module>/<feature>/`; a project that flattens one tree flattens both (`00-business-taxonomy.md`, `00-project-kickoff.md`).
+- Business-specific example names removed; placeholders only.
+
 ## 0.6.0 - 2026-07-13
 
 Business taxonomy with physical arrangement, and per-feature code homes — the requirements tree and the code tree mirror each other, bridged by the contract.

@@ -27,7 +27,7 @@ Initialize the project-level documents and guardrails before feature work begins
    - loud-failure questions for error handling.
 4. Initialize `docs/glossary.md`.
 5. Initialize `docs/requirements-index.md` as the project-level feature roster, grouped by business module per `00-business-taxonomy.md`: scope, grading, status, and a holding area for out-of-scope ideas.
-6. Decide the feature code-home template (default `src/features/<feature>/` with api/application/domain/infrastructure/models/tests, adjusted by the four questions above) and record it in `architecture.md`'s directory-structure section.
+6. Decide the feature code-home template (default `src/<module>/<feature>/` with api/application/domain/infrastructure/models/tests, mirroring the docs tree and adjusted by the four questions above) and record it in `architecture.md`'s directory-structure section.
 7. Read `00-pacing-mode.md` to choose blueprint or incremental pacing and record it in `docs/workflow-state.json`.
 8. Read `00-governance-ci-hooks.md` to set document governance, CI gates, hooks, and status files (state-file shapes live in `99-status-and-evidence.md`).
 9. Walk the tuning checklist below with the user and record the answers in kickoff notes or `architecture.md`.

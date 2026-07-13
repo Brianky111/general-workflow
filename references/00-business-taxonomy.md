@@ -67,7 +67,7 @@ After splitting, `00-整理后需求.md` stays the index: goals, non-goals, `## 
 Every feature gets exactly one code home, decided at kickoff and recorded in `architecture.md`'s directory-structure section, mirroring the docs tree. Default template for service-style projects — adjust layer names and count per the kickoff four questions; layers follow need, not fashion:
 
 ```text
-src/features/<feature>/          # 大代码库可同样嵌套 <module>/<feature>
+src/<module>/<feature>/          # 与文档树同构：模块目录下一功能一归宿
 ├── api/             # 接收请求、返回结果
 ├── application/     # 编排流程
 ├── domain/          # 领域规则与核心业务逻辑
@@ -76,7 +76,7 @@ src/features/<feature>/          # 大代码库可同样嵌套 <module>/<feature
 └── tests/           # 测试
 ```
 
-- The code-home name matches the doc-set folder: `docs/features/<module>/<feature>/` ↔ `src/features/<feature>/` (or `src/features/<module>/<feature>/` when the codebase nests modules too).
+- The two trees stay isomorphic: `docs/features/<module>/<feature>/` ↔ `src/<module>/<feature>/`, same module and feature names on both sides. A project that flattens the docs tree flattens the code tree the same way (`src/<feature>/`).
 - The contract is the bridge between the two trees: use cases map to contract methods; the plan's method-assignment table maps every method to a concrete path inside the code home.
 - Cross-feature shared code lives outside feature homes as a shared kernel declared in `architecture.md`, never copied between features; shared entities stay in `domain-models.md`.
 
