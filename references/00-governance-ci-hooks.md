@@ -7,8 +7,10 @@ Set mechanical guardrails so workflow discipline does not depend on agent memory
 ## Entry Conditions
 
 - Project kickoff explicitly selected durable workflow governance.
-- A review asks whether governance or CI is strong enough.
-- A PR modifies guarded docs, fixtures, CI, lint config, or audit scripts.
+- An accepted Delivery Anchor item or repository governance policy makes a named CI/guardrail the minimum credible proof.
+- A PR modifies a guardrail already selected for that anchor item, such as guarded docs, fixtures, CI, lint config, or audit scripts.
+
+A reviewer's generic request for “stronger CI” is a governance follow-up, not an entry condition for the current delivery.
 
 ## Document Governance
 
@@ -20,7 +22,7 @@ Set mechanical guardrails so workflow discipline does not depend on agent memory
 
 ## CI Gates
 
-Add only gates appropriate to the stack and recorded risks:
+Add only gates mapped to a Delivery Anchor item or already accepted repository governance policy; every delivery-blocking gate must name that source, a finite command/budget, and its terminal state:
 
 - layer-boundary import checks,
 - forbidden raw external-field leaks,
@@ -36,8 +38,8 @@ Add only gates appropriate to the stack and recorded risks:
 - status consistency,
 - domain/use-case/frontend unit and component tests,
 - adapter integration, runtime contract, cross-feature workflow, and browser E2E tests,
-- selected property/mutation/fuzz/security/accessibility/visual-regression checks,
-- risk-triggered matrix checks for required `GAP`/planned cells, unknown test IDs, unsupported PASS claims, production `N-ID`/wiring gaps, and coverage/evidence disagreement.
+- selected property/mutation/fuzz/security/accessibility/visual-regression checks, each with a finite wall-clock/attempted-case scope and deduplicated candidate output,
+- risk-triggered matrix checks for required `GAP`/`P:` evidence cells, unknown test IDs, unsupported `PASS` claims, production `N-ID`/wiring gaps, and coverage/evidence disagreement.
 
 ## Hooks
 
@@ -50,17 +52,19 @@ Local hooks are early feedback only; CI must repeat the checks.
 
 ## Scheduled Checks
 
-- fixture freshness probes compare external reality with `fixtures/contract/`,
-- nightly fuzz/property testing records seeds,
-- mutation testing exposes weak assertions.
+- fixture freshness probes compare external reality with `fixtures/contract/` under a finite request/time limit;
+- each scheduled fuzz/property job has a fixed target/invariant, wall-clock or attempted-case limit, and cross-run semantic deduplication;
+- each mutation job has a fixed changed-node scope, mutant/time limit, and equivalent-mutant classification.
+
+Scheduled jobs produce candidate issues/evidence only. A seed, survivor, or drift result never appends to the current or a `DELIVERY-DONE` TOS and never reopens a closed delivery. A result may falsify an open compatibility outcome only when it is reproducible and maps to that anchor promise; otherwise handling it requires a newly accepted user/authoritative-source delta with its own finite plan and cumulative admission cap.
 
 ## Output
 
 - For kickoff: only the explicitly selected governance configuration, CI gates, hooks, and optional single status source, with reasons recorded in the existing kickoff/architecture surface.
 - For an audit: a short report naming each expected gate as present, weakened, or missing, with evidence, plus fixes or a follow-up list.
 
-Configuration is complete when every gate this project selected is enforced by CI (not only by local hooks) and a deliberately failing example is caught. Then return to the router.
+Configuration is complete when every anchor-linked gate this project selected is enforced by CI (not only by local hooks) and a deliberately failing example is caught. Then return to the router and re-evaluate the Delivery Anchor; do not add another gate from the audit output.
 
 ## Stop Conditions
 
-Stop for user confirmation before weakening or removing an existing gate, and when branch protection or CODEOWNERS is unavailable and the tag-based fallback must be accepted.
+Stop for user confirmation before weakening or removing an accepted gate, and when an anchor-required branch-protection or CODEOWNERS rule is unavailable and the tag-based fallback must be accepted. Missing optional or unanchored governance cannot block `ANCHOR-SATISFIED`.

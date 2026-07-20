@@ -32,8 +32,8 @@ Track only artifacts required by the feature's chosen path:
 
 | Artifact | Default | Triggered when | Done when |
 |---|---|---|---|
-| Durable raw source | Core | Always link or preserve once | Source remains accessible |
-| Structured requirement + BDD | Core | Ordinary feature contract | Observable behavior is READY and frozen |
+| Durable raw source / Delivery Anchor | Core | Always link the original source and any ordered accepted deltas | Immutable source history remains accessible; current Anchor state is clear |
+| Structured requirement + BDD | Core | Ordinary feature contract | Faithfully project the current Anchor state; observable behavior is READY and frozen |
 | Dedicated interface contract | Conditional | Public/external compatibility, migration, security, complex state/concurrency, or cross-owner boundary | Triggered risk is explicit and accepted |
 | Conflict appendix | Conditional | A concrete legacy overlap or uncertain migration boundary exists | Actual locations and chosen handling are recorded |
 | Fixtures/probes | Conditional | External behavior cannot be trusted from documentation alone | Examples trace to captured evidence |
@@ -59,12 +59,12 @@ Keep the chosen source concise:
 
 ```markdown
 ## 状态
-- 阶段：<当前交付状态>
-- 核心合同：<source/contract ref>
-- READY/冻结证据：<commit/PR/批准来源；未就绪则写真实 blocker>
+- Delivery Anchor：<original source + ordered accepted delta refs；current state>
+- Anchor state / request_gap：<SATISFIED / UNMET + concrete existing ID or clause / BLOCKED + exact reason>
+- 下一步：<一个直接关闭该 gap 的动作；SATISFIED/BLOCKED 时为 stop>
+- 证据：<production path + test/CI/commit/截图/日志摘要>
+- 有限测试义务：<VERIFIED/total；仅在测试适用且需要 handoff/closeout 时>
 - 当前负责人：<仅在有 owner/handoff 时>
-- 下一步：<一个可执行动作>
-- 证据：<测试/CI/commit/截图/日志摘要>
 ```
 
 Add the following sections only when their condition applies. Omit them entirely rather than filling empty placeholders.
@@ -109,11 +109,15 @@ An OOS finding is not implementation permission. It remains read-only unless the
 
 ## Evidence Rules
 
+- Treat the immutable original source plus ordered explicitly accepted deltas as the Delivery Anchor. Requirements, BDD, plans, tests, reviews, and status are projections/evidence; none may rewrite Anchor history or self-accept a scope expansion.
+- At every triggered status update, record the current Anchor state and one concrete `request_gap` first. Use `none` only when the anchored outcome, authorized writes, required production/gates, and known blockers support it; a vague “continue testing/review” is not a gap.
 - Prefer repository facts over manual status prose.
 - Every complete claim points to a path, command, commit, PR/CI result, screenshot, trace, or concise log evidence.
 - Status may lag while work is active, but it must never run ahead of evidence.
 - A blocking question identifies the exact decision and affected acceptance/contract boundary; an empty `【答复】：` marker exists only for a real pending question.
 - A risk-triggered matrix cannot claim PASS without supporting evidence; untriggered matrix cells do not exist and need no `N/A` entries.
+- When test work applies, completion names the finite frozen `TOS` total and shows every obligation `VERIFIED`; `PASS`/`EXISTING-PASS`/`ACCEPTED-NONTEST` remain evidence kinds. Status cannot add obligations or treat an unbounded discovery pass as pending work.
+- Record `planning_gap_refreeze_used`, invalid-red correction, aggregate repair/recheck, review/adjudication slots, probe/discovery campaign state, or admission-cap counters only when triggered, overridden, or consumed, in the existing plan/TOS row or handoff. Never create an all-zero ledger; once used, a reroute or session change cannot reset it, and the use must be persisted before a pause or owner/session handoff.
 - A reviewer must be independent only when the named risk or governance requires separation of duties.
 - If rounds are used for audit or multi-owner history, archived rounds remain read-only; ordinary revisions use a delta and do not require a new full round.
 - Parallel owners update only their own scope in the chosen status source; cross-scope edits preserve other owners' evidence.
@@ -122,11 +126,12 @@ An OOS finding is not implementation permission. It remains read-only unless the
 
 At a triggered update point:
 
-1. Compare the chosen status source with Git, worktrees, tests, CI, PRs, and runtime evidence.
-2. Correct unsupported claims.
-3. Record only the current blocker, handoff, or closeout plus its next action.
-4. Include scope firewall, worktree closeout, or OOS sections only when their conditions apply.
-5. Keep the update within the document budget from `00-feature-grading-and-splitting.md`, or name the audit/coordination exception.
+1. Reconcile the Delivery Anchor's current effective state from the immutable original source and ordered accepted deltas; record the exact `request_gap` or evidence-backed `none` before any stage/test status.
+2. Compare that state and the chosen status source with Git, worktrees, tests, CI, PRs, and runtime evidence.
+3. Correct unsupported claims without rewriting Anchor history or promoting tool/reviewer findings into scope.
+4. Record only the current blocker, handoff, or closeout plus its next action; when applicable, include the frozen obligation count and any exhausted budget without reopening discovery.
+5. Include scope firewall, worktree closeout, or OOS sections only when their conditions apply.
+6. Keep the update within the document budget from `00-feature-grading-and-splitting.md`, or name the audit/coordination exception.
 
 ## Output
 
@@ -137,4 +142,4 @@ At a triggered update point:
 
 ## Stop Conditions
 
-Stop when a claimed pause, handoff, owner transfer, or completion has no reliable evidence. Report the uncertainty and smallest verification step. Missing untriggered documents or stale non-authoritative mirrors do not block READY or implementation.
+Stop when the Anchor state or concrete `request_gap` cannot be established, when a claimed pause/handoff/completion has no reliable evidence, or when the claimed test boundary is not finite. Report the uncertainty and smallest verification step tied to the existing Anchor/obligation set. A tool/reviewer finding with no Anchor mapping cannot keep status active. When `DELIVERY-DONE` is evidenced, write one closeout and stop. Record `request_gap: none` in that closeout; status synchronization must not launch another review/test pass. Missing untriggered documents or stale non-authoritative mirrors do not block READY or implementation.

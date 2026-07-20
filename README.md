@@ -4,26 +4,30 @@ This repository develops the `general-workflow` Codex skill: an implementation-f
 
 The skill helps Codex:
 
-- detect the current workflow stage from repository evidence;
+- preserve the original request plus explicitly accepted deltas as the immutable Delivery Anchor, and decide whether that request is complete before selecting any workflow stage;
+- continue only from one named source-backed `request_gap`; unanchored findings, tests, risks, and review suggestions become follow-ups rather than new delivery work;
 - load only the reference document needed for that stage;
 - freeze the smallest sufficient behavior contract, then continue into code in the same run when no material decision is blocked;
 - treat documentation as a conditional decision/risk tool rather than a mandatory `00…99` checklist;
 - distinguish product/module/feature/use-case/task levels and map one feature across its full-stack code homes;
 - turn concise requirements into BDD Rules and concrete Given/When/Then examples, asking only questions that change observable behavior;
 - bind existing-code plans and tests to the current production owner, real runtime/composition-root path, and nearest existing test suite;
-- use a sparse behavior-to-proof map and behavior-sized red-green-refactor loops, expanding to a full matrix only for named risks;
+- freeze a finite anchor-linked test-obligation set in the sparse behavior-to-proof map, reject unanchored obligations, then consume only valid obligations with behavior-sized red-green-refactor loops;
+- declare the Delivery Anchor/current gap once per plan, reuse existing AC/R/EX IDs in rows, and omit unused campaign/counter ledgers on the ordinary path;
+- cap property, fuzz, mutation, adversarial, review-sampling, and counterexample admission cumulatively for the accepted delivery, with no reset through rerouting, new executors, or renamed campaigns;
 - reject red tests against test-local surrogates, unregistered `V2` implementations, or parallel test harnesses;
+- stop immediately when every original/accepted outcome is delivered through the intended production entry and only its minimum anchor-linked proof, writes, wiring, gates, and regression satisfy `DELIVERY-DONE`;
 - prove frontend/backend contracts, cross-feature effects, user flows, and final Definition of Done;
 - keep the main conversation as the orchestrator while subagents act as scoped executors;
 - handle refactors, implementation, review, verification, and change recovery without reading the full source workflow every time.
 
 ## Workflow overview
 
-Every request enters through the progress router, which scans repository evidence and first evaluates a positive `READY` predicate. Refactors never become features; similar requirements are triaged (merge / revise / new) before a second behavior source is created:
+Every request enters through the progress router. The immutable original source plus explicitly accepted deltas form the Delivery Anchor. The router first absorbs existing production evidence and classifies it as `ANCHOR-SATISFIED`, `ANCHOR-UNMET`, or `ANCHOR-BLOCKED`; only `ANCHOR-UNMET` with one concrete `request_gap` may query the stage table or the subordinate positive `READY` predicate. Refactors never become new behavior features; similar requirements are triaged (merge / revise / new) before a second behavior source is created:
 
 ![请求入口与路由](docs/images/routing-map.svg)
 
-A normal feature request uses the lean incremental pipeline. Raw source, structured behavior, and BDD examples form the default compact contract; one cold read records only actual findings. Once behavior, changed boundaries, the production write seam, and credible verification are clear, planning, red, and implementation can continue in the same run. Blueprint batching is an explicit opt-in for shared high-risk freezes rather than the new-project default:
+A normal feature request uses the lean incremental pipeline. Structured behavior and BDD examples are faithful projections of the Delivery Anchor, not new scope authorities; one cold read checks that projection and records only source-backed findings. Once the selected gap's behavior, production write seam, and credible verification are clear, planning declares the Anchor/gap once and freezes a finite Test Obligation Set (`TOS`) whose rows reuse existing acceptance IDs. Ordinary work has no discovery campaign and writes no all-zero budget ledger; campaign IDs and counters appear only when triggered or consumed. Review or tool output may discharge the set but cannot extend it. A candidate changes scope only after an accepted user/authoritative-source delta, while a reproducible production counterexample may enter only when it actually falsifies an anchor outcome and fits the frozen cap. Budgets do not reset on reroute. At every meaningful checkpoint the workflow asks again whether the original request is complete; once it is delivered with minimum credible evidence, it closes once and stops without another review, red test, or discovery pass. Blueprint batching remains explicit opt-in for shared high-risk freezes:
 
 ![单功能主管线](docs/images/feature-pipeline.svg)
 
@@ -61,9 +65,13 @@ The skill uses progressive disclosure:
 
 1. Start from `SKILL.md`.
 2. Always read `references/00-progress-router.md` first.
-3. Evaluate whether the compact contract and repository evidence make the work `READY` for code.
-4. Load only the reference file needed for the next material decision or execution step.
-5. Do not route backward solely because an optional artifact or approval timestamp is absent.
+3. Build the Delivery Anchor from the immutable original source and accepted deltas; evaluate its completion through the real production path before selecting a stage.
+4. If `ANCHOR-UNMET`, name one concrete `request_gap`; if no gap exists, close or quarantine the finding instead of continuing.
+5. Evaluate whether that gap's compact projection and repository evidence make it `READY` for code.
+6. Freeze only anchor-linked test obligations and discovery/admission budgets inside the executable plan.
+7. Load only the reference file needed to close the selected gap; every write batch must directly advance its acceptance predicate.
+8. Evaluate the Delivery Anchor and `DELIVERY-DONE` before any new red/review/discovery pass, and stop when they hold.
+9. Do not route backward solely because an optional artifact, unanchored finding, possible extra edge case, or approval timestamp is absent.
 
 The orchestration model is explicit:
 
@@ -76,18 +84,19 @@ The orchestration model is explicit:
 
 | File | Purpose |
 |---|---|
-| `references/00-progress-router.md` | Choose the current workflow stage and next reference. |
+| `references/00-progress-router.md` | Decide original-request completion first, then choose a subordinate stage only for one anchor gap. |
 | `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
 | `references/00-pacing-mode.md` | Default to incremental delivery; opt into blueprint only for justified shared freezes. |
 | `references/00-refactor-intake.md` | Establish existing behavior and green-test protection without backfilling workflow docs. |
 | `references/03-bdd-example-mapping.md` | Map concise requirements into observable Rules and concrete Examples. |
 | `references/05-conflict-scan.md` | Find the real production owner/runtime path and reusable code and tests. |
-| `references/06-planning.md` | Build the smallest executable, reuse-first implementation plan. |
-| `references/06-test-strategy.md` | Map behavior sparsely to existing test homes and risk-triggered wiring evidence. |
-| `references/07-red-tests.md` | Prove an admissible red against the approved production node. |
+| `references/06-planning.md` | Build the smallest executable, reuse-first plan and freeze its finite test boundary. |
+| `references/06-test-strategy.md` | Map a finite obligation set sparsely to existing test homes and budgeted risk evidence. |
+| `references/07-red-tests.md` | Consume one frozen pending obligation with an admissible red against the approved production node. |
 | `references/08-implementation.md` | Modify the selected production owner and reject shadow implementations. |
 | `references/09-review-and-verification.md` | Verify behavior, evidence, ownership, and acceptance. |
 | `references/09-feature-completeness.md` | Run a final independent evidence audit for governed or high-risk work. |
+| `references/10-counterexample-recovery.md` | Admit and repay one deduplicated counterexample without recursive discovery. |
 
 ## Validate
 
@@ -102,7 +111,7 @@ $env:PYTHONUTF8 = 1   # required on GBK-default Windows: quick_validate.py reads
 python "<path-to-skill-creator>\scripts\quick_validate.py" (git rev-parse --show-toplevel)
 ```
 
-`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that the READY/document-budget and N-ID/SUT-binding policy anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
+`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that Delivery-Anchor-first routing, concrete `request_gap` gating, READY/document-budget, N-ID/SUT-binding, finite anchor-linked TOS, discovery-budget, and `DELIVERY-DONE` stop anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
 
 `git diff --check` may print CRLF conversion warnings on this Windows checkout; distinguish those from real whitespace errors.
 

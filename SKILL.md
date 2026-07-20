@@ -13,6 +13,7 @@ Read `references/00-progress-router.md` before reading any other reference file.
 
 ## Operating Rules
 
+- Treat the durable original user request as the immutable **Delivery Anchor**. Its current version is that source plus only explicitly accepted deltas; structured requirements, BDD, plans, `TOS`, tests, reviews, and status are subordinate projections/evidence and cannot expand it. Before selecting any stage, classify the anchor as `ANCHOR-SATISFIED`, `ANCHOR-UNMET`, or `ANCHOR-BLOCKED`. Continue only from `ANCHOR-UNMET` by naming one concrete `request_gap` tied to an original/accepted outcome, non-goal, required write, or predeclared minimum proof. If no such gap exists, close or quarantine the finding; do not start another test, review, discovery, or implementation loop.
 - Treat working code plus trustworthy verification as the primary deliverable. Documentation pays only for an unresolved decision, a handoff, or a material risk; never finish an authorized build/change request with documents alone when the work is ready to implement.
 - Inspect repository evidence before choosing a stage: current production entry points and owners, call/registration paths, nearby tests and their runner, reusable fixtures/helpers/fakes, docs, status, PR/CI notes, and recent diffs. For existing-code work, code and tests are mandatory planning inputs rather than a post-contract afterthought.
 - Use a positive readiness test. Normal work is ready when observable behavior and non-goals are clear, no blocking product decision remains, changed public/data semantics are explicit, the existing-code write seam is known, and a credible verification path exists. A faithful raw-source + structured-requirement + BDD bundle is the default frozen behavior contract; a separate interface contract is required only for a material public/runtime boundary change.
@@ -21,6 +22,9 @@ Read `references/00-progress-router.md` before reading any other reference file.
 - Treat one requirement = one feature boundary = one source of truth as the organizing instinct. A feature is a user-visible vertical slice that may cross frontend, shared contracts, backend, persistence, and cross-feature events; it is not synonymous with one backend directory. Route every incoming request into exactly one source: a new feature, a merge into an unconfirmed sibling, or a delta revision of a confirmed one. Never create a second document set for the same behavior. Place requests on the hierarchy in `00-business-taxonomy.md` only when that distinction affects ownership or delivery.
 - Treat numbered `00-…` through `99-…` artifacts as conditional dashboard slots, not a mandatory set. Create only artifacts triggered by the current decision or risk. An untriggered interface document, conflict report, full test matrix, audit report, or state mirror is `N/A`, not a missing gate. Update the selected status surface only at a human pause, handoff, or closeout.
 - Bind every existing-code test/implementation loop to a stable production node (`N-ID`): current owner, real runtime or composition-root path, nearest existing test home, and reused test assets. A red test against a test-local surrogate, an unregistered `V2`, a parallel harness, or a newly invented implementation path is invalid. Prefer modifying or extending the current owner; `NEW` or `REPLACEMENT` nodes require explicit reuse-rejection evidence, a non-test runtime edge, wiring verification, and—when side by side—a selection and retirement rule.
+- Freeze a finite Test Obligation Set (`TOS`) inside the executable plan, not a new artifact/ID layer. Every obligation must cite the Delivery Anchor outcome/non-goal whose minimum credible proof it supplies; an unanchored obligation is `INVALID-OBLIGATION`, cannot enter red, and cannot block completion. Ordinary work uses one cheapest rule obligation per distinct changed behavior/invariant plus focused proof only for a named failure-prone seam; equivalent examples share one obligation. Tests, reviews, tools, and executors cannot add keys. Only an accepted anchor delta, or a distinct reproducible counterexample that actually falsifies an anchor outcome and is admitted under the frozen delivery cap, may expand the set.
+- Freeze cumulative probe/pairwise/property/fuzz/mutation/adversarial discovery and repair limits only when those paths are actually triggered. Ordinary work has no discovery campaign and uses implicit one-correction/one-repair defaults; do not create an empty budget ledger. Once triggered or consumed, rerouting, another executor/session, or renamed input/campaign cannot reset an allowance; recovery never launches child discovery. A normal discovery limit records `DISCOVERY-CLOSED` and already admitted work continues. Missing required anchor evidence, a known unadmitted anchor-falsifying blocker, a second planning-freeze omission after one correction, any second invalid red after one correction, or a frozen delivery-blocking finding that remains after one aggregate repair/recheck is `BLOCKED`.
+- Evaluate original-request completion before another test/review loop. `DELIVERY-DONE` starts with every original/accepted outcome observed through the intended production entry and every non-goal preserved; then requires only the anchor-linked minimum proof, authorized writes, wiring/runtime selection, predeclared required gates, selected regression, and executor integration needed to support that result. A finding defeats completion only when it is reproducible, maps to an anchor item, and actually falsifies that outcome or its only credible proof. Unanchored campaigns, obligations, gates, theoretical risks, coverage suggestions, and optional reviews are follow-ups, not delivery blockers. When `DELIVERY-DONE` holds, perform one closeout/status sync, report completion, and stop.
 - Once readiness holds, write the smallest executable plan and enter red/green/refactor or implementation in the same run. Missing optional documents, approval timestamps, matrix `N/A` cells, or status mirrors must not delay code. Record evidence at meaningful checkpoints rather than after every internal micro-step.
 - Treat refactor, cleanup, rewrite, restructure, or simplification requests as workflow work, not new features. Read `00-refactor-intake.md`, reuse the owning behavior contract and existing green protection, and record only the delta needed to prove behavior preservation.
 - Maintain a scope firewall. The frozen behavior, code-reality scan, and executable plan define what may change; code topology explains why those paths are sufficient. Quarantine unrelated bugs, failing tests, or design smells unless they directly block current evidence. Do not opportunistically repair neighboring systems.
@@ -32,7 +36,7 @@ Read `references/00-progress-router.md` before reading any other reference file.
 - At planning, refactor, implementation, and review stages, read `references/00-orchestration-policy.md` when local subagent tools exist and the task is non-trivial, separable, risky, or validation-heavy.
 - Load one stage reference at a time. Do not read all files in `references/` unless the user explicitly asks for a full audit or migration.
 - Load support references only when the selected stage asks for them or the evidence triggers their topic.
-- Return to `00-progress-router.md` after a meaningful contract, implementation-batch, or evidence checkpoint. Do not re-route merely to manufacture an optional artifact or to mirror unchanged state.
+- Return to `00-progress-router.md` after a meaningful contract, implementation-batch, or evidence checkpoint. Re-evaluate the Delivery Anchor before any stage row; do not re-route merely to manufacture an optional artifact, mirror unchanged state, or investigate an unanchored finding.
 - If evidence is contradictory, read `references/99-status-and-evidence.md`, reconcile the state, then return to the router.
 - If a risk-triggered stage requires user confirmation, stop at the gate and report the exact behavior or safety decision needed; do not pause for reversible internal design choices.
 - Treat the original workflow document, if present, as source material only. Prefer the split reference documents for execution.
@@ -57,9 +61,9 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `04-interface-contract.md`: document only material public/runtime boundary deltas and risk-triggered invariants.
 - `04-fixtures-and-probes.md`: capture external data through probes and govern contract/counterexample fixtures.
 - `05-conflict-scan.md`: map existing production owners, runtime paths, reusable code/tests, and real conflicts before choosing a write seam.
-- `06-planning.md`: write the smallest executable, reuse-first code and verification plan, then start implementation when ready.
-- `06-test-strategy.md`: map each behavior sparsely to the cheapest trustworthy existing test home and any necessary wiring evidence.
-- `07-red-tests.md`: prove an admissible failure through the selected real production node and existing test infrastructure.
+- `06-planning.md`: write the smallest executable, reuse-first code plan and freeze its finite test obligations, then start implementation when ready.
+- `06-test-strategy.md`: map a finite behavior-proof set to the cheapest trustworthy existing test home and budgeted wiring/risk evidence.
+- `07-red-tests.md`: consume one frozen pending obligation through the selected real production node and existing test infrastructure.
 - `07-anti-cheat-and-red-replay.md`: verify both red-before-green order and SUT/runtime binding; invalidate wrong-target reds.
 - `08-implementation.md`: modify the selected production owner, prove wiring and regressions, and avoid shadow implementations.
 - `09-review-and-verification.md`: verify behavior, evidence, UI, and regression scope.
@@ -67,15 +71,15 @@ This map is an index for discovery only. Stage selection must go through `00-pro
 - `09-integration-acceptance.md`: run real-layer, cross-feature, UI, contract, and E2E acceptance.
 - `09-feature-completeness.md`: audit the test matrix and Definition of Done before closing and archiving a feature round.
 - `10-change-protocol.md`: handle contract, requirement, or external-behavior changes.
-- `10-counterexample-recovery.md`: turn reproducible failures into permanent regression tests.
+- `10-counterexample-recovery.md`: deduplicate and repay one bounded, admitted counterexample without recursive discovery.
 - `99-status-and-evidence.md`: reconcile evidence at pauses, handoffs, and closeout using one human-maintained status source when needed.
 
 ## Default Response Shape
 
 When taking over work, report:
 
-1. Detected stage and whether the work is `READY` for code.
-2. Repository evidence used, including existing production and test anchors for existing-code work.
-3. Frozen behavior or the one concrete blocker; list optional documents only when their risk trigger applies.
-4. Immediate code/test action and the verification command or evidence expected.
+1. Delivery Anchor source/current accepted delta, anchor state, and—only when unmet—the single selected `request_gap`.
+2. Detected subordinate stage and whether the selected gap is `READY` for code.
+3. Repository evidence used, including existing production and test anchors for existing-code work.
+4. Immediate anchor-closing code/test action and its finite verification command, or the `DELIVERY-DONE`/`BLOCKED` stop decision.
 5. Orchestration decision when relevant: executor scopes delegated, or a concise reason for direct execution.

@@ -2,6 +2,35 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.12.0 - 2026-07-20
+
+Stage routing and completion are now anchored to the original request rather than to newly discovered workflow work.
+
+- The immutable original user request plus explicitly accepted deltas form the Delivery Anchor. Structured requirements, BDD, plans, TOS, tests, reviews, and status are subordinate projections/evidence and cannot expand delivery scope.
+- Before any stage selection or new discovery, the router classifies `ANCHOR-SATISFIED`, `ANCHOR-UNMET`, or `ANCHOR-BLOCKED`. Only `ANCHOR-UNMET` with one concrete source-backed `request_gap` may continue; no gap means closeout, quarantine/follow-up, or a newly authorized delivery.
+- Multiple incomplete outcomes follow explicit user priority, then the dependency order required for the next user-visible vertical result. The former “earliest unresolved material risk” tie breaker is removed.
+- `ORIGINAL-REQUEST-DONE` requires observable production-path outcomes, preserved non-goals, completed requested writes, applied accepted deltas, and no known reproducible anchor-falsifying counterexample. TOS green alone is insufficient.
+- Every plan row, test obligation, discovery campaign, write batch, review, and blocking gate must cite the anchor outcome it completes or proves. An unanchored item is `INVALID-OBLIGATION`/follow-up: it cannot enter red, consume repair budget, or block completion.
+- To keep the ordinary path implementation-forward, a plan declares its Anchor/current gap once and rows reuse existing AC/R/EX/obligation IDs. Default allowances are implicit, discovery is off by default, and counters/campaign details are recorded only when triggered, overridden, consumed, or handed off—never as an all-zero workflow ledger.
+- Review, coverage, mutation, fuzz, CI, and executor findings affect the current delivery only when reproducible and when they actually falsify an original/accepted outcome or its minimum credible proof. Theoretical improvements and neighboring bugs no longer trigger another red/review cycle.
+- Accepted changes append a delta to the current anchor version without rewriting original-source history. Verified drift inside an existing compatibility promise is evidence against that promise; unrelated drift remains a candidate until accepted.
+- Status and diagrams now expose the anchor state and selected `request_gap` before subordinate stage/TOS details. Consistency checks protect this priority ordering against regression.
+
+## 0.11.0 - 2026-07-20
+
+Test execution now has a finite boundary and a mandatory terminal predicate.
+
+- Planning freezes a finite Test Obligation Set (`TOS`) inside the existing sparse verification map. Ordinary work uses one rule obligation per distinct changed behavior/invariant and adds focused connection proof only for a named seam that can fail independently.
+- Tests, reviewers, coverage tools, executors, and the orchestrator may discharge obligations or report candidates but cannot self-accept expansion. After freeze, only a user/authoritative-source/verified-drift contract or risk delta, or a distinct reproducible in-scope counterexample admitted under the delivery cap, can change the set.
+- Every delivery declares one cumulative integer counterexample cap (ordinary default `1`) and a closed list of risk campaigns. Property, fuzz, mutation, adversarial, and anti-hardcoding limits cannot reset across reroutes, executors, or sessions; reaching a normal limit records `DISCOVERY-CLOSED`, while only missing required evidence or a known unadmitted in-scope blocker becomes `BLOCKED`.
+- TOS states are canonical: `PENDING -> RED -> GREEN -> VERIFIED`, with same-key `GAP/REPAIRING` for bounded repairs. `PASS`, `EXISTING-PASS`, and accepted non-test proof are evidence kinds; faithful `UNEXPECTED-GREEN` moves the obligation to `VERIFIED`.
+- `INVALID-RED` receives one mapping/setup correction per obligation in total; any later invalid red is `BLOCKED` regardless of category. Ordinary implementation also carries a finite same-failure attempt/time stop.
+- Review, independent module review, integration acceptance, and completeness reconciliation can route only an existing frozen obligation back for repair. A re-review verifies the original finding set and cannot restart sampling or adversarial discovery.
+- Counterexample recovery admits at most one representative regression obligation per distinct semantic failure, reuses existing failing protection, and never recursively starts another fuzz/property/mutation/adversarial campaign.
+- Pure-refactor characterization tests are identified at intake but written only after a finite protection set is frozen. Scheduled CI discovery is independently bounded, deduplicates across runs, and produces candidates without reopening a completed delivery.
+- The router evaluates `DELIVERY-DONE` before another test/review loop. It closes only after selected campaigns, all obligations, authorized write batches, runtime wiring/selection, triggered review/integration/governed gates, regression evidence, and in-scope blockers are resolved; then it performs one closeout update and must stop.
+- `check_consistency.py` protects the finite-boundary, bounded-discovery, non-recursive recovery, and mandatory-stop anchors across the skill.
+
 ## 0.10.0 - 2026-07-20
 
 Implementation readiness and existing-code reuse now outrank document completeness.

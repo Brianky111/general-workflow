@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Keep the current conversation as the task orchestrator and use subagents as scoped executors. Avoid the failure mode where the main thread and subagents both implement the same task in parallel.
+Keep the current conversation as the task orchestrator and use subagents as scoped executors. Every writable or gate-consuming executor must close a named Delivery Anchor `request_gap`; tool availability and executor findings cannot create delivery scope. Avoid the failure mode where the main thread and subagents both implement the same task in parallel.
 
 Also avoid the failure mode where the orchestrator keeps opening new worktrees or executor branches instead of integrating the previous loop.
 
@@ -16,8 +16,8 @@ Also avoid the failure mode where the orchestrator keeps opening new worktrees o
 
 | Role | Owns | Must not do |
 |---|---|---|
-| Main thread / orchestrator | Stage routing, scope, plan, executor prompts, write-set boundaries, monitoring, integration, conflict resolution, final verification, user communication | Implement the same scope assigned to an executor while that executor is working |
-| Executor subagent | Assigned audit, mapping, test, implementation, probe, or review task | Expand scope, edit outside assigned paths, revert other agents, decide final acceptance, communicate completion to the user |
+| Main thread / orchestrator | Delivery Anchor decision, subordinate stage routing, frozen scope/TOS, executor prompts, write-set boundaries, monitoring, integration, conflict resolution, final verification, user communication | Implement the same delegated scope while its executor works; self-accept a contract/risk/test expansion at any time |
+| Executor subagent | Assigned anchor gap audit, mapping, finite test obligation, implementation, probe, or review task | Add test obligations, expand the Delivery Anchor, edit outside assigned paths, revert other agents, decide final acceptance, communicate completion to the user |
 
 ## Execution Modes
 
@@ -28,7 +28,7 @@ Choose the lightest mode that preserves correctness:
 | Direct execution | Tiny task, no useful split, local blocker, subagents unavailable, or merge risk exceeds value | Execute locally and record the reason if the task is non-trivial |
 | Read-only executor | Requirements audit, code mapping, test review, diff review, risk scan, or external-behavior check | Delegate the investigation, then wait or do only non-overlapping orchestration work |
 | Worker executor | A module, layer, test file, probe, or fixture can be edited independently | Assign exact read/write boundaries and pause same-scope implementation locally |
-| Adversarial executor | Security, authorization, protocol, migration, concurrency, weak tests, or high-cost failure risk | Ask for counterexamples, missed cases, and evidence gaps; keep final judgment in main thread. For adversarial-tier modules, the attack executor reads only the contract, never the implementation |
+| Adversarial executor | Security, authorization, protocol, migration, concurrency, weak tests, or high-cost failure risk | Run only the pre-budgeted scope and report deduplicated candidates; keep admission and final judgment in the main thread. For adversarial-tier modules, the attack executor reads only the contract, never the implementation |
 
 Use a role-isolated research/worker/check trio only when independent discovery and review materially reduce risk or when several scopes can truly progress in parallel. Ordinary bounded work may use one worker plus main-thread verification. The same executor never both implements and independently certifies one high-risk scope.
 
@@ -47,7 +47,7 @@ One session, one scope. A conversation binds to a single feature — or a single
 
 Treat an executor worktree or branch as a leased workspace for one scope, not as a disposable retry token.
 
-A writable worktree needs an orchestrator-approved inline charter, normally no more than eight lines: purpose plus accepted `AC`/existing ID and `N-ID`; one-sentence objective; exact write set; important read-only and prohibited paths; required red/green/regression or visual evidence; handoff/branch/commit expectation; and merge/no-op/blocked/discard closeout owner. Keep it in the executor prompt, task plan, or existing status surface—never a separate charter document.
+A writable worktree needs an orchestrator-approved inline charter, normally no more than eight lines: Delivery Anchor source plus current `request_gap`, assigned frozen obligation key, accepted `AC`/existing ID and `N-ID`; one-sentence objective; exact write set; important read-only and prohibited paths; required red/green/regression or visual evidence; handoff/branch/commit expectation; and merge/no-op/blocked/discard closeout owner. Keep it in the executor prompt, task plan, or existing status surface—never a separate charter document. Executors may consume assigned anchor-linked obligations but cannot add them.
 
 Do not open a writable worktree for vague work such as "investigate", "continue", "fix the remaining failures", "clean up the module", or "make progress". Those are read-only discovery or planning tasks until the orchestrator can name the target ID, write set, and evidence. If discovery needs isolation, mark the worktree `review-only` and prohibit code edits.
 
@@ -75,16 +75,17 @@ Do not launch a new same-feature executor/worktree between steps 1 and 7. If sev
 
 ## Orchestrator Procedure
 
-1. Select the workflow stage first; do not route to orchestration only because tools exist.
+1. Classify the Delivery Anchor first and select one `request_gap`; only then select the subordinate workflow stage. Do not route to orchestration because tools exist, and do not spawn writable/review work when the anchor is satisfied or no valid gap exists.
 2. Decide whether executor help changes correctness, coverage, or throughput.
 3. If writable delegation is useful, write the worktree charter first. If the objective cannot be tied to a target ID, write set, and evidence, use read-only discovery instead.
 4. If delegating, write a small execution brief:
-   - objective;
-   - target ID from the approved charter;
+   - Delivery Anchor source/current accepted delta and selected `request_gap`;
+   - objective that directly closes that gap;
+   - target ID and assigned anchor-linked frozen obligation key from the approved charter;
    - context manifest for bounded tasks (exact files to load, each with a one-line reason), or a search scope for discovery tasks (paths, globs, or subsystems the executor may search);
    - allowed write paths, or `report only`;
    - prohibited paths and behaviors;
-   - required output evidence;
+   - required output evidence and, for discovery, the frozen campaign ID plus remaining cumulative wall-clock/attempted-case/admission budget;
    - handoff location;
    - closeout rule;
    - model tier, when the platform supports it: mechanical or repetitive work → fast cheap tier; standard implementation → default tier; architecture, security, protocol, or adversarial review → strongest tier. Reviewers never below the default tier.
@@ -92,12 +93,12 @@ Do not launch a new same-feature executor/worktree between steps 1 and 7. If sev
 6. After launching executors, do not implement their assigned scope locally. The main thread may:
    - inspect state needed for coordination;
    - prepare or update the compact task plan or selected status/handoff surface;
-   - launch additional executors;
+   - launch only additional executors assigned to frozen obligations/campaign IDs and an unused primary-review, recheck, or adjudication slot;
    - review executor outputs;
    - integrate non-overlapping results;
    - run final tests and acceptance checks;
    - make tiny integration fixes after executor handoff.
-7. If executor output conflicts, the main thread resolves the conflict and may ask a reviewer/adversarial executor for a report. Do not let executors decide final acceptance.
+7. If executor output conflicts, the main thread resolves it from local evidence or consumes the one frozen independent-adjudication slot. Do not launch a chain of reviewers/adversarial executors. If the conflict remains after that report, mark the affected scope `BLOCKED`; executors never decide final acceptance.
 
 ## Executor Prompt Template
 
@@ -105,7 +106,8 @@ Do not launch a new same-feature executor/worktree between steps 1 and 7. If sev
 You are an executor in an orchestrated workflow. The main thread owns scope, integration, and final acceptance.
 
 Task: <one concrete objective>
-Target ID: <AC or existing R/EX/P, matrix batch, bug, counterexample, or approved change ID>
+Delivery Anchor / request gap: <original or accepted source ID + one unmet outcome/write/proof>
+Target ID / frozen obligation: <AC or existing R/EX/P, matrix batch, admitted counterexample, or approved change ID + proof kind>
 Context manifest (bounded tasks — load these and nothing else):
 - <file or doc path> — <why this task needs it>
 Search scope (discovery tasks — search freely inside, report anything outside):
@@ -113,13 +115,13 @@ Search scope (discovery tasks — search freely inside, report anything outside)
 May edit: <paths or "none, report only">
 Must not edit: <paths/behaviors>
 Preserve: <contracts, public behavior, tests, data shape>
-Evidence required: <red/green command, regression, screenshot, trace, or report>
+Evidence required / discovery budget: <red/green command, selected regression, screenshot, trace, or frozen campaign ID + remaining cumulative limits; no new obligations or budget>
 Handoff: <selected status/handoff surface and commit expectation>
 Closeout: <merge/no-op/blocked/discard owner>
 Return: <diff summary, commands, evidence, blockers, risks>
 ```
 
-Bounded (worker/review) executors read only the manifest plus their own write paths. Discovery executors — conflict scans, code mapping, risk scans, anti-hardcoding sampling, adversarial probing — get a declared search scope instead of a closed file list: they search freely inside it and report, rather than act on, anything found outside. Do not paste conversation history into the brief — the manifest or scope carries the context. An executor that finds its manifest or scope insufficient stops and reports what is missing; it does not silently expand its own scope.
+Bounded (worker/review) executors read only the manifest plus their own write paths. A review executor consumes the anchor-linked owning obligation/gate's single primary-review, recheck, or adjudication slot; a new executor or session cannot replay a used slot. Discovery executors — conflict scans, code mapping, risk scans, anti-hardcoding sampling, adversarial probing — consume one anchor-linked frozen campaign ID and its remaining delivery-level budget: they search inside it and report deduplicated candidates, rather than act on or create tests for them. Rerouting, another executor/session, or a renamed campaign cannot reset the cumulative counters. Do not paste conversation history into the brief — the manifest or scope carries the context. An executor that finds its manifest, scope, or budget insufficient stops and reports what is missing; it does not silently expand its own scope. The orchestrator may admit a candidate only when it reproducibly falsifies an anchor outcome and the frozen integer cap has room. Only an accepted user/authoritative-source delta may expand the Delivery Anchor; unrelated verified drift remains a change candidate.
 
 ## Output
 
@@ -132,7 +134,7 @@ Bounded (worker/review) executors read only the manifest plus their own write pa
 
 ## Stop Conditions
 
-Stop or re-plan if executor write sets overlap unsafely, an executor needs to change contracts or public behavior, executor reports contradict each other, or the main thread cannot verify executor claims with local evidence.
+Stop or re-plan if executor write sets overlap unsafely, an executor needs to change the Delivery Anchor/public behavior/frozen obligations, minimum anchor evidence cannot be produced within the cumulative budget, a known unadmitted anchor-falsifying blocker remains, or the main thread cannot verify claims needed for the selected anchor gap. One anchor-relevant conflict may consume the frozen adjudication slot; a remaining conflict is `ANCHOR-BLOCKED`, not permission for another executor. Normal limit exhaustion closes that campaign as `DISCOVERY-CLOSED` and does not prevent already admitted obligations from continuing. Unanchored executor concerns are follow-up and cannot launch another executor loop.
 
 Stop instead of spawning another worktree if a prior same-feature worktree/branch is dirty, unmerged, lacks a handoff, or has selected-status evidence that has not been reconciled.
 

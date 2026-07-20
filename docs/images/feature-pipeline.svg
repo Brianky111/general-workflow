@@ -1,6 +1,6 @@
 <svg width="760" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img">
 <title>general-workflow 精简实现主管线</title>
-<desc>以原始来源、结构化需求和 BDD 形成紧凑合同，经过一次冷读后达到合同 READY 并冻结；随后绑定现有生产 owner、真实运行入口和既有测试归宿，形成 EXECUTION READY 计划，并在同一轮完成真实 SUT 红测、实现、装配与回归验证。专用接口、探针、完整矩阵和独立审计只由具体风险触发。</desc>
+<desc>不可改写的原始请求与明确接受的变更组成 Delivery Anchor。每次循环先判断原始需求是否已通过真实生产入口完成；满足则立即停止，未满足时只选择一个 source-backed request_gap。结构化需求、BDD、有限 TOS、实现与门禁都从属于该 gap，无法映射 Anchor 的 finding 或测试不能延长交付。</desc>
 <style>
 .th{font:600 14px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
 .ts{font:400 12px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
@@ -12,25 +12,25 @@
 </style>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
-<g class="purple"><rect x="35" y="38" width="200" height="68" rx="5"/><text class="th" x="135" y="62" text-anchor="middle">紧凑行为合同</text><text class="ts" x="135" y="82" text-anchor="middle">原始来源 · 结构化需求 · BDD</text><text class="ts" x="135" y="97" text-anchor="middle">只记录实际行为与非目标</text></g>
-<g class="purple"><rect x="280" y="38" width="200" height="68" rx="5"/><text class="th" x="380" y="62" text-anchor="middle">一次冷读</text><text class="ts" x="380" y="82" text-anchor="middle">只问真实阻塞问题</text><text class="ts" x="380" y="97" text-anchor="middle">零 finding 只记 audit clean</text></g>
-<g class="green"><rect x="525" y="38" width="200" height="68" rx="5"/><text class="th" x="625" y="62" text-anchor="middle">合同 READY · 冻结</text><text class="ts" x="625" y="82" text-anchor="middle">行为清楚 · 边界明确</text><text class="ts" x="625" y="97" text-anchor="middle">不重复审批，转代码现实扫描</text></g>
+<g class="purple"><rect x="35" y="38" width="200" height="68" rx="5"/><text class="th" x="135" y="62" text-anchor="middle">Delivery Anchor</text><text class="ts" x="135" y="82" text-anchor="middle">不可改写原始来源 · accepted delta</text><text class="ts" x="135" y="97" text-anchor="middle">唯一交付范围权威</text></g>
+<g class="purple"><rect x="280" y="38" width="200" height="68" rx="5"/><text class="th" x="380" y="62" text-anchor="middle">第一判断 · 原始需求完成？</text><text class="ts" x="380" y="82" text-anchor="middle">真实生产结果 · 最低可信证据</text><text class="ts" x="380" y="97" text-anchor="middle">满足即停；否则一个 request_gap</text></g>
+<g class="green"><rect x="525" y="38" width="200" height="68" rx="5"/><text class="th" x="625" y="62" text-anchor="middle">ANCHOR-UNMET · READY</text><text class="ts" x="625" y="82" text-anchor="middle">只投影当前 gap 的需求 / BDD</text><text class="ts" x="625" y="97" text-anchor="middle">无 gap 不得进入下游阶段</text></g>
 <line class="arr" x1="235" y1="72" x2="270" y2="72" marker-end="url(#arrow)"/><line class="arr" x1="480" y1="72" x2="515" y2="72" marker-end="url(#arrow)"/>
 
 <line class="arr" x1="625" y1="106" x2="625" y2="146" marker-end="url(#arrow)"/>
 <g class="purple"><rect x="525" y="156" width="200" height="76" rx="5"/><text class="th" x="625" y="180" text-anchor="middle">代码现实与复用</text><text class="ts" x="625" y="200" text-anchor="middle">N-ID · 当前 owner · 真实入口</text><text class="ts" x="625" y="216" text-anchor="middle">既有测试归宿 · fixtures/helpers</text></g>
-<g class="purple"><rect x="280" y="156" width="200" height="76" rx="5"/><text class="th" x="380" y="180" text-anchor="middle">EXECUTION READY 计划</text><text class="ts" x="380" y="200" text-anchor="middle">精确写集 · 复用动作 · 命令</text><text class="ts" x="380" y="216" text-anchor="middle">稀疏行为→证明映射</text></g>
-<g class="purple"><rect x="35" y="156" width="200" height="76" rx="5"/><text class="th" x="135" y="180" text-anchor="middle">真实 SUT 红测</text><text class="ts" x="135" y="200" text-anchor="middle">复用 runner / suite / fixture</text><text class="ts" x="135" y="216" text-anchor="middle">wrong-SUT / 意外绿则回退</text></g>
+<g class="purple"><rect x="280" y="156" width="200" height="76" rx="5"/><text class="th" x="380" y="180" text-anchor="middle">ANCHOR-LINKED PLAN · 有限 TOS</text><text class="ts" x="380" y="200" text-anchor="middle">每行引用 request_gap · 精确写集</text><text class="ts" x="380" y="216" text-anchor="middle">无引用义务无效，不可阻塞</text></g>
+<g class="purple"><rect x="35" y="156" width="200" height="76" rx="5"/><text class="th" x="135" y="180" text-anchor="middle">只消费 Anchor-linked PENDING</text><text class="ts" x="135" y="200" text-anchor="middle">真实 SUT · 复用既有测试归宿</text><text class="ts" x="135" y="216" text-anchor="middle">意外绿可 no-op；不另找红测</text></g>
 <line class="arr" x1="525" y1="194" x2="490" y2="194" marker-end="url(#arrow)"/><line class="arr" x1="280" y1="194" x2="245" y2="194" marker-end="url(#arrow)"/>
 
 <line class="arr" x1="135" y1="232" x2="135" y2="272" marker-end="url(#arrow)"/>
-<g class="purple"><rect x="35" y="282" width="200" height="76" rx="5"/><text class="th" x="135" y="306" text-anchor="middle">修改现有生产 owner</text><text class="ts" x="135" y="326" text-anchor="middle">最小转绿 · 绿后重构</text><text class="ts" x="135" y="342" text-anchor="middle">禁止未注册 V2 / 平行 harness</text></g>
+<g class="purple"><rect x="35" y="282" width="200" height="76" rx="5"/><text class="th" x="135" y="306" text-anchor="middle">修改现有生产 owner</text><text class="ts" x="135" y="326" text-anchor="middle">每批写入直接关闭 request_gap</text><text class="ts" x="135" y="342" text-anchor="middle">禁止未注册 V2 / 平行 harness</text></g>
 <g class="purple"><rect x="280" y="282" width="200" height="76" rx="5"/><text class="th" x="380" y="306" text-anchor="middle">装配与回归</text><text class="ts" x="380" y="326" text-anchor="middle">真实 route / registry / DI</text><text class="ts" x="380" y="342" text-anchor="middle">目标测试 · wiring · regression</text></g>
-<g class="green"><rect x="525" y="282" width="200" height="76" rx="5"/><text class="th" x="625" y="306" text-anchor="middle">完成与一次收口</text><text class="ts" x="625" y="326" text-anchor="middle">代码与证据优先</text><text class="ts" x="625" y="342" text-anchor="middle">pause / handoff / closeout 才更新状态</text></g>
+<g class="green"><rect x="525" y="282" width="200" height="76" rx="5"/><text class="th" x="625" y="306" text-anchor="middle">ANCHOR-SATISFIED · 强制停止</text><text class="ts" x="625" y="326" text-anchor="middle">原始结果先完成 · 从属证据闭合</text><text class="ts" x="625" y="342" text-anchor="middle">不再 review / red / discovery</text></g>
 <line class="arr" x1="235" y1="320" x2="270" y2="320" marker-end="url(#arrow)"/><line class="arr" x1="480" y1="320" x2="515" y2="320" marker-end="url(#arrow)"/>
 
-<g class="amber"><rect x="35" y="416" width="690" height="72" rx="5"/><text class="th" x="380" y="440" text-anchor="middle">仅由具体风险触发扩写</text><text class="ts" x="380" y="460" text-anchor="middle">公共/外部兼容 · 不可逆迁移 · 安全合规 · 并发/复杂状态机 · 跨 owner · 正式审计</text><text class="ts" x="380" y="477" text-anchor="middle">按风险增加接口、探针、矩阵或独立审查；不恢复整套文档流水线</text></g>
-<path class="arr dash" d="M625 156 C690 132 700 132 700 106" marker-end="url(#arrow)"/><text class="ts lg" x="694" y="129" text-anchor="end">发现实质边界风险才扩写</text>
+<g class="amber"><rect x="35" y="416" width="690" height="72" rx="5"/><text class="th" x="380" y="440" text-anchor="middle">只有 Anchor-linked 风险触发有限扩写</text><text class="ts" x="380" y="460" text-anchor="middle">公共/外部兼容 · 不可逆迁移 · 安全合规 · 并发/复杂状态机 · 跨 owner · 正式审计</text><text class="ts" x="380" y="477" text-anchor="middle">理论 finding / coverage / mutant 无法映射原始需求时只进 follow-up，不衍生红测</text></g>
+<path class="arr dash" d="M625 156 C690 132 700 132 700 106" marker-end="url(#arrow)"/><text class="ts lg" x="694" y="129" text-anchor="end">只回到同一个 anchor gap</text>
 
 <g class="purple"><rect x="35" y="526" width="10" height="10" rx="2"/></g><text class="ts lg" x="53" y="535">连续交付步骤</text>
 <g class="green"><rect x="162" y="526" width="10" height="10" rx="2"/></g><text class="ts lg" x="180" y="535">READY / 完成</text>

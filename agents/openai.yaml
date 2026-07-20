@@ -1,7 +1,7 @@
 interface:
   display_name: "General Workflow"
-  short_description: "Implementation-first BDD/TDD with existing-code reuse"
-  default_prompt: "Use $general-workflow to freeze the smallest sufficient behavior contract, reuse the repository's real code and test paths, and continue through implementation and verification without unnecessary document gates."
+  short_description: "Original-request-anchored delivery with finite tests"
+  default_prompt: "Use $general-workflow to treat my original request plus accepted deltas as the Delivery Anchor, first decide whether it is already complete through the real production path, and only when one concrete request_gap remains use concise BDD, existing-code reuse, finite anchor-linked tests, implementation, and verification to close it; stop immediately when the anchor is satisfied."
 
 policy:
   allow_implicit_invocation: true
