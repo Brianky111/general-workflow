@@ -2,52 +2,55 @@
 
 ## Purpose
 
-Define the full vertical-slice behavior the code must satisfy before implementation begins. "Interface" includes user interaction, runtime schemas, APIs/events, state transitions, and cross-feature effects; it is not only an HTTP signature.
+Document a public or high-risk boundary only when the lean core contract is not sufficient. An ordinary feature's durable source, structured requirement, and BDD examples already form its behavior contract.
 
 ## Entry Conditions
 
-- Requirements are accepted or have no blocking intent questions.
-- The BDD map passed its gate and has no stale or unapproved Rule/Example.
-- No current contract exists, or the contract does not cover required scenarios.
+Create or extend a dedicated interface contract only when at least one risk applies:
+
+- public API, event, SDK, file format, or external compatibility changes;
+- an unknown external protocol needs probes, fixtures, retry, or failure semantics;
+- a migration or irreversible data effect needs before/after and rollback rules;
+- security, privacy, compliance, payment, or another high-cost boundary needs explicit review;
+- concurrency, idempotency, distributed consistency, or a complex state machine needs invariants;
+- shared schemas, events, or state cross feature/team/owner boundaries.
+
+Repository age, multiple internal modules, or a desire to show every layer is not an entry condition. When no trigger exists, keep changed interface details inside the core contract or code-native schema and return to the READY check.
 
 ## Actions
 
-1. Define the end-to-end user flow and every applicable UI state: loading, empty, success, validation, permission denied, network/server error, retry, disabled/in-flight, and duplicate submission.
-2. Define public behavior: commands, API endpoints, events, files, and runtime schemas shared across frontend/backend or service boundaries. Make units, casing, enums, nullability, versioning, and error forms explicit.
-3. Define domain state machines, legal/illegal transitions, data meanings, validation rules, and error behavior.
-4. Define cross-feature ownership: which feature owns each state change or event, which features consume it, expected idempotency, and which downstream effects are synchronous or eventually consistent.
-5. Add a data model table: `| 字段 | 中文含义 | 示例值 | 来源 | 必填 |`, followed by one complete JSON example.
-6. For every method or message, answer four fixed questions: purpose, input example, output example, and failure behavior with explicit loud/silent declaration.
-7. Write invariants as `P1`, `P2` statements that hold for all inputs; enhanced/adversarial modules must have them.
-8. Map every accepted `S/E/B` scenario and `R/EX` behavior example across UI -> contract -> application/use case -> domain -> adapter/persistence -> downstream feature effect, and include one walkthrough using the same example data. Cite the `D` decision IDs each clause implements.
-9. Add glossary increments for new domain terms.
-10. If external systems are involved, read `04-fixtures-and-probes.md` before inventing examples.
-11. For large features, read `00-feature-grading-and-splitting.md`, then split module contracts under `interfaces/<module>.md` and keep `01-接口.md` as the index.
+Document only the affected boundary:
+
+1. State the relevant acceptance IDs and changed observable behavior.
+2. Define changed commands, endpoints, events, files, or runtime schemas with units, casing, enums, nullability, versions, and error forms where compatibility depends on them.
+3. Define only the applicable state transitions, ownership, idempotency, timing, migration, rollback, or security invariants.
+4. Use one representative input/output/failure example for each changed public method or message; do not duplicate unchanged code-native definitions.
+5. Link producer and consumer evidence, fixtures, or probes when an external/shared boundary exists.
+6. Record the implementation write boundary and any cross-owner responsibility needed to prevent scope drift.
+7. Reuse the core acceptance IDs. Do not create a second full behavior map or repeat the same example through every absent layer.
+
+For external-system uncertainty, read `04-fixtures-and-probes.md`. Split the contract only when independent owners or reviewers require distinct approval boundaries or the risk-specific material cannot fit the document budget.
+
+## Revision Shape
+
+Write a delta by default: changed clauses, compatibility impact, preserved behavior, and required verification. Keep the previous accepted contract as history.
+
+Write a complete snapshot only when public compatibility tooling, a consumer-facing specification, formal audit, or regulation requires an authoritative full version. Record that exception and why a delta is insufficient.
+
+## Contract Freeze
+
+Run the targeted `03-ambiguity-audit.md` check. A clean audit plus a faithful restatement of work the user already authorized freezes the contract without another confirmation.
+
+Use the one allowed human pause only when the interface introduces a real unresolved choice about user-visible behavior, compatibility, data meaning, migration, security, irreversible effects, or ownership. Combine that decision with any other pre-code questions; do not add a contract-review ceremony after the same answer is recorded.
+
+Once the triggered risk is resolved, apply the READY check in `00-feature-grading-and-splitting.md` and continue into planning, tests, and implementation in the same run. A missing dedicated interface file is not a blocker when no trigger applies.
 
 ## Output
 
-Create or update the active round's `docs/<module>/<feature>/<round>/01-接口.md` and optional `interfaces/*.md`, written in Chinese. For lightweight features, write the contract as a module-sectioned part of `00-功能.md` instead of a separate file. A revision round writes the complete contract after the change, never a delta.
-
-## Contract Gate
-
-The contract is a document-PR human gate. Before user review, always route the draft through `03-ambiguity-audit.md` — the audit is an unconditional second net, not a fallback for known problems. Merge preconditions: the audit report is attached and the `## 待确认反问` section is empty.
-
-For lightweight features this gate merges with the planning gate into one document-PR review of `00-功能.md` (see `00-feature-grading-and-splitting.md`); run the audit and checklist once against that file.
-
-Offer the user this review checklist:
-
-1. Does every accepted `R/EX` behavior map to a contract clause without changing its Given/When/Then meaning?
-2. Is every field's meaning understandable in plain language?
-3. Does the example data survive the scenario walkthrough without broken links or missing fields?
-4. Are all failures loud? Are declared silent cases justified and forbidden side effects preserved?
-5. Do the invariants read as bottom lines that hold for any input?
-6. Do raw external-system fields appear only in adapter-layer docs?
-7. Do frontend and backend agree on fields, units, casing, enums, errors, and loading/retry semantics through a runtime-checkable contract?
-8. Are state ownership, cross-feature events, idempotency, and downstream effects explicit?
-9. Are existing-code conflicts and overlaps clearly explained: current behavior, target behavior, risk, and why the decision is deferred to planning?
-
-Merge freezes the contract. Code stubs are generated after the planning gate — `06-planning.md` owns that instruction; CI owns doc-vs-stub signature comparison. Questions raised before the freeze go to the question list; questions raised after the freeze go to `10-change-protocol.md`.
+- Ordinary feature: no separate output; keep the changed boundary in the core contract or authoritative code schema.
+- Risk-triggered feature: one focused interface section or `01-接口.md`, within the default two-artifact/160-line budget unless the named exception justifies more.
+- Revision: a delta unless compatibility or audit requires a complete snapshot.
 
 ## Stop Conditions
 
-Stop for user review when contract choices affect product behavior, user-visible text, external compatibility, or data semantics, and always at the contract gate before planning or implementation. A method without example data is incomplete; an old project without a concrete conflict report is incomplete.
+Stop only for an unresolved material interface decision or missing real-world evidence that makes the boundary unsafe to freeze. Missing exhaustive UI states, four-question forms, full-stack walkthroughs, or a document-PR gate do not block ordinary implementation.

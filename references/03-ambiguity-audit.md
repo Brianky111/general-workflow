@@ -2,42 +2,49 @@
 
 ## Purpose
 
-Catch silent assumptions before human approval.
+Catch material silent assumptions with the smallest review that can change a decision. A clean audit is a short evidence note, not a separate report or human gate.
 
 ## Entry Conditions
 
-- Requirements, BDD behavior map, or interface draft is ready for a gate.
-- The author claims there are no pending questions.
-- A reviewer suspects missing scenarios, undefined terms, or invented details.
+- The core contract is about to be frozen.
+- A changed clause affects a named compatibility, migration, security, concurrency/state, or ownership risk.
+- A reviewer has a concrete reason to suspect a missing behavior or invented detail.
 
-## Auditor Setup
+## Audit Scope
 
-Use an independent pass when possible. The auditor should read only the draft documents, upstream docs, glossary, shared models, and raw requirements. Do not give the auditor the author's private reasoning or implementation code.
+Read the durable raw source, structured requirement, BDD examples, and only the shared models or existing-code evidence relevant to the changed boundary. Do not require a full independent pass for ordinary low-risk work.
 
-## Audit Checklist
+Use an independent reviewer when public/external compatibility, irreversible migration, security/privacy/compliance, complex concurrency/state, cross-owner shared contracts, or formal audit requires separation of duties. Otherwise the author may perform one labeled cold-read in the same run.
 
-- Every explicit raw requirement appears in the structured draft.
-- Terms are defined and consistent with `glossary.md`.
-- Normal, error, and boundary scenario categories are not silently empty; applicable permission, illegal-state, concurrency/duplicate, dependency-failure, retry/recovery, refresh/persistence, UI-state, and cross-feature cases are accounted for.
-- Every requirement scenario maps to a BDD Rule/Example and every example traces back; no rule exists only because the implementation would be convenient.
-- Given states relevant preconditions, When contains one business trigger, and Then states observable outcomes plus forbidden side effects where applicable.
-- Branches are closed: if a case is mentioned, its behavior is specified.
-- Vague quantities or degree words are quantified or questioned.
-- Defaults, nulls, limits, and extreme inputs are defined.
-- Draft statements do not conflict with each other or with shared models.
-- Frontend/backend schemas agree on units, casing, enums, nullability, errors, and retry semantics; cross-feature ownership and event timing are not implicit.
-- Every behavior traces to raw requirements, scenario IDs, or decision records; untraceable behavior becomes a question.
-- Every `D` decision record lands in the draft: a behavior-affecting decision with no corresponding clause or scenario is a finding, not a formality.
+## Targeted Checks
+
+- Every explicit requested behavior is present and no observable behavior was invented.
+- Each acceptance behavior has a concrete example and credible verification approach.
+- Terms, fields, errors, defaults, limits, and forbidden side effects are precise where they affect this change.
+- Changed frontend/backend or producer/consumer schemas agree where a shared boundary exists.
+- State/event ownership, compatibility, migration, security, concurrency, and recovery are explicit only when triggered by the feature's actual risk.
+- No unresolved choice can materially alter user-visible behavior, data meaning, irreversible effects, or ownership.
+
+Check applicable risks; do not write an `N/A` defense for every theoretical category.
 
 ## Triage
 
-- Document defects go back to the drafting agent: missing sections, missing examples, broken template shape.
-- True ambiguity goes into `## 待确认反问` with location, options, consequences, and recommendation.
+- Fix document-shape or wording defects directly when they do not change behavior.
+- Route a true blocking choice to `03-requirements-clarification.md` in the single batched pause.
+- Record a non-blocking technical assumption in the affected clause only when it constrains implementation.
 
 ## Output
 
-Attach an audit report with document-position evidence. No evidence means not reviewed.
+When clean, add one short note to the core contract, PR/task, or chosen status source:
+
+```text
+Ambiguity audit: clean @ <commit/date/source>; no blocking behavior finding.
+```
+
+Do not create or attach a separate zero-finding report. When findings exist, record only location, material consequence, and resolution; a dedicated report is justified only by an independent-review or formal-audit risk trigger.
+
+A clean result does not require another user confirmation when the contract faithfully restates already authorized work. Apply READY and continue into planning, tests, and implementation in the same run.
 
 ## Stop Conditions
 
-Do not pass the gate until audit is complete and pending questions are answered or explicitly waived by the human reviewer.
+Stop only for an unresolved material finding. Missing exhaustive category proof or a standalone audit report is not a blocker.

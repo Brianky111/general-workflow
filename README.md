@@ -1,30 +1,33 @@
 # General Workflow Skill
 
-This repository develops the `general-workflow` Codex skill: a staged, document-governed workflow for discovering behavior with BDD and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
+This repository develops the `general-workflow` Codex skill: an implementation-forward, evidence-driven workflow for discovering behavior with BDD and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
 
 The skill helps Codex:
 
 - detect the current workflow stage from repository evidence;
 - load only the reference document needed for that stage;
-- preserve requirements, contracts, plans, tests, and evidence;
+- freeze the smallest sufficient behavior contract, then continue into code in the same run when no material decision is blocked;
+- treat documentation as a conditional decision/risk tool rather than a mandatory `00…99` checklist;
 - distinguish product/module/feature/use-case/task levels and map one feature across its full-stack code homes;
-- turn scenario rosters into BDD Rules, concrete Given/When/Then Examples, and explicit Questions before interface design;
-- use a requirement-to-test matrix and behavior-sized red-green-refactor loops;
+- turn concise requirements into BDD Rules and concrete Given/When/Then examples, asking only questions that change observable behavior;
+- bind existing-code plans and tests to the current production owner, real runtime/composition-root path, and nearest existing test suite;
+- use a sparse behavior-to-proof map and behavior-sized red-green-refactor loops, expanding to a full matrix only for named risks;
+- reject red tests against test-local surrogates, unregistered `V2` implementations, or parallel test harnesses;
 - prove frontend/backend contracts, cross-feature effects, user flows, and final Definition of Done;
 - keep the main conversation as the orchestrator while subagents act as scoped executors;
 - handle refactors, implementation, review, verification, and change recovery without reading the full source workflow every time.
 
 ## Workflow overview
 
-Every request enters through the progress router, which scans repository evidence and routes to one of four paths. Refactors never become features; similar requirements are triaged (merge / revise / new) before any folder is created:
+Every request enters through the progress router, which scans repository evidence and first evaluates a positive `READY` predicate. Refactors never become features; similar requirements are triaged (merge / revise / new) before a second behavior source is created:
 
 ![请求入口与路由](docs/images/routing-map.svg)
 
-A feature request runs the single-feature pipeline (incremental mode). Amber boxes are human gates; after every stage the agent returns to the router. In blueprint mode the first three segments run as batches over all features with three batch reviews before parallel implementation:
+A normal feature request uses the lean incremental pipeline. Raw source, structured behavior, and BDD examples form the default compact contract; one cold read records only actual findings. Once behavior, changed boundaries, the production write seam, and credible verification are clear, planning, red, and implementation can continue in the same run. Blueprint batching is an explicit opt-in for shared high-risk freezes rather than the new-project default:
 
 ![单功能主管线](docs/images/feature-pipeline.svg)
 
-The numbered document set (`00-…` to `99-…`) doubles as the user's dashboard: requirement docs show whether intent was captured, contract/plan docs show what will be built, the Feature Test Matrix in `02-测试矩阵.md` shows each scenario across Domain/Use Case/frontend/adapter/contract/feature-integration/cross-feature/E2E layers and resolves every test ID to execution evidence, and `09-完整性审计.md` decides whether the assembled feature is genuinely complete.
+Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordinary work does not create empty conflict reports, all-`N/A` matrices, audit reports with no findings, or multiple status mirrors. Dedicated interface, test-matrix, integration, and completeness artifacts appear only when public compatibility, external protocols, migrations, security, concurrency/state-machine risk, cross-owner behavior, audit obligations, or multi-owner handoff justify them.
 
 ## Repository layout
 
@@ -58,8 +61,9 @@ The skill uses progressive disclosure:
 
 1. Start from `SKILL.md`.
 2. Always read `references/00-progress-router.md` first.
-3. Select the current stage from repository evidence.
-4. Load only the reference file needed for that stage.
+3. Evaluate whether the compact contract and repository evidence make the work `READY` for code.
+4. Load only the reference file needed for the next material decision or execution step.
+5. Do not route backward solely because an optional artifact or approval timestamp is absent.
 
 The orchestration model is explicit:
 
@@ -74,14 +78,16 @@ The orchestration model is explicit:
 |---|---|
 | `references/00-progress-router.md` | Choose the current workflow stage and next reference. |
 | `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
-| `references/00-pacing-mode.md` | Choose blueprint or incremental pacing; blueprint batch gates. |
-| `references/00-refactor-intake.md` | Reconfirm requirements/contracts before refactor work. |
-| `references/03-bdd-example-mapping.md` | Map requirements into observable Rules, Examples, and Questions before contracts. |
-| `references/06-planning.md` | Build implementation plans and executor scopes. |
-| `references/06-test-strategy.md` | Build the Feature Test Matrix coverage view and executable evidence register. |
-| `references/08-implementation.md` | Implement against frozen contracts and red tests. |
+| `references/00-pacing-mode.md` | Default to incremental delivery; opt into blueprint only for justified shared freezes. |
+| `references/00-refactor-intake.md` | Establish existing behavior and green-test protection without backfilling workflow docs. |
+| `references/03-bdd-example-mapping.md` | Map concise requirements into observable Rules and concrete Examples. |
+| `references/05-conflict-scan.md` | Find the real production owner/runtime path and reusable code and tests. |
+| `references/06-planning.md` | Build the smallest executable, reuse-first implementation plan. |
+| `references/06-test-strategy.md` | Map behavior sparsely to existing test homes and risk-triggered wiring evidence. |
+| `references/07-red-tests.md` | Prove an admissible red against the approved production node. |
+| `references/08-implementation.md` | Modify the selected production owner and reject shadow implementations. |
 | `references/09-review-and-verification.md` | Verify behavior, evidence, ownership, and acceptance. |
-| `references/09-feature-completeness.md` | Audit the test matrix and Definition of Done before closeout. |
+| `references/09-feature-completeness.md` | Run a final independent evidence audit for governed or high-risk work. |
 
 ## Validate
 
@@ -96,7 +102,7 @@ $env:PYTHONUTF8 = 1   # required on GBK-default Windows: quick_validate.py reads
 python "<path-to-skill-creator>\scripts\quick_validate.py" (git rev-parse --show-toplevel)
 ```
 
-`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, and that every reference is reachable from the router. Run it before committing changes to `SKILL.md` or `references/`.
+`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that the READY/document-budget and N-ID/SUT-binding policy anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
 
 `git diff --check` may print CRLF conversion warnings on this Windows checkout; distinguish those from real whitespace errors.
 

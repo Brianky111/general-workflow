@@ -2,17 +2,27 @@
 
 ## Purpose
 
-Arrange requirements physically along the business hierarchy — product, module, feature, use case, sub-feature, task — and map every feature to one explicit vertical slice across the applications it touches. Each add/remove/modify round on a feature gets its own numbered document set, archived on completion, so the feature's history stays navigable and the active work is always one directory.
+Use the business hierarchy — product, module, feature, use case, sub-feature, task — only to clarify ownership, acceptance, or independent delivery. Map behavior to the repository's existing vertical slice and avoid creating folders, rounds, or duplicate code homes solely to satisfy a taxonomy.
 
 ## Contents
 
-- Canonical layout and change rounds
+- Lean layout, optional governed layout, and change rounds
 - Level mapping and use-case splitting
 - Placement rules
 - Vertical feature slice and code layout
 - Output and stop conditions
 
-## Canonical Layout
+## Lean Layout
+
+Prefer the repository's existing task/spec and code layout. When a durable feature document is useful, the ordinary shape may be only:
+
+```text
+docs/<module>/<feature>/00-功能.md   # source link + concise requirements + inline BDD + compact plan/evidence
+```
+
+Add `fixtures/`, interface/conflict appendices, a test matrix, round directories, archives, or one status source only when their named risk trigger in `00-feature-grading-and-splitting.md` applies. The following is an expanded governed layout, not a required template:
+
+## Expanded Governed Layout
 
 ```text
 docs/
@@ -23,7 +33,7 @@ docs/
 └── <module>/                        # 大功能模块（目录内有 00-模块概述.md 即为模块目录）
     ├── 00-模块概述.md                # 模块职责、功能清单、跨功能共享决策
     └── <feature>/                   # 功能特性
-        ├── status.json              # 功能级：activeRound、最新冻结引用、模块状态
+        ├── status.json              # 可选：多 owner / 长期 handoff 时选用的唯一状态源
         ├── fixtures/                # 功能级、跨轮共享：contract / counterexamples / generated
         ├── <NN>-<round>/            # 变更轮：01-初建、02-<变更slug>…（进行中的一轮）
         │   ├── 00-项目识别.md
@@ -31,7 +41,7 @@ docs/
         │   ├── 00-整理后需求.md      # 用例索引：编号场景清单
         │   ├── 00-行为示例.md        # BDD Rule / Example / Question 与 Given-When-Then
         │   ├── use-cases/           # 使用场景（触发拆分后，每用例一档）
-        │   ├── 01-接口.md            # 子功能索引（每轮为完整合同，非增量）
+        │   ├── 01-接口.md            # 可选：风险触发的接口 delta 或所需完整快照
         │   ├── interfaces/<sub>.md  # 子功能合同
         │   ├── 01-代码冲突与重叠.md
         │   ├── conflicts/<sub>.md
@@ -44,14 +54,14 @@ docs/
             └── <NN>-<round>/        # 验收通过后整轮移入
 ```
 
-Path convention: round documents are written as `docs/<module>/<feature>/<round>/...` throughout these references, where `<round>` always means the feature's **active round**. `fixtures/` and `status.json` sit at feature level across rounds. Single-module or tiny projects may flatten the module level; set thresholds at kickoff.
+Path convention: where a project already uses rounds, references write them as `docs/<module>/<feature>/<round>/...`, with `<round>` meaning the active governed round. Projects on the lean path may use their existing issue/spec location or one compact feature file and omit rounds, fixtures, and status files entirely.
 
 ## Change Rounds
 
-- Every add/remove/modify of a feature opens a new round directory `<NN>-<round>` (two-digit sequence plus a short slug; the first is `01-初建`) holding its own numbered doc set. One round, one doc set — the one-requirement-one-doc-set instinct applied per change.
-- Rounds apply to requirement/contract-level work: the initial build, level-A changes, and similarity-triage revisions. Level B (bug fix / counterexample repayment) and level C (display tweaks) stay inside the active round — or, when no round is active, record into feature-level `fixtures/counterexamples/` and `status.json` without opening one.
-- Each round's `00-行为示例.md` and `01-接口.md` are the **complete** accepted behavior map and contract after the change, never deltas. A new level-A round copies both forward, then revises requirements -> BDD examples -> contract in order; the newest archived round holds current truth.
-- On feature-completeness acceptance (terminal state), move the round directory into `archive/` and update `status.json`'s `activeRound` to empty. Archived rounds are read-only history; corrections open a new round.
+- Do not open a round for every change. Default to a delta in the existing authoritative issue/contract. Open a governed round only for a public compatibility snapshot, formal audit/regulatory history, irreversible migration, or long-running independent-owner approval boundary.
+- Bug fixes, counterexample repayment, display tweaks, and ordinary behavior changes stay in the current source of truth. Do not create `fixtures/` or `status.json` if the project does not already need them.
+- A round records changed acceptance clauses, BDD examples, boundary deltas, and evidence. Copy a complete post-change contract only when tooling, external consumers, or formal audit requires one authoritative snapshot; otherwise never copy unchanged prose forward.
+- When governed rounds are used, archive one only after its required risk evidence passes and clear `activeRound` in the one selected status source. Archived rounds are read-only history; later changes create a delta or another governed round according to the same triggers.
 - `fixtures/` never moves with a round: counterexamples are append-only permanent regression assets, and tests reference their paths across rounds.
 
 ## Level-by-Level Mapping
@@ -60,11 +70,11 @@ Path convention: round documents are written as `docs/<module>/<feature>/<round>
 |---|---|---|
 | 产品 / 系统 Product | repo-level docs | `architecture.md`, `requirements-index.md`, `glossary.md`, `domain-models.md` |
 | 大功能模块 Module | **directory** | `docs/<module>/` with `00-模块概述.md`; one roster section in `requirements-index.md` |
-| 功能特性 Feature | **directory** | `docs/<module>/<feature>/` — feature-level `status.json` and `fixtures/`, plus change rounds |
-| 变更轮 Round | **directory** | `docs/<module>/<feature>/<NN>-<round>/` — one doc set per add/remove/modify; archived on completion |
-| 使用场景 Use Case | **file** (split on size) | `S/E/B` roster in `00-整理后需求.md`, BDD `R/EX` map in `00-行为示例.md`; split detailed scenarios/examples into `use-cases/UC<n>-<slug>.md` when triggers fire, keeping both indexes authoritative |
-| 子功能 Sub-feature | **file** (split on size) | a module section of the round's `01-接口.md`; split into `interfaces/<sub>.md` per the contract split triggers |
-| 具体任务 Task | **entry** | a behavior-sized red/green/refactor batch: defined in `02-规划.md`, covered in `02-测试矩阵.md`, and tracked in `status.json` plus `99-进度.md` |
+| 功能特性 Feature | existing issue/spec or optional directory | one authoritative compact contract; add status/fixtures/rounds only when triggered |
+| 变更轮 Round | optional directory | only for governed history or independent approval; stores a delta unless a full snapshot is required |
+| 使用场景 Use Case | inline section or split file | lean `AC`/Given-When-Then examples; preserve existing S/E/B or R/EX IDs rather than adding a parallel scheme |
+| 子功能 Sub-feature | existing code/contract section | split only for independent ownership, compatibility, or review boundaries |
+| 具体任务 Task | plan/handoff entry | behavior-sized red/green/refactor batch bound to `N-ID`, an existing test home, and evidence; durable status is optional and singular |
 
 ## Use-Case Splitting
 
@@ -72,23 +82,23 @@ Mirror the contract-split idiom: keep use cases inline in `00-整理后需求.md
 
 - more than ~6 scenario groups, or the doc is too long to review in one pass;
 - use cases with distinct actors or acceptance rhythms;
-- multiple agents drafting or clarifying use cases in parallel.
+- independent owners need separate approval or handoff boundaries.
 
-After splitting, `00-整理后需求.md` stays the requirement index and `00-行为示例.md` stays the Rule/Example index. Detailed scenarios and Given/When/Then examples live in the owning use-case file and are linked, never copied. The user confirmation gate confirms both indexes together.
+After splitting, keep one authoritative index and link detailed scenarios/examples from it; never copy them. Ask for confirmation only when the split introduces a material ownership or behavior decision.
 
 ## Placement Rules
 
 - A request that spans business modules, or ships in independently acceptable parts, is not one feature: split it into features under their modules before capture (`00-feature-grading-and-splitting.md`).
-- A request that is really a use case or sub-feature of an existing feature is not a new feature: similarity triage merges it into the active round, or opens a revision round on the confirmed feature (`02-requirements-capture.md`); the triage scan covers `requirements-index.md`, module overviews, and the newest round of each feature.
-- A use case that outgrows its feature — its own actors, own acceptance, own release rhythm — is promoted to a feature through similarity triage; record the move in `requirements-index.md`.
-- Every round declares its parent module (`所属模块`) and, for revision rounds, the previous round it supersedes, at the head of `00-整理后需求.md` or `00-功能.md`.
-- New modules need a `00-模块概述.md` before their first feature folder; keep it to responsibility, feature roster slice, and cross-feature shared decisions.
+- A request that is really a use case or sub-feature of an existing feature is not a new feature: similarity triage merges it into the authoritative compact contract or records a revision delta (`02-requirements-capture.md`).
+- A use case that outgrows its feature — its own actors, acceptance, owner, and release rhythm — may be promoted through similarity triage; record the move only in the roster/status source the project already uses.
+- When rounds are used, declare the parent module and prior authoritative reference at the head of the compact contract.
+- Create `00-模块概述.md` only when several features need a durable shared ownership or cross-feature decision source; a new code directory alone does not require one.
 
 ## Vertical Feature Slice and Code Layout
 
 A Feature is a user-understandable capability, not a backend folder. Give it one logical boundary and one declared home per touched application/runtime. Code is not archived per round — code homes reflect the newest accepted contract; rounds version documents and Git versions code.
 
-For a full-stack project, prefer this logical shape and adapt paths to the repository:
+For a brand-new full-stack project, the following may be a useful logical shape. In an existing repository, extend its current owners, registrations, conventions, and test homes instead of creating a parallel feature tree:
 
 ```text
 apps/
@@ -112,17 +122,16 @@ tests/e2e/<module>/<feature>/            # critical real user paths
 Backend `models/` is not a generic drawer. Put transport DTOs in `api/`, commands/results in `application/`, entities/value objects in `domain/`, persistence/external records in `infrastructure/`, and shared wire schemas in `packages/contracts/` or the repository's equivalent. A small or single-runtime project may collapse directories, but it still records where each concern lives.
 
 - Keep the docs feature path stable while code spans several declared homes: `docs/<module>/<feature>/` ↔ the same `<module>/<feature>` identity in web, API, contracts, and E2E trees.
-- The contract bridges the slice: use cases map to UI flows, schemas, API/event methods, domain rules, adapters, and downstream feature effects. The plan maps each contract clause to a concrete path and test-matrix row.
+- The compact contract bridges the slice. The plan maps each changed acceptance behavior to a stable production `N-ID`, exact existing/new path, nearest test home, and sparse proof; expand layer-by-layer traceability only for a named risk.
 - Keep dependency direction explicit: UI calls application-facing contracts; application orchestrates; domain owns legal business states; infrastructure implements ports. Neither domain nor application imports UI frameworks, ORM clients, or vendor SDKs.
 - Cross-feature shared code lives outside feature homes as a shared kernel declared in `architecture.md`, never copied between features. Shared domain definitions live in `domain-models.md`; shared runtime schemas have one code owner.
 
 ## Output
 
-- `requirements-index.md` grouped by module, with placement decisions (split / merge / promote) recorded.
-- Module directories with `00-模块概述.md`; feature folders under their modules; one active round directory per feature under change.
-- Archived rounds under `archive/` after completeness acceptance; `status.json` tracking `activeRound`.
-- The vertical-slice code-home map in `architecture.md`, including frontend, contracts, backend, adapters, and E2E locations when applicable.
+- A concise placement decision in the existing task/contract when hierarchy affects scope.
+- The repository's actual production/test anchors and ownership, not a template-generated parallel tree.
+- Optional module overviews, rounds, archives, fixtures, or one status source only when their risk/governance trigger applies.
 
 ## Stop Conditions
 
-Stop for the user when a request cannot be placed on one level, when a split or promotion changes review scope, when a feature needs an undeclared runtime/code home, or before archiving a round whose completeness evidence is incomplete.
+Stop for the user only when competing placements change observable scope, ownership, public compatibility, or independent acceptance, or before archiving a governed round whose required risk evidence is incomplete. Otherwise choose the smallest faithful placement and continue.

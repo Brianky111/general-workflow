@@ -2,80 +2,53 @@
 
 ## Purpose
 
-Initialize the project-level documents and guardrails before feature work begins.
+Establish only the project facts needed to deliver the first safe vertical slice. Kickoff must not require a complete governance blueprint before ordinary implementation can begin.
 
 ## Entry Conditions
 
 - A new repository is adopting this workflow.
-- `docs/architecture.md`, `docs/glossary.md`, governance, CI, or state files are absent.
+- The requested slice lacks essential architecture, tool, or ownership evidence.
+- A project-level risk may require a shared contract, migration, security, or governance baseline.
 
-## Actions
+## Lean Kickoff
 
-1. Create `docs/architecture.md` with:
-   - layer map: layer name, one-line responsibility, forbidden actions,
-   - dependency direction: lower layers must not know higher layers,
-   - vertical feature-slice map across frontend, shared contracts, backend, adapters, and E2E where applicable,
-   - directory tree with one-line purpose per directory.
-2. Decide layers by need, not by template. Ask:
-   - Is there an external system or third-party API? Add an adapter layer.
-   - Are there pure business rules independent of UI/external systems? Add a core layer.
-   - Are there multi-step flows? Add an orchestration layer that orders calls but does not make domain judgments.
-   - Is there a human interface? Add a frontend layer that displays and forwards, not owns business rules.
-3. Write project examples for four architecture tests:
-   - platform replacement test for adapter boundaries,
-   - paper-calculation test for core logic,
-   - script test for orchestration order,
-   - loud-failure questions for error handling.
-4. Initialize `docs/glossary.md`.
-5. Initialize `docs/requirements-index.md` as the project-level feature roster, grouped by business module per `00-business-taxonomy.md`: scope, grading, status, and a holding area for out-of-scope ideas.
-6. Decide the vertical-slice code-home template and record it in `architecture.md`: one feature identity across each touched runtime, using the full-stack example in `00-business-taxonomy.md` when applicable. Do not create a generic backend `models/` drawer; assign each model to its owning layer.
-7. Read `00-pacing-mode.md` to choose blueprint or incremental pacing and record it in `docs/workflow-state.json`.
-8. Read `00-governance-ci-hooks.md` to set document governance, CI gates, hooks, and status files (state-file shapes live in `99-status-and-evidence.md`).
-9. Walk the tuning checklist below with the user and record the answers in kickoff notes or `architecture.md`.
+Default to incremental lean pacing from `00-pacing-mode.md`. Inspect and reuse repository evidence before creating documents. For the first feature, record only what is needed to run and verify it:
 
-## Tuning Checklist
+1. runtime/language and the relevant entry points;
+2. the smallest truthful layer or vertical-slice boundary;
+3. the one-command build/test/check path when available;
+4. the durable raw requirement source and its owning feature/module;
+5. any blocking shared schema, external system, migration, security, or owner boundary.
 
-Instantiate these project-level parameters before feature work; unanswered items become silent defaults later:
+Put these facts in the feature's core contract, an existing architecture file, or the repository's normal task/PR location. Do not create `architecture.md`, `glossary.md`, `requirements-index.md`, workflow state, or governance files merely to satisfy a template.
 
-- [ ] layers: add/remove/rename per the four architecture questions
-- [ ] vertical feature-slice template: frontend, shared runtime contracts, backend layers, adapters, E2E home, and shared-kernel ownership
-- [ ] module grouping: which business modules structure the roster and the `docs/<module>/` directories, and the threshold below which a tiny project may flatten
-- [ ] change-round convention: round slug naming, and which level-B/C work may stay inside the active round instead of opening one
-- [ ] use-case split threshold: when scenario groups move from `00-整理后需求.md` into `use-cases/*.md` files
-- [ ] BDD form: Markdown Example Mapping by default; whether an executable Gherkin runner is justified, where `.feature` files live, and which artifact is authoritative
-- [ ] BDD depth: standard-path Rule/Example requirements and the minimum inline form for lightweight features
-- [ ] pacing mode: blueprint or incremental this cycle; blueprint scope goes to `requirements-index.md`
-- [ ] project identification criteria: what counts as new project / old project / new module in old project
-- [ ] glossary: seed the domain terms
-- [ ] forbidden-words list: raw external-field blacklist when external systems exist
-- [ ] test framework and one-command run (Vitest / Jest / pytest ...)
-- [ ] frontend test stack: logic/component/page tests, browser E2E, accessibility, and visual-regression tools when UI exists
-- [ ] contract-test mechanism: shared runtime schema, OpenAPI validation, or consumer-driven contracts
-- [ ] property-testing and combination tools (fast-check / hypothesis; PICT or equivalent)
-- [ ] CI platform and gate scripts (PR gates, red-replay marking, commit-scope audit, status consistency, scheduled jobs)
-- [ ] governance switches: CODEOWNERS / branch protection, or the tag-based fallback
-- [ ] validation-strength thresholds: instantiate "high-cost decisions" as a concrete project list
-- [ ] feature Definition of Done: select the applicable checklist and evidence forms from `09-feature-completeness.md`
-- [ ] examples: fill every template placeholder with this project's domain content
-- [ ] mutation testing: schedule and survival-rate requirement
-- [ ] nightly fuzz budget: duration or iterations
-- [ ] lightweight-path criteria: what counts as lightweight here
-- [ ] raw-requirement preservation: how user words/attachments enter `00-原始需求.md`; append-only or not
-- [ ] conflict-scan scope: which directories, entries, historical features, tests, and configs old-project scans must cover
-- [ ] implementation-strategy decision template: criteria for from-scratch / modify existing / reuse-and-extend / refactor-then-implement / strangler replacement
-- [ ] contract split thresholds: when `01-接口.md` splits into `interfaces/<module>.md` and when `conflicts/<module>.md` splits alongside (module count, line count, parallelism, external protocol, reuse)
-- [ ] fixture freshness cadence: per external-system change speed
-- [ ] visual-track form: screenshots / local preview / recording; visual-regression baseline management
-- [ ] question-answer channel: batch in-doc, PR comments, or chat-then-write-back — pick one and fix it
-- [ ] hooks policy: enable `core.hooksPath scripts/hooks` or not; which checks warn vs block
-- [ ] state-file policy: enable `workflow-state.json` / `status.json` or not; schema fields, status enums, and evidence-link format
-- [ ] parallelism: single serial agent, or multi-agent per module after freeze
-- [ ] initial-review strictness: small projects may drop the anti-hardcoding sample, never the evidence rule
+Apply the pre-code budget from `00-feature-grading-and-splitting.md`: at most two new artifacts, 160 nonblank lines, one human pause, and no more than 20% of expected work or 30 minutes. Name the risk exception before exceeding it.
+
+## Risk-Triggered Project Artifacts
+
+Create or extend only what a concrete risk needs:
+
+- `docs/architecture.md` when multiple runtimes, shared state, public contracts, migrations, or cross-owner boundaries need a stable project decision;
+- `docs/glossary.md` when inconsistent domain terms could change behavior or data meaning;
+- `docs/requirements-index.md` when several owners/features need scope coordination or similarity decisions must survive handoff;
+- a project status source when work is blueprint, long-running, paused, audited, or handed between owners;
+- governance/CI hooks when security, compliance, release risk, or repeated evidence drift justifies enforcement.
+
+When an architecture artifact is required, keep it focused on layer responsibilities, dependency direction, shared ownership, code homes, and forbidden cross-boundary writes. Add adapters, domain layers, orchestration, or UI layers only when the code actually needs them.
+
+## Decisions
+
+Decide reversible technical defaults without user confirmation. Ask the user only when a decision changes observable behavior, project scope, public compatibility, data meaning, security posture, irreversible migration, or ownership. A clear request to implement plus a faithful lean kickoff is already authorized.
+
+If blueprint mode is proposed, record the exact shared risk and get the one necessary approval through `00-pacing-mode.md`. Do not walk an exhaustive tuning checklist before feature work; tune BDD runners, property/mutation tools, fixture cadence, visual baselines, hooks, status schemas, or parallelism only when the requested slice triggers them.
 
 ## Output
 
-Project-level kickoff docs and guardrails, the recorded pacing mode, and the tuning checklist answers. Architecture approval freezes layer boundaries; later architecture changes use `10-change-protocol.md` level A. Then return to the router.
+- For ordinary work: no dedicated kickoff document; add the minimum project facts to the core contract or existing repository source.
+- For a triggered project risk: one focused project artifact containing the decision, evidence, owner, and reevaluation condition.
+
+Then evaluate the feature contract through `00-feature-grading-and-splitting.md`. When READY, continue into planning, tests, and implementation in the same run.
 
 ## Stop Conditions
 
-Stop for human review when layer boundaries, dependency directions, or external-system responsibilities are not obvious, and before adopting this workflow in a repository whose owner has not confirmed it.
+Stop before adopting this workflow when the repository owner has not authorized it. Otherwise stop only for a real project-scope, public-boundary, migration, security, or ownership decision; missing template documents are not blockers.

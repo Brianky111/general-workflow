@@ -2,155 +2,139 @@
 
 ## Purpose
 
-Keep handoff state synchronized with real evidence. Status files help navigation but are not the source of truth.
+Keep durable handoff claims aligned with Git, tests, CI, PRs, and runtime evidence without turning status bookkeeping into a prerequisite for implementation.
 
-## Contents
+## Default Rule
 
-- Document Set Checklist
-- Evidence reconciliation actions
-- Workflow and feature state-file shapes
-- Consistency rules
-- Output and stop conditions
+Ordinary single-owner work needs no dedicated status document. Use the repository's task/PR plus Git and test evidence, and update status only at:
 
-## Entry Conditions
+1. a real human pause for a blocking decision;
+2. an owner or executor handoff;
+3. closeout.
 
-- Router evidence conflicts.
-- User asks whether the requirement matches their expectations, how far the work has progressed, or what is still missing.
-- Work is being handed off between agents.
-- Progress/status files are missing or stale.
+Do not update status after every internal workflow stage. Do not create or hand-maintain `workflow-state.json`, feature `status.json`, and `99-进度.md` in parallel. If durable status is triggered, choose one manual authority; other views must be generated or treated as non-authoritative.
 
-## Document Set Checklist
+## Status Triggers
 
-One change round owns one numbered document set; the checklist applies to the feature's active round, and archived rounds hold completed sets. The numbers are the user's dashboard: each document answers one question the user cares about, and the missing ones are exactly "还差哪些". Report progress against this checklist, not from memory.
+Use a dedicated status/evidence source only when one applies:
 
-| Document | Produced by | Answers for the user | Done when |
+- work pauses across sessions with a real blocker;
+- multiple owners, executors, worktrees, or teams require handoff and closeout;
+- blueprint coordination holds several features behind a shared dependency;
+- migration, security, compliance, or formal audit requires durable approval/evidence state;
+- the user explicitly requires a persistent status artifact.
+
+Repository age, a missing template file, or an ordinary single-agent feature is not a trigger.
+
+## Conditional Artifact Ledger
+
+Track only artifacts required by the feature's chosen path:
+
+| Artifact | Default | Triggered when | Done when |
 |---|---|---|---|
-| `00-项目识别.md` | Project identification | 这是新项目还是改旧项目，判断有没有依据 | Four fixed sections filled |
-| `00-原始需求.md` | Requirements capture | 我的原话有没有被完整封存、未被改写 | Raw words preserved, append-only |
-| `00-整理后需求.md` (+ `use-cases/*.md` after splitting) | Capture + clarification | 需求是否符合我的预期（编号场景 = 我的意图） | Questions answered, user confirmed, `requirementsConfirmedAt` set |
-| `00-行为示例.md` (+ detailed examples in `use-cases/*.md`) | BDD Example Mapping | 每条规则在具体前置条件和动作下应该表现出什么结果 | Every `S/E/B` maps to `R/EX`, questions empty, user confirmed, `behaviorExamplesConfirmedAt` set |
-| `01-接口.md` / `interfaces/*.md` | Interface contract | 行为合同是不是我要的行为 | Ambiguity audit attached, user approved, `contractsFrozenAt` set |
-| `01-代码冲突与重叠.md` / `conflicts/*.md` | Conflict scan (old projects) | 与现有代码的冲突讲清楚了没有 | `## 总结` filled, every C-ID concrete |
-| `fixtures/` | Probes | 外部数据是真的还是编的 | Contract examples trace to probe captures |
-| `02-规划.md` | Planning | 怎么实现、冲突怎么处理、验证多严 | Every C-ID consumed, user approved the plan gate |
-| `02-测试矩阵.md` | Feature Test Matrix | 每条需求由哪层证明、组装后靠什么证明、证据在哪里 | Coverage view and evidence register agree; every cell is planned with a test ID, supported PASS, or explained N/A; no blanks/GAPs |
-| tests + implementation | Red tests + implementation | 每个行为是否真的走过红、绿、重构 | Per-micro-batch red/green evidence in CI and matrix links |
-| module review + `09-集成验收.md` | Review + acceptance | 零件和真实纵向切片是否都跑通 | Independent reports, runtime contracts, scenarios, reload/UI evidence green |
-| `09-完整性审计.md` | Feature completeness | 单测组装后功能是否真的完整 | Matrix reconciled, DoD passed, closure decision evidenced |
-| `99-进度.md` + `status.json` | Every stage | 进度如何、还差哪些、卡在哪 | Mirrors the rows above with evidence links |
+| Durable raw source | Core | Always link or preserve once | Source remains accessible |
+| Structured requirement + BDD | Core | Ordinary feature contract | Observable behavior is READY and frozen |
+| Dedicated interface contract | Conditional | Public/external compatibility, migration, security, complex state/concurrency, or cross-owner boundary | Triggered risk is explicit and accepted |
+| Conflict appendix | Conditional | A concrete legacy overlap or uncertain migration boundary exists | Actual locations and chosen handling are recorded |
+| Fixtures/probes | Conditional | External behavior cannot be trusted from documentation alone | Examples trace to captured evidence |
+| Feature Test Matrix | Conditional | Multi-layer/cross-owner risk, adversarial verification, or formal traceability needs a durable matrix | Required rows point to supported evidence |
+| Dedicated status source | Conditional | A status trigger above exists | Current pause/handoff/closeout is evidenced |
+| Tests + implementation | Delivery evidence | The accepted behaviors are implemented | Commands/CI/runtime evidence support the claim |
 
-Lightweight features may merge requirement, BDD examples, contract, plan, and test-matrix rows into named sections of `00-功能.md`; the behavior questions, traceability, assembly coverage, and done-criteria stay the same.
+Do not report an untriggered artifact as “missing.” The complete lean contract is the durable source plus structured requirement and BDD examples; risk-triggered artifacts extend it rather than redefining completeness.
 
-When reporting, list each row as present / in progress / missing, name the next unpassed gate, and mirror the missing list in `99-进度.md`.
+## Source Selection
+
+Prefer an already durable issue, PR, or project tracker. Otherwise choose exactly one:
+
+- `99-进度.md` for a human-readable multi-owner handoff;
+- feature `status.json` when automation consumes structured state;
+- a project status source for a blueprint or regulated cross-feature baseline.
+
+Record the chosen authority once. Legacy repositories may retain other files, but do not manually synchronize equivalent fields across them. Reconcile or retire stale mirrors at the next handoff/closeout instead of blocking current implementation solely to refresh them.
+
+## Minimal Status Shape
+
+Keep the chosen source concise:
+
+```markdown
+## 状态
+- 阶段：<当前交付状态>
+- 核心合同：<source/contract ref>
+- READY/冻结证据：<commit/PR/批准来源；未就绪则写真实 blocker>
+- 当前负责人：<仅在有 owner/handoff 时>
+- 下一步：<一个可执行动作>
+- 证据：<测试/CI/commit/截图/日志摘要>
+```
+
+Add the following sections only when their condition applies. Omit them entirely rather than filling empty placeholders.
+
+## Conditional Scope Firewall
+
+Add a scope firewall when existing-code work has nearby behavior, failures, or shared paths that could be accidentally pulled into the change:
+
+```markdown
+| 路径/发现 | 本轮处理 | 与核心合同的关系 | 证据/后续去向 |
+|---|---|---|---|
+| <path or finding> | 改 / 只读 / 不碰 / blocker | <AC/合同边界> | <test/OOS/change source> |
+```
+
+Only accepted behavior, a concrete blocking dependency, or an approved change grants write scope. The firewall does not require an empty table for isolated work.
+
+## Conditional Worktree Charter and Closeout
+
+For a writable executor/worktree or multi-owner scope, record before edits:
+
+- purpose and target behavior/bug ID;
+- allowed and forbidden write paths;
+- required verification evidence;
+- handoff location;
+- closeout result: committed, no-op, blocked, discarded, or integrated.
+
+At handoff or closeout, reconcile branch/worktree facts before assigning the same scope again: integrate or explicitly reject document/status changes, integrate or record code/test results, update the one authoritative status source, and release or advance the owner. Do not open another same-scope writable loop while dirty/unmerged work, an unsupported PASS claim, or an unreconciled handoff remains.
+
+This section is not required for single-owner local work or read-only discovery.
+
+## Conditional Out-of-Scope Findings
+
+Record an OOS item only when an actual neighboring bug, failing test, dead code, or design problem is discovered:
+
+```markdown
+| OOS ID | 发现 | 为什么不在本轮修 | 是否阻塞核心合同证据 | 后续去向 |
+|---|---|---|---|---|
+| OOS1 | <finding> | <scope reason> | 是 / 否 | <issue/change/holding area> |
+```
+
+An OOS finding is not implementation permission. It remains read-only unless the user accepts it, a change delta adds it, or evidence proves it directly blocks the current contract. Do not add an empty OOS field when nothing was found.
+
+## Evidence Rules
+
+- Prefer repository facts over manual status prose.
+- Every complete claim points to a path, command, commit, PR/CI result, screenshot, trace, or concise log evidence.
+- Status may lag while work is active, but it must never run ahead of evidence.
+- A blocking question identifies the exact decision and affected acceptance/contract boundary; an empty `【答复】：` marker exists only for a real pending question.
+- A risk-triggered matrix cannot claim PASS without supporting evidence; untriggered matrix cells do not exist and need no `N/A` entries.
+- A reviewer must be independent only when the named risk or governance requires separation of duties.
+- If rounds are used for audit or multi-owner history, archived rounds remain read-only; ordinary revisions use a delta and do not require a new full round.
+- Parallel owners update only their own scope in the chosen status source; cross-scope edits preserve other owners' evidence.
 
 ## Actions
 
-1. Compare status docs with repository facts: files, commits, tests, PRs, and CI.
-2. Mark each stage as not started, in progress, blocked, or complete.
-3. For every complete claim, attach evidence: path, command, commit, PR, CI link, screenshot, or log summary.
-4. Remove or correct unsupported claims.
-5. Record blockers as concrete next decisions or commands.
+At a triggered update point:
 
-## File Shapes
-
-State files must not contain secrets, account credentials, tokens, or full sensitive external responses; only paths, commits, PR/CI links, short summaries, and shareable status.
-
-`docs/workflow-state.json` minimum fields:
-
-```json
-{
-  "schema": 1,
-  "mode": "blueprint|incremental",
-  "currentGate": "kickoff|identification|requirements|bdd|interfaces|planning|test-strategy|implementation|review|integration|completeness|done|blocked",
-  "inScopeFeatures": ["<功能名>"],
-  "lastApprovedRef": "<main-sha-or-approved-tag>",
-  "pendingQuestions": 0
-}
-```
-
-`docs/<module>/<feature>/status.json` minimum fields (feature level, spans rounds):
-
-```json
-{
-  "schema": 1,
-  "feature": "<功能名>",
-  "activeRound": "<NN>-<round>，无进行中轮次则为空",
-  "projectType": "new|existing|new-module-in-existing",
-  "phase": "identification|requirements|bdd|interfaces|planning|test-strategy|red|green|review|integration|completeness|done|blocked",
-  "gate": "open|waiting-human|approved|blocked",
-  "pendingQuestions": 0,
-  "requirementsConfirmedAt": "<pr-or-tag-or-main-sha>",
-  "behaviorExamplesConfirmedAt": "<pr-or-tag-or-main-sha>",
-  "contractsFrozenAt": "<pr-or-tag-or-main-sha>",
-  "testStrategyFrozenAt": "<与规划门同一批准证据>",
-  "conflictReport": "01-代码冲突与重叠.md",
-  "integrationEvidence": "<09-集成验收.md 或 CI/trace>",
-  "completenessEvidence": "<09-完整性审计.md，完成前可为空>",
-  "modules": {
-    "<模块名>": {
-      "owner": "<agent-id-or-branch>",
-      "status": "todo|red|green|review|done|blocked",
-      "contract": "01-接口.md#<模块名>",
-      "testMatrix": "02-测试矩阵.md#<场景或模块>",
-      "redEvidence": "<ci-run-or-commit>",
-      "greenEvidence": "<ci-run-or-commit>",
-      "refactorEvidence": "<commit-or-diff-summary>",
-      "batches": {
-        "BATCH-01": {
-          "scenarios": ["S1"],
-          "status": "todo|red|green|refactored|blocked",
-          "redEvidence": "<ci-run-or-commit>",
-          "greenEvidence": "<ci-run-or-commit>",
-          "refactorEvidence": "<commit-or-diff-summary>"
-        }
-      },
-      "reviewer": "<agent-id, optional until review>",
-      "reviewEvidence": "<report-path-or-ci, optional until review>",
-      "next": "<下一步一句话>"
-    }
-  }
-}
-```
-
-`99-进度.md` opens with a feature-level summary, then one fixed-shape section per module:
-
-```markdown
-## 全局
-- 阶段：<当前阶段>
-- 文档集缺失：<对照文档集清单列出，无则写“无”>
-- 阻塞：<待确认反问 / 外部依赖 / 无>
-- 下一步：<一句话>
-
-## <模块名>
-- 状态：todo / red / green / review / done / blocked
-- 负责人：<agent-id 或分支名>
-- 合同：<01-接口.md#锚点 或 interfaces/<模块名>.md>
-- 测试矩阵：<02-测试矩阵.md#锚点>
-- 红证据：<CI 链接或 commit；无则写“无”>
-- 绿证据：<CI 链接或 commit；无则写“无”>
-- 重构证据：<commit 或无行为变化的 diff/测试摘要；无则写“无”>
-- 微批次：<BATCH-ID -> 场景 IDs -> red/green/refactored/blocked -> 证据>
-- 审查：<初审报告或 CI 链接；无则写“无”>
-- 阻塞：<待确认反问 / 失败测试 / 外部依赖 / 无>
-- 下一步：<一句话>
-```
-
-## Consistency Rules
-
-- `pendingQuestions` must equal unresolved `【答复】：` entries.
-- `requirementsConfirmedAt`, `behaviorExamplesConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt` must point to a PR, commit, or approval tag; free-text “confirmed” is not evidence.
-- Existing projects must have a conflict report with concrete scan conclusions.
-- A module cannot be `done` without contract and test-matrix references, every planned micro-batch green/refactored with per-batch evidence, and `reviewEvidence` pointing to a review report or CI run.
-- A feature cannot be `done` without accepted BDD evidence, `integrationEvidence`, `completenessEvidence`, every required Feature Test Matrix coverage cell reconciled to supported `PASS` or accepted `N/A`, zero blank/`GAP`/`P:` coverage cells, and the completeness audit passing.
-- `reviewer`, when present, must differ from the module's `owner`: the reviewer is never the implementer.
-- `activeRound`, when set, must point to an existing round directory; archive it only after completeness passes. Archived rounds are read-only history — corrections open a new round.
-- Status may lag behind reality, but it must not run ahead of evidence.
-- Parallel agents edit only their own module section of `99-进度.md`; cross-module status writes must preserve other modules' fields.
+1. Compare the chosen status source with Git, worktrees, tests, CI, PRs, and runtime evidence.
+2. Correct unsupported claims.
+3. Record only the current blocker, handoff, or closeout plus its next action.
+4. Include scope firewall, worktree closeout, or OOS sections only when their conditions apply.
+5. Keep the update within the document budget from `00-feature-grading-and-splitting.md`, or name the audit/coordination exception.
 
 ## Output
 
-Update `docs/workflow-state.json`, `docs/<module>/<feature>/status.json`, or the active round's `99-进度.md` if the target project uses them; create them from the shapes above when the project adopted this workflow but the files are missing.
+- Ordinary active work: no status-file write.
+- Human pause: one concise blocker update in the chosen durable source.
+- Handoff: one owner/evidence/closeout update, including a conditional worktree charter when applicable.
+- Closeout: one final evidence-backed state update.
 
 ## Stop Conditions
 
-Stop if no reliable evidence exists for the claimed stage; report the uncertainty and the safest next verification step.
+Stop when a claimed pause, handoff, owner transfer, or completion has no reliable evidence. Report the uncertainty and smallest verification step. Missing untriggered documents or stale non-authoritative mirrors do not block READY or implementation.

@@ -2,72 +2,64 @@
 
 ## Purpose
 
-Preserve the user's original request and convert it into structured, reviewable requirements without inventing design choices.
+Preserve a durable source and express only the behavior needed for a safe, testable implementation. For an ordinary feature, the raw source plus concise structured requirements and BDD examples form the complete core contract.
 
 ## Entry Conditions
 
-- The feature has user intent but lacks `00-原始需求.md` or `00-整理后需求.md`.
-- The request is scattered across chat, issue text, screenshots, or existing notes.
+- User intent has no durable source or concise behavior contract.
+- The request is scattered across chat, issue text, screenshots, or notes.
+- A new request may overlap an existing feature boundary.
 
-Refactor, cleanup, or restructure requests are not requirements — route them to `00-refactor-intake.md` instead. Capture here only the existing behavior a refactor must preserve, when that behavior's feature docs are missing; the feature folder is named after the behavior, never after the refactor.
+Refactor, cleanup, or restructure requests route to `00-refactor-intake.md`. When behavior docs are missing, capture only the behavior the refactor must preserve; do not invent a new feature named after the refactor.
+
+## Durable Raw Source
+
+Link the existing task, issue, message, attachment, or accepted specification when it is stable and accessible. Create `00-原始需求.md` only when the source would otherwise be lost, is split across ephemeral inputs, or formal audit requires an append-only snapshot. Do not duplicate a durable source merely to satisfy the workflow.
 
 ## Similarity Triage
 
-One requirement owns exactly one feature folder and one document set. Before creating any new folder, scan `docs/requirements-index.md`, the module overviews (`00-模块概述.md`), the goals and numbered scenarios of existing feature `00-整理后需求.md` (or `00-功能.md`) files, and the glossary for features that overlap the incoming request. Place the request on the business hierarchy per `00-business-taxonomy.md`: module-sized requests split first; use-case-sized requests merge.
+Keep one authoritative contract for one behavior. Scan the feature roster when one exists, nearby structured requirements, module boundaries, glossary terms, and relevant code/tests.
 
-Classify the relationship:
+Classify the request:
 
-- **New requirement:** no meaningful overlap in actors, scenarios, or data. Create a new feature folder with its first round, `01-初建`.
-- **Merge:** the request belongs inside an existing feature's boundary — same behavior area, would share the contract or modules, a separate folder would duplicate docs — and that feature's requirement is **not yet confirmed**. Append the new words to the active round's `00-原始需求.md` and extend its scenarios; do not create a second folder.
-- **Revision:** the request changes or extends a requirement that is **already confirmed** (or a frozen contract). Route to `10-change-protocol.md`, which opens a new change round in that feature; never a second feature folder.
+- **New:** independently observable and independently acceptable behavior. Create or use its own core contract.
+- **Merge:** extends an unconfirmed contract within the same behavior boundary. Append the source and examples to that contract.
+- **Revision:** changes an already accepted behavior or frozen contract. Route to `10-change-protocol.md` and record a delta by default.
 
-When the classification is uncertain, stop and ask the user with this shape — always list the similarity points and argue each option:
+Make an evidence-backed classification without pausing when one option is clearly faithful to the request. Ask once only when the alternatives materially change user-visible scope, contract ownership, compatibility, or history. Present the concrete overlap, the two plausible outcomes, and a recommendation; do not create a feature folder merely to hold the question.
 
-```markdown
-### 相似需求裁决【<新请求摘要> vs <现有功能名>】
-- 相似点：<共同的角色/场景/数据/术语，逐条列出>
-- 差异点：<真正不同的地方>
-- A. 合并进 <现有功能>——为什么合并：<同一行为边界/共享合同或模块/分开会重复文档>；后果：<扩展该功能的场景与合同，仍是一套文档>
-- B. 作为 <现有功能> 的修正——为什么修正：<改变了已确认的意图/与既有场景矛盾>；后果：<走变更协议，等级 A 或 B，重新过关卡>
-- C. 立为新需求——理由：<边界独立/可单独验收>；后果：<新建功能目录，冲突扫描须覆盖与 <现有功能> 的重叠>
-- 建议：<A/B/C 及理由>
-- 【答复】：
-```
+## Structured Requirement
 
-This question is a hard stop presented in the conversation — no feature folder exists yet to hold it. When the project keeps `docs/requirements-index.md`, park the pending decision in its holding area so the open question survives the session and later agents can find it.
+Keep the ordinary structured requirement concise and include:
 
-Record the outcome in `docs/requirements-index.md` (merged into X / revision of X / new feature Y) so later agents can trace the mapping.
+- source reference;
+- goal and non-goals;
+- actors or affected users when relevant;
+- observable acceptance behaviors with stable IDs;
+- changed UI, public schema, state, persistence, or downstream effects;
+- concrete exclusions and blocking assumptions;
+- the selected `lean` path or a named risk exception from `00-feature-grading-and-splitting.md`.
 
-Hard rules: never let two document sets describe the same behavior, and never silently rewrite an accepted requirement — merges append, revisions go through the change protocol.
+Use `AC1`, `AC2`, ... for the lean path and express the corresponding Given/When/Then examples inline through `03-bdd-example-mapping.md`. Existing S/E/B and R/EX IDs may remain authoritative when already established or when regulated traceability requires them. Do not create parallel ID systems for the same behavior.
 
-## Actions
+Cover failure, permission, boundary, concurrency, recovery, persistence, UI, or cross-feature cases only when the request or code risk makes them applicable. Do not write per-category `N/A` proof.
 
-1. Copy the original request into `00-原始需求.md`; append rather than rewrite when possible.
-2. Draft `00-整理后需求.md` with:
-   - the parent module (`所属模块`) at the head, per `00-business-taxonomy.md`,
-   - goal and non-goals,
-   - actors or users,
-   - numbered acceptance scenarios,
-   - touched UI surfaces and user-visible states,
-   - affected upstream/downstream features and ownership expectations,
-   - data or UI terms that need a glossary entry,
-   - assumptions separated from confirmed facts.
-3. Add numbered acceptance scenarios:
-   - `S1`, `S2` for normal paths,
-   - `E1`, `E2` for error paths,
-   - `B1`, `B2` for boundary cases.
-   Ensure the roster also covers applicable permission, illegal-state, concurrent/duplicate, dependency-failure, retry/recovery, refresh/persistence, UI-state, and cross-feature outcomes. Keep `S/E/B` IDs and add category tags rather than inventing colliding ID namespaces.
-   When the scenario list outgrows one review pass, split use cases into `use-cases/UC<n>-<slug>.md` per `00-business-taxonomy.md`, keeping the roster in `00-整理后需求.md` as the index.
-4. Propose standard or lightweight path; read `00-feature-grading-and-splitting.md` if the path or document granularity is unclear.
-5. Mark unclear items as questions; do not silently choose product behavior.
-6. Keep this document at scenario-roster level. Do not expand Given/When/Then here; route the accepted-enough draft to `03-bdd-example-mapping.md` so rules, concrete examples, and new questions have one home.
+## Questions and Authorization
+
+Mark only unresolved choices that can change observable behavior, external compatibility, data meaning, security, irreversible effects, or ownership. Decide reversible internal design choices yourself and record them only when they constrain later work.
+
+When the user explicitly authorized implementation and the structured requirement faithfully restates that request, do not ask for a second confirmation. A new product choice or material assumption still routes to `03-requirements-clarification.md`.
+
+## READY Transition
+
+After the BDD examples are concrete and the targeted ambiguity audit has no blocking finding, apply the READY check in `00-feature-grading-and-splitting.md`. The raw source, structured requirement, and BDD examples are sufficient for an ordinary feature; missing dedicated interface, conflict, matrix, or status files do not block READY unless their risk trigger exists.
+
+Freeze the core contract at its source/commit reference and continue into planning, tests, and implementation in the same run. Do not require a separate requirement/BDD human gate for a faithful restatement already authorized by the user.
 
 ## Output
 
-Write concise Chinese requirement docs in the feature's active round, `docs/<module>/<feature>/<round>/`.
+Prefer one `00-功能.md` or the repository's existing task/spec location containing structured requirements and inline BDD examples. Use separate `00-原始需求.md` or `00-行为示例.md` only when source durability, independent ownership, document size, or formal traceability justifies it. Stay within the default pre-code budget: two new artifacts, 160 nonblank lines, one human pause, and at most 20% of expected effort or 30 minutes.
 
 ## Stop Conditions
 
-Route every structured draft through `03-bdd-example-mapping.md`, then `03-requirements-clarification.md`. If answers change behavior, refresh the BDD map; then run `03-ambiguity-audit.md` before the user confirms the requirement roster and behavior examples together.
-
-Do not write contracts or tests while intent questions remain unresolved.
+Stop only for a real blocking behavior, compatibility, data, security, irreversible-effect, or ownership decision. Otherwise finish the core contract and continue in the same run.

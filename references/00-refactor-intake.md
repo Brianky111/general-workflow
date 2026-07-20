@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Prevent refactor requests from skipping product intent or protection evidence. Reconfirm requirements, accepted BDD examples, contracts, and the relevant test matrix before code changes, then classify whether the work can stay behavior-preserving.
+Prevent refactor requests from changing behavior accidentally. Establish the smallest trustworthy protection baseline from existing code, public behavior, and tests, then classify the work without backfilling a documentation program.
 
 ## Not a Feature
 
-A refactor is work on existing behavior, never a requirement of its own. Do not create a feature folder, `00-原始需求.md`, or a `requirements-index.md` entry for a refactor request. Its documentation home is the owning feature's `02-规划.md` refactor preflight — for a refactor spanning several features, one preflight per affected feature — or `10-change-protocol.md` when behavior changes. If the touched behavior has no feature docs at all, what may be backfilled through `02-requirements-capture.md` is the existing behavior being protected; the feature is that behavior, not the refactor.
+A refactor is work on existing behavior, never a requirement of its own. Do not create a feature folder, raw-requirement copy, contract set, test matrix, or roster entry for the refactor. Record the protection baseline and write boundary in the current plan/handoff or an existing owning feature document. Use `10-change-protocol.md` only when accepted behavior actually changes.
 
 ## Entry Conditions
 
@@ -14,57 +14,57 @@ A refactor is work on existing behavior, never a requirement of its own. Do not 
 - Planning selects `refactor before implementation`.
 - A refactor commit or work batch is about to start.
 
-## Requirements Recertification
+## Protection Recertification
 
-Before touching code, re-read the smallest current evidence set:
+Before touching code, inspect the smallest available evidence set:
 
-- project docs: `docs/architecture.md`, `docs/glossary.md`, `docs/requirements-index.md`;
-- target feature docs: `00-原始需求.md`, `00-整理后需求.md`, `00-行为示例.md`, `use-cases/*.md`, `01-接口.md`, `interfaces/*.md`, `01-代码冲突与重叠.md`, `conflicts/*.md`, `02-规划.md`, `02-测试矩阵.md`, or `00-功能.md` for lightweight features;
-- state and evidence: `status.json`, `99-进度.md`, `docs/workflow-state.json`, tests, recent diffs, PR notes, CI, and review comments.
+- the current public/runtime entry, active owner, callers, registrations, persistence/schema boundaries, and downstream effects;
+- the nearest existing protection tests, their runner and baseline result, plus reusable fixtures/helpers;
+- accepted behavior docs when they already exist and are relevant;
+- recent diffs, PR/CI notes, and user-stated preservation constraints.
 
-Verify that `requirementsConfirmedAt`, `behaviorExamplesConfirmedAt`, `contractsFrozenAt`, and `testStrategyFrozenAt`, when present, point to concrete approval evidence. Status text alone is not enough.
+Do not read every workflow document, require approval timestamps, or create missing artifacts. Current code, observable behavior, and a green protection suite may serve as the refactor contract. If the behavior lacks protection, add a characterization test around the existing production owner before restructuring it.
 
 ## Classification
 
 Classify the requested work before implementation:
 
-- **Pure refactor:** no change to accepted BDD examples, public signatures, data semantics, persisted shape, user-visible text, error behavior, protocol behavior, authorization behavior, or scenario outcomes. Behavior maps, tests, and contracts stay unchanged. Do not write new red tests for a pure refactor: proceed to `08-implementation.md` with the existing green tests as protection evidence.
+- **Pure refactor:** no change to observable outcomes, public signatures, data semantics, persisted shape, user-visible text, error/protocol/authorization behavior, or runtime ownership. Existing protection remains green throughout; characterization tests may be added before the refactor when coverage is missing, but no behavior red is required.
 - **Behavior-affecting refactor:** any of the above might change, or layer/module boundaries need to move. Route to `10-change-protocol.md` level A before coding.
-- **Missing or stale prerequisites:** accepted requirements, BDD examples, contracts, plan, or test matrix cannot be found or do not match the code being touched. Route to `02-requirements-capture.md`, `03-bdd-example-mapping.md`, `04-interface-contract.md`, `06-planning.md`, `06-test-strategy.md`, or `99-status-and-evidence.md` before coding.
+- **Unprotected behavior:** the intended invariant is clear but no test reaches the current owner. Add the smallest characterization test in the existing test home, confirm it is green against the current production path, then refactor. Missing workflow documents alone never create this classification.
 
-Every refactor target must trace to a requirement scenario, contract method/invariant, documented conflict, or explicit planning item. Do not justify refactor solely from code aesthetics.
+Every refactor target must name the production `N-ID`, behavior being preserved, exact write boundary, protection command, and rollback. Do not justify a replacement or second owner solely from code aesthetics.
 
-In a repository that never adopted this workflow (no workflow docs exist), do not create workflow docs uninvited: treat the current public interfaces, observed behavior, and green test suite as the protection contract, state that substitution in the report, and require the protection suite to stay green throughout. If no protection tests exist for the touched behavior, add characterization tests first or stop and ask the user.
+In a repository that never adopted this workflow, use the same rule; no special bootstrap is required.
 
 ## Plan Update
 
-Add or update a refactor preflight section in `02-规划.md`:
+Record a compact preflight in the current task plan, handoff, or existing owning document:
 
 ```markdown
 ## 重构复核
 
 | 项 | 证据 | 结论 |
 |---|---|---|
-| 需求复核 | `<文档/PR/commit/tag>` | <已确认 / 缺失 / 需变更> |
-| BDD 行为复核 | `<R/EX 与确认证据>` | <保持不变 / 缺失 / 需变更协议> |
-| 合同复核 | `<接口/不变量/场景>` | <保持不变 / 需变更协议> |
-| 测试矩阵 | `<02-测试矩阵.md#行>` | <覆盖充分 / 缺口回到测试策略> |
-| 保护行为 | S1/E1/P1... | <测试或人工证据> |
-| 重构边界 | `<模块/文件>` | <可改 / 禁改> |
+| Production node | `<N-ID / owner / real entry>` | <existing owner; no parallel replacement> |
+| Protected behavior | `<observable invariants>` | <unchanged / behavior change> |
+| Baseline | `<existing test command + result>` | <green / characterization needed> |
+| Reused test assets | `<suite / fixture / helper>` | <reuse decision> |
+| Write boundary | `<files/symbols>` | <writable / read-only / prohibited> |
 | 回滚方式 | `<命令/分支/开关>` | <说明> |
 ```
 
-If no implementation plan exists, route to `06-planning.md` and create it before writing code.
+If no executable plan exists, use `06-planning.md`; a standalone `02-规划.md` is not required.
 
 If local subagent tools are available and the refactor is non-trivial, read `00-orchestration-policy.md` after the refactor classification. The main thread remains the orchestrator; executors perform assigned audits, mappings, tests, or module edits.
 
 ## Output
 
-- Updated `02-规划.md` refactor preflight, or a route to the missing prerequisite stage.
-- Pure-refactor / behavior-affecting / missing-prerequisite classification.
-- Updated status/progress evidence if the target project uses those files.
+- Compact refactor preflight in the selected plan/handoff surface.
+- Pure-refactor / behavior-affecting / unprotected-behavior classification.
+- Updated status evidence only at a human pause, handoff, or closeout when the project uses a status surface.
 - Exact tests, CI, diffs, or review reports used as evidence.
 
 ## Stop Conditions
 
-Stop before coding if accepted requirements, BDD examples, or contracts cannot be recertified, behavior might change without a level-A proposal, public signatures or tests would need edits, or independent review reports contradict the refactor classification.
+Stop before coding only if the preserved behavior itself is ambiguous, the requested work would change public/data/runtime behavior without an accepted change, no safe characterization seam can be established, or evidence contradicts the pure-refactor classification. Missing workflow documents or timestamps are not blockers.

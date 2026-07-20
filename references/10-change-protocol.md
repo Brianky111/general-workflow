@@ -2,38 +2,47 @@
 
 ## Purpose
 
-Handle requirement, contract, fixture, or external-behavior changes without silently rewriting history.
+Change accepted behavior without silently rewriting history or rebuilding an unaffected document set. Record a focused delta, revalidate the affected contract, and return to implementation quickly.
 
 ## Entry Conditions
 
-- User changes intent.
-- External service behavior drifts.
-- Implementation proves the contract is wrong or incomplete.
-- Tests or the completeness audit reveal a missing scenario, UI state, cross-feature effect, or assembly contract that changes accepted behavior.
-- Similarity triage in `02-requirements-capture.md` classifies a new request as a revision of an existing feature's confirmed requirement.
+- The user changes intent or extends an accepted behavior.
+- External behavior or a shared/public contract drifts.
+- Implementation or a test proves an accepted clause wrong or incomplete.
+- Similarity triage classifies a request as a revision of an existing feature.
 
 ## Actions
 
-1. Identify the source of change: user intent, code reality, external drift, or test discovery.
-2. Record what changes and what remains stable.
-3. Update requirements and BDD behavior examples before contracts, tests, or implementation.
-4. Preserve old evidence where useful; do not delete counterexamples casually.
-5. Re-route to the earliest affected stage after the change is accepted.
+1. Link the new durable source and identify the affected acceptance IDs or contract clauses.
+2. Record the delta: what changes, what remains stable, compatibility impact, and required verification.
+3. Update only the affected structured requirement, BDD example, interface clause, and test evidence. Do not rerun or rewrite unaffected stages.
+4. Preserve prior accepted evidence and counterexamples as history.
+5. Run a targeted ambiguity audit, apply READY, and continue into tests and implementation in the same run when no real blocking choice remains.
+
+The user's explicit change request authorizes a faithful delta. Do not require a second change-proposal approval that merely restates it. Ask once only when implementation requires a materially different product, compatibility, data, security, irreversible-effect, or ownership decision.
 
 ## Levels
 
-- **Level A: behavior, contract, or architecture change.** Stop, write a change proposal, wait for approval, then open a new round and update architecture/shared models/requirements/BDD examples/contracts/plans/test matrix/tests/implementation in order.
-- **Level B: bug fix or counterexample repayment.** First write a reproducing red test, then fix to green; the fix merges on green CI without a human gate. If the fix proves the contract is wrong, upgrade to level A.
-- **Level C: pure display adjustment.** Change only style, copy, or layout; use human visual acceptance and update visual baselines. Any logic change upgrades to B or A.
+- **Level A: observable behavior, public contract, or architecture delta.** Update the affected core contract and any risk-triggered artifact. Use one combined human pause only for an unresolved material choice. A new round or full document snapshot is not automatic.
+- **Level B: bug fix or counterexample repayment without intended contract change.** Write or identify the reproducing red test, fix to green, and link evidence. If the fix changes accepted behavior, upgrade only the affected clause to level A.
+- **Level C: pure display adjustment.** Change style, copy, or layout with appropriate visual evidence. Any logic change upgrades to B or A.
 
-**Probe exception:** verifying uncertain external behavior with a disposable probe needs no change proposal. The probe's output stored in `fixtures/contract/` becomes the official data source; the probe code itself is discarded, never merged as implementation (see `04-fixtures-and-probes.md`).
+**Probe exception:** a disposable probe may verify uncertain external behavior without a change proposal. Store shareable captures under the project's fixture convention when they become contract evidence; discard probe-only implementation code. See `04-fixtures-and-probes.md`.
 
 For reproducible bugs, property-test seeds, fuzz failures, integration red scenarios, or mutation survivors, read `10-counterexample-recovery.md`.
 
+## Delta and Snapshot Policy
+
+Default to a delta in the existing core contract, change note, issue, or PR. Open a new round only when independent ownership, long-running handoff, or audit history needs it.
+
+Write a complete post-change snapshot only when public compatibility tooling, external consumers, formal audit, or regulation requires one authoritative full contract. State the named exception before exceeding the default pre-code budget from `00-feature-grading-and-splitting.md`.
+
 ## Output
 
-Documented change record and updated stage docs.
+- Ordinary change: one concise delta linked to the prior accepted source and updated test evidence.
+- Risk-triggered change: the smallest focused interface, migration, security, ownership, or traceability addition.
+- No duplicate status artifact unless status is independently triggered by `99-status-and-evidence.md`.
 
 ## Stop Conditions
 
-Stop for confirmation when the change alters user-visible behavior, external compatibility, data meaning, or previous acceptance criteria.
+Stop only for an unresolved material change decision or unsafe missing external evidence. A missing new round, full contract rewrite, or repeated approval is not a blocker.

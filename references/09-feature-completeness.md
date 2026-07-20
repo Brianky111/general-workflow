@@ -2,23 +2,23 @@
 
 ## Purpose
 
-Decide whether a feature is genuinely complete rather than merely implemented or unit-green. This is the final evidence audit before archiving a change round.
+Independently reconcile evidence for a governed or high-risk feature before archiving or making a formal completion claim. Ordinary work closes through targeted review/regression without creating this artifact.
 
 ## Entry Conditions
 
-- Module review evidence exists.
-- Integration acceptance has exercised the real vertical slice.
-- The feature has a current `02-测试矩阵.md` or equivalent lightweight section.
+- A named high-risk, formal-audit, regulated, or governed-round trigger requires final independent reconciliation.
+- Required module/review and real-layer integration evidence exists.
+- The sparse verification map or risk-triggered matrix identifies all required proof.
 
 ## Definition of Done Audit
 
-Check only applicable items, but require evidence or an explicit accepted `N/A` reason for each.
+Check only applicable, assigned items. Omit irrelevant categories instead of writing `N/A` proof.
 
 ### Specification
 
 - User goal, non-goals, actors, scenarios, BDD Rules/Examples, permissions, state transitions, concurrency/retry behavior, and recovery behavior are settled and mutually traceable.
 - UI states, public schemas, state machine, events, invariants, and cross-feature ownership are explicit in the contract.
-- Every accepted BDD example/invariant maps through the test matrix to implementation and evidence; every requirement scenario reaches at least one accepted example.
+- Every changed acceptance behavior/invariant maps through the sparse or risk-triggered verification plan to its production `N-ID`, implementation, and evidence.
 
 ### Backend and domain
 
@@ -43,17 +43,17 @@ Check only applicable items, but require evidence or an explicit accepted `N/A` 
 
 ## Actions
 
-1. Walk the Feature Test Matrix row and cell at a time. Resolve every test ID through the evidence register and verify each `PASS:<test-id>@<evidence>` against the actual test, command, CI/trace, fixture, and assertion. Required cells may end only as supported `PASS` or accepted `N/A:<reason>`.
-2. Reconcile the matrix, integration report, `status.json`, `99-进度.md`, CI, screenshots/traces, and current Git state. Evidence wins over status text.
+1. Walk only the assigned sparse/risk-triggered proof rows. Resolve every claimed pass against the actual production `N-ID`, test, command, CI/trace, fixture, wiring, and assertion.
+2. Reconcile Git, CI, tests, screenshots/traces, integration evidence, and the one selected status source when one exists. Evidence wins over status text; do not require both `status.json` and `99-进度.md`.
 3. List uncovered or weak rows and route each to the owning stage: contract, test strategy, red tests, implementation, or integration acceptance.
-4. Record the audit in `09-完整性审计.md` with four sections: passed evidence, accepted `N/A`, remaining gaps, and closure decision.
-5. Only on a pass, update state to done, move the active round into `archive/`, clear `activeRound`, and report the evidence summary. Keep feature-level fixtures in place.
+4. Record passed evidence, remaining gaps, and the closure decision in the existing governed review/round surface. Create `09-完整性审计.md` only when the governing scheme explicitly requires it.
+5. Only on a pass, update the selected status source. Move a round into `archive/` and clear `activeRound` only when the project actually uses governed rounds. Keep permanent counterexample fixtures in place.
 6. Run the lessons pass after closure: propose reusable glossary, architecture, CI, template, or workflow improvements for governed approval.
 
 ## Output
 
-An evidence-backed `docs/<module>/<feature>/<round>/09-完整性审计.md`. A pass is the workflow terminal state; a fail routes back without archiving.
+An evidence-backed final reconciliation in the governed review/round surface, with a dedicated `09-完整性审计.md` only when required. A pass is the high-risk/governed terminal state; a fail routes back without archiving.
 
 ## Stop Conditions
 
-Do not mark complete because coverage percentage is high, because all unit tests pass, because the UI looked right once, or because status files say done. A `P:`, `GAP`, blank cell, bare checkmark, unknown test ID, unsupported `PASS`, missing assembly evidence, or frontend-only state blocks closure.
+Do not mark complete because coverage percentage is high, because unit tests alone pass when a connection risk exists, because the UI looked right once, or because status says done. Any assigned `P:`/`GAP`, unknown test ID, wrong production `N-ID`, unsupported pass, missing wiring/assembly evidence, or frontend-only state blocks closure. Missing irrelevant matrix columns or duplicate status files do not.

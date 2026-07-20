@@ -2,54 +2,73 @@
 
 ## Purpose
 
-Choose workflow weight and document granularity before writing detailed contracts.
+Choose the lightest workflow that makes the requested change safe to implement. Default to an incremental lean path; add documents and gates only for a named risk that the core contract cannot contain safely.
 
 ## Entry Conditions
 
-- A new feature starts.
-- The agent is unsure whether full standard flow is necessary.
-- A contract is becoming too large or should be split for parallel work.
+- A feature or change starts.
+- The agent must decide whether the core contract is enough to implement.
+- A concrete compatibility, migration, security, concurrency, state-machine, or ownership risk may require a dedicated artifact.
 
-## Feature Path
+## Lean Core Contract
 
-Grading applies to incremental mode only; blueprint batches advance all features together without grading (see `00-pacing-mode.md`).
+For an ordinary feature, the sufficient contract is:
 
-Whether the request is a feature at all — or a module that should split into several features, or a use case that belongs inside an existing one — is decided first, per `00-business-taxonomy.md`. That file also owns requirement-level use-case splitting; this file owns contract-level splitting.
+1. the durable raw source — a task, issue, message, attachment, or a short preserved excerpt; do not copy it into a new file when a stable source already exists;
+2. concise structured requirements — goal, non-goals, scope, changed public/data behavior, and blocking assumptions;
+3. BDD behavior examples — inline by default, using stable acceptance IDs and concrete Given/When/Then outcomes.
 
-- **Standard path:** default. Complete the full stage sequence: identification and requirements (`01`/`02`), BDD example mapping, clarification, and audit (`03`), full-stack contract and conflict scan (`04`/`05`), planning plus test matrix (`06`), behavior-sized red/green/refactor loops (`07`/`08`), review, integration acceptance, and completeness audit (`09`).
-- **Lightweight path:** allowed only when all are true:
-  - no new external dependency,
-  - no cross-feature event, distributed consistency, complex state machine, or concurrency rule,
-  - two or fewer behavior-bearing modules (thin presentation/transport wrappers do not count by themselves),
-  - no high-cost or irreversible decision.
+The structured requirement and BDD examples may share one file. This core contract replaces separate interface, conflict, test-matrix, and status artifacts unless a risk trigger below requires one. Code-native schemas and tests may be the detailed technical truth when they do not introduce an unresolved product choice.
 
-For lightweight work, preserve raw requirements separately, but structured requirements, a minimal `## BDD 行为示例`, interface, plan, and test matrix may be merged into `00-功能.md`. The BDD section still maps each scenario to a Rule and at least one Given/When/Then example. Contract and planning gates merge into one document-PR review. Old projects still need a conflict section; behavior, assembly-test, review, completeness, and evidence rules do not weaken.
+## READY Check
 
-Level-B/C work and pure refactors reuse the current accepted BDD map unless they expose a behavior gap; any intended behavior change upgrades to level A and refreshes the map.
+Freeze the core contract and proceed when all are true:
 
-Do not instantiate every full-stack directory merely to match a template. A simple CRUD or pass-through feature may collapse absent layers and tests; record the concrete code homes and preserve the same ownership, contract, matrix, and completion questions.
+- observable outcomes and non-goals are clear;
+- no unresolved question can change user-visible behavior, external compatibility, data meaning, security posture, or an irreversible effect;
+- changed public interfaces, schemas, state transitions, or persistence semantics are explicit, or the contract states that none change;
+- the intended write boundary and any concrete existing-code conflict are understood well enough to avoid scope drift;
+- every acceptance behavior has a credible verification approach;
+- every triggered risk exception has the smallest necessary treatment.
 
-Bug fixes are not feature grading; route to `10-change-protocol.md` level B.
+When the user already authorized the work and the core contract is a faithful restatement, that authorization is sufficient: do not ask the user to confirm the same intent again. Record the freeze in the contract or its source reference and continue into planning, tests, and implementation in the same run. If implementation reveals a behavior change, reopen only the affected clause through `10-change-protocol.md`.
 
-## Large Feature Split Triggers
+## Default Document Budget
 
-Split `01-接口.md` into `interfaces/<module>.md` when any trigger applies:
+Before code, default to:
 
-1. three or more stable modules,
-2. multiple agents need parallel implementation,
-3. external protocol/system needs probes, fixtures, and failure semantics,
-4. enhanced/adversarial modules need clearer invariants and counterexample handling,
-5. the contract is too long for review,
-6. the module will be reused by multiple features.
+- at most two new artifacts;
+- at most 160 nonblank Markdown lines across them;
+- at most one human pause;
+- documentation work no more than 20% of expected task effort or 30 minutes, whichever limit is reached first.
 
-## Split Shape
+Reuse or amend an existing artifact before creating another. Exceed the budget only by naming the risk exception, the decision or evidence the extra material enables, and why a smaller section is insufficient. Template completeness, repository age, module count, subagent availability, or a desire to be exhaustive are not exceptions.
 
-Keep `01-接口.md` as an index containing module map, shared model references, cross-module order, reading order, and scenario walkthrough entry. Put method four-questions, field tables, invariants, and failure semantics in module files. Shared entities belong in `domain-models.md`, not copied across modules.
+## Risk-Triggered Expansion
+
+Add only the artifact or section named by the risk:
+
+- **Public or external compatibility:** a dedicated interface contract and compatibility/consumer evidence.
+- **Unknown external protocol:** probes, captured fixtures, and explicit failure/retry semantics.
+- **Migration or irreversible data effects:** migration, rollback, and recovery decisions with a human gate.
+- **Security, privacy, compliance, payment, or other high-cost effects:** the relevant threat, approval, and audit evidence.
+- **Concurrency, idempotency, distributed consistency, or a complex state machine:** invariants, transition/event ownership, and focused adversarial tests.
+- **Cross-owner shared schemas, events, or state:** an ownership/interface artifact and cross-feature verification.
+- **Concrete legacy conflict or uncertain migration boundary:** a conflict appendix covering the actual locations and chosen handling; an old repository alone does not require an empty report.
+- **Long-running multi-owner delivery, formal audit, or regulated traceability:** one explicit status/evidence source and any required trace table.
+
+An exception does not upgrade the whole feature to every standard artifact. Expand only the affected boundary and return to the READY check.
+
+## Splitting
+
+Keep the core contract together. Split a dedicated contract only when independent owners or reviewers need separate approval boundaries, an external protocol needs isolated fixtures/failure semantics, or the risk-specific material would exceed the document budget. Parallel execution or three modules alone is not a reason to duplicate documents.
+
+When splitting, keep one index that points to authoritative sections; never define the same behavior or schema twice. Shared entities remain in the project shared-model source when one exists.
 
 ## Output
 
-Record the proposed path and its reasons at the head of the feature doc (`00-整理后需求.md` or `00-功能.md`). The user confirms or overrides the grading in the first document PR. Then return to the router.
+Record `lean` or the named risk-triggered expansion at the head of the core contract. Record only budget exceptions and their reasons; do not create a grading document or ask for a grading-only confirmation.
 
 ## Stop Conditions
 
-Stop for confirmation if the chosen path reduces documentation burden or changes review gates.
+Stop only for a real blocking decision about observable behavior, compatibility, data meaning, security, irreversible effects, or ownership. Otherwise complete the READY check and continue in the same run.

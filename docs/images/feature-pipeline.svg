@@ -1,61 +1,38 @@
-<svg width="680" viewBox="0 0 680 760" xmlns="http://www.w3.org/2000/svg" role="img">
-<title>general-workflow 单功能主管线</title>
-<desc>从项目识别、需求、BDD 示例映射、反问审计、需求与行为确认，经全栈合同、探针、冲突扫描、合同冻结，到规划与测试矩阵、红绿重构、初审、集成验收、完整性审计直至功能完成的蛇形流程。</desc>
+<svg width="760" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>general-workflow 精简实现主管线</title>
+<desc>以原始来源、结构化需求和 BDD 形成紧凑合同，经过一次冷读后达到合同 READY 并冻结；随后绑定现有生产 owner、真实运行入口和既有测试归宿，形成 EXECUTION READY 计划，并在同一轮完成真实 SUT 红测、实现、装配与回归验证。专用接口、探针、完整矩阵和独立审计只由具体风险触发。</desc>
 <style>
-.th{font:500 14px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
+.th{font:600 14px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
 .ts{font:400 12px -apple-system,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
-.purple rect{fill:#EEEDFE;stroke:#534AB7;stroke-width:.75}
-.purple .th{fill:#3C3489}.purple .ts{fill:#534AB7}
-.amber rect{fill:#FAEEDA;stroke:#854F0B;stroke-width:.75}
-.amber .th{fill:#633806}.amber .ts{fill:#854F0B}
-.gray rect{fill:#F1EFE8;stroke:#5F5E5A;stroke-width:.75}
-.gray .th{fill:#444441}.gray .ts{fill:#5F5E5A}
-.green rect{fill:#EAF3DE;stroke:#3B6D11;stroke-width:.75}
-.green .th{fill:#27500A}.green .ts{fill:#3B6D11}
-.arr{stroke:#888780;stroke-width:1.5;fill:none}
-.lg{fill:#888780}
+.purple rect{fill:#EEEDFE;stroke:#534AB7;stroke-width:.9}.purple .th{fill:#3C3489}.purple .ts{fill:#534AB7}
+.green rect{fill:#EAF3DE;stroke:#3B6D11;stroke-width:.9}.green .th{fill:#27500A}.green .ts{fill:#3B6D11}
+.amber rect{fill:#FAEEDA;stroke:#854F0B;stroke-width:.9}.amber .th{fill:#633806}.amber .ts{fill:#854F0B}
+.gray rect{fill:#F1EFE8;stroke:#5F5E5A;stroke-width:.9}.gray .th{fill:#444441}.gray .ts{fill:#5F5E5A}
+.arr{stroke:#888780;stroke-width:1.5;fill:none}.dash{stroke-dasharray:5 4}.lg{fill:#6F6E69}
 </style>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<g class="purple"><rect x="40" y="40" width="160" height="56" rx="4"/><text class="th" x="120" y="61" text-anchor="middle" dominant-baseline="central">01 识别</text><text class="ts" x="120" y="79" text-anchor="middle" dominant-baseline="central">新旧项目判断</text></g>
-<g class="purple"><rect x="260" y="40" width="160" height="56" rx="4"/><text class="th" x="340" y="61" text-anchor="middle" dominant-baseline="central">02 需求</text><text class="ts" x="340" y="79" text-anchor="middle" dominant-baseline="central">封存原话 · 整理场景</text></g>
-<g class="purple"><rect x="480" y="40" width="160" height="56" rx="4"/><text class="th" x="560" y="61" text-anchor="middle" dominant-baseline="central">03 BDD · 反问 · 审计</text><text class="ts" x="560" y="79" text-anchor="middle" dominant-baseline="central">Example Mapping · 冷读</text></g>
-<line class="arr" x1="200" y1="68" x2="250" y2="68" marker-end="url(#arrow)"/>
-<line class="arr" x1="420" y1="68" x2="470" y2="68" marker-end="url(#arrow)"/>
-<line class="arr" x1="560" y1="96" x2="560" y2="126" marker-end="url(#arrow)"/>
-<g class="amber"><rect x="480" y="136" width="160" height="56" rx="4"/><text class="th" x="560" y="157" text-anchor="middle" dominant-baseline="central">需求与行为确认</text><text class="ts" x="560" y="175" text-anchor="middle" dominant-baseline="central">场景 · Rule · Example</text></g>
-<g class="purple"><rect x="260" y="136" width="160" height="56" rx="4"/><text class="th" x="340" y="157" text-anchor="middle" dominant-baseline="central">04 接口合同</text><text class="ts" x="340" y="175" text-anchor="middle" dominant-baseline="central">四问 · 不变量 · 示例</text></g>
-<g class="purple"><rect x="40" y="136" width="160" height="56" rx="4"/><text class="th" x="120" y="157" text-anchor="middle" dominant-baseline="central">04 探针实录</text><text class="ts" x="120" y="175" text-anchor="middle" dominant-baseline="central">外部数据不许编</text></g>
-<line class="arr" x1="480" y1="164" x2="430" y2="164" marker-end="url(#arrow)"/>
-<line class="arr" x1="260" y1="164" x2="210" y2="164" marker-end="url(#arrow)"/>
-<line class="arr" x1="120" y1="192" x2="120" y2="222" marker-end="url(#arrow)"/>
-<g class="purple"><rect x="40" y="232" width="160" height="56" rx="4"/><text class="th" x="120" y="253" text-anchor="middle" dominant-baseline="central">05 冲突扫描</text><text class="ts" x="120" y="271" text-anchor="middle" dominant-baseline="central">旧代码重叠 · 不拍板</text></g>
-<g class="amber"><rect x="260" y="232" width="160" height="56" rx="4"/><text class="th" x="340" y="253" text-anchor="middle" dominant-baseline="central">关卡① 合同冻结</text><text class="ts" x="340" y="271" text-anchor="middle" dominant-baseline="central">审计已附 · 用户批准</text></g>
-<g class="purple"><rect x="480" y="232" width="160" height="56" rx="4"/><text class="th" x="560" y="253" text-anchor="middle" dominant-baseline="central">06 规划 · 测试矩阵</text><text class="ts" x="560" y="271" text-anchor="middle" dominant-baseline="central">实现方式 · 分层证据</text></g>
-<line class="arr" x1="200" y1="260" x2="250" y2="260" marker-end="url(#arrow)"/>
-<line class="arr" x1="420" y1="260" x2="470" y2="260" marker-end="url(#arrow)"/>
-<line class="arr" x1="560" y1="288" x2="560" y2="318" marker-end="url(#arrow)"/>
-<g class="amber"><rect x="480" y="328" width="160" height="56" rx="4"/><text class="th" x="560" y="349" text-anchor="middle" dominant-baseline="central">关卡② 规划冻结</text><text class="ts" x="560" y="367" text-anchor="middle" dominant-baseline="central">人审后生成 stub</text></g>
-<g class="purple"><rect x="260" y="328" width="160" height="56" rx="4"/><text class="th" x="340" y="349" text-anchor="middle" dominant-baseline="central">07 红测</text><text class="ts" x="340" y="367" text-anchor="middle" dominant-baseline="central">先证明会失败</text></g>
-<g class="purple"><rect x="40" y="328" width="160" height="56" rx="4"/><text class="th" x="120" y="349" text-anchor="middle" dominant-baseline="central">08 实现 · 重构</text><text class="ts" x="120" y="367" text-anchor="middle" dominant-baseline="central">最小转绿 · 绿后整理</text></g>
-<line class="arr" x1="480" y1="356" x2="430" y2="356" marker-end="url(#arrow)"/>
-<line class="arr" x1="260" y1="356" x2="210" y2="356" marker-end="url(#arrow)"/>
-<line class="arr" x1="120" y1="384" x2="120" y2="414" marker-end="url(#arrow)"/>
-<g class="purple"><rect x="40" y="424" width="160" height="56" rx="4"/><text class="th" x="120" y="445" text-anchor="middle" dominant-baseline="central">09 模块初审</text><text class="ts" x="120" y="463" text-anchor="middle" dominant-baseline="central">独立审 · 必附证据</text></g>
-<g class="amber"><rect x="260" y="424" width="160" height="56" rx="4"/><text class="th" x="340" y="445" text-anchor="middle" dominant-baseline="central">关卡③ 集成验收</text><text class="ts" x="340" y="463" text-anchor="middle" dominant-baseline="central">真环境 · 人眼过</text></g>
-<g class="purple"><rect x="480" y="424" width="160" height="56" rx="4"/><text class="th" x="560" y="445" text-anchor="middle" dominant-baseline="central">09 完整性审计</text><text class="ts" x="560" y="463" text-anchor="middle" dominant-baseline="central">矩阵 · DoD · 证据</text></g>
-<line class="arr" x1="200" y1="452" x2="250" y2="452" marker-end="url(#arrow)"/>
-<line class="arr" x1="420" y1="452" x2="470" y2="452" marker-end="url(#arrow)"/>
-<line class="arr" x1="560" y1="480" x2="560" y2="510" marker-end="url(#arrow)"/>
-<g class="green"><rect x="480" y="520" width="160" height="56" rx="4"/><text class="th" x="560" y="541" text-anchor="middle" dominant-baseline="central">功能完成</text><text class="ts" x="560" y="559" text-anchor="middle" dominant-baseline="central">归档 · 回归 · 经验沉淀</text></g>
-<g class="gray"><rect x="40" y="632" width="180" height="56" rx="4"/><text class="th" x="130" y="653" text-anchor="middle" dominant-baseline="central">反例回收</text><text class="ts" x="130" y="671" text-anchor="middle" dominant-baseline="central">可复现失败必修</text></g>
-<g class="gray"><rect x="250" y="632" width="180" height="56" rx="4"/><text class="th" x="340" y="653" text-anchor="middle" dominant-baseline="central">变更协议 A/B/C</text><text class="ts" x="340" y="671" text-anchor="middle" dominant-baseline="central">冻结后的一切变化</text></g>
-<g class="gray"><rect x="460" y="632" width="180" height="56" rx="4"/><text class="th" x="550" y="653" text-anchor="middle" dominant-baseline="central">99 进度仪表盘</text><text class="ts" x="550" y="671" text-anchor="middle" dominant-baseline="central">进度 · 缺口 · 证据</text></g>
-<g class="purple"><rect x="40" y="716" width="10" height="10" rx="2"/></g>
-<text class="ts lg" x="58" y="721" dominant-baseline="central">流程阶段</text>
-<g class="amber"><rect x="136" y="716" width="10" height="10" rx="2"/></g>
-<text class="ts lg" x="154" y="721" dominant-baseline="central">用户关卡</text>
-<g class="green"><rect x="236" y="716" width="10" height="10" rx="2"/></g>
-<text class="ts lg" x="254" y="721" dominant-baseline="central">终态</text>
-<g class="gray"><rect x="312" y="716" width="10" height="10" rx="2"/></g>
-<text class="ts lg" x="330" y="721" dominant-baseline="central">随时可进入的支路</text>
+
+<g class="purple"><rect x="35" y="38" width="200" height="68" rx="5"/><text class="th" x="135" y="62" text-anchor="middle">紧凑行为合同</text><text class="ts" x="135" y="82" text-anchor="middle">原始来源 · 结构化需求 · BDD</text><text class="ts" x="135" y="97" text-anchor="middle">只记录实际行为与非目标</text></g>
+<g class="purple"><rect x="280" y="38" width="200" height="68" rx="5"/><text class="th" x="380" y="62" text-anchor="middle">一次冷读</text><text class="ts" x="380" y="82" text-anchor="middle">只问真实阻塞问题</text><text class="ts" x="380" y="97" text-anchor="middle">零 finding 只记 audit clean</text></g>
+<g class="green"><rect x="525" y="38" width="200" height="68" rx="5"/><text class="th" x="625" y="62" text-anchor="middle">合同 READY · 冻结</text><text class="ts" x="625" y="82" text-anchor="middle">行为清楚 · 边界明确</text><text class="ts" x="625" y="97" text-anchor="middle">不重复审批，转代码现实扫描</text></g>
+<line class="arr" x1="235" y1="72" x2="270" y2="72" marker-end="url(#arrow)"/><line class="arr" x1="480" y1="72" x2="515" y2="72" marker-end="url(#arrow)"/>
+
+<line class="arr" x1="625" y1="106" x2="625" y2="146" marker-end="url(#arrow)"/>
+<g class="purple"><rect x="525" y="156" width="200" height="76" rx="5"/><text class="th" x="625" y="180" text-anchor="middle">代码现实与复用</text><text class="ts" x="625" y="200" text-anchor="middle">N-ID · 当前 owner · 真实入口</text><text class="ts" x="625" y="216" text-anchor="middle">既有测试归宿 · fixtures/helpers</text></g>
+<g class="purple"><rect x="280" y="156" width="200" height="76" rx="5"/><text class="th" x="380" y="180" text-anchor="middle">EXECUTION READY 计划</text><text class="ts" x="380" y="200" text-anchor="middle">精确写集 · 复用动作 · 命令</text><text class="ts" x="380" y="216" text-anchor="middle">稀疏行为→证明映射</text></g>
+<g class="purple"><rect x="35" y="156" width="200" height="76" rx="5"/><text class="th" x="135" y="180" text-anchor="middle">真实 SUT 红测</text><text class="ts" x="135" y="200" text-anchor="middle">复用 runner / suite / fixture</text><text class="ts" x="135" y="216" text-anchor="middle">wrong-SUT / 意外绿则回退</text></g>
+<line class="arr" x1="525" y1="194" x2="490" y2="194" marker-end="url(#arrow)"/><line class="arr" x1="280" y1="194" x2="245" y2="194" marker-end="url(#arrow)"/>
+
+<line class="arr" x1="135" y1="232" x2="135" y2="272" marker-end="url(#arrow)"/>
+<g class="purple"><rect x="35" y="282" width="200" height="76" rx="5"/><text class="th" x="135" y="306" text-anchor="middle">修改现有生产 owner</text><text class="ts" x="135" y="326" text-anchor="middle">最小转绿 · 绿后重构</text><text class="ts" x="135" y="342" text-anchor="middle">禁止未注册 V2 / 平行 harness</text></g>
+<g class="purple"><rect x="280" y="282" width="200" height="76" rx="5"/><text class="th" x="380" y="306" text-anchor="middle">装配与回归</text><text class="ts" x="380" y="326" text-anchor="middle">真实 route / registry / DI</text><text class="ts" x="380" y="342" text-anchor="middle">目标测试 · wiring · regression</text></g>
+<g class="green"><rect x="525" y="282" width="200" height="76" rx="5"/><text class="th" x="625" y="306" text-anchor="middle">完成与一次收口</text><text class="ts" x="625" y="326" text-anchor="middle">代码与证据优先</text><text class="ts" x="625" y="342" text-anchor="middle">pause / handoff / closeout 才更新状态</text></g>
+<line class="arr" x1="235" y1="320" x2="270" y2="320" marker-end="url(#arrow)"/><line class="arr" x1="480" y1="320" x2="515" y2="320" marker-end="url(#arrow)"/>
+
+<g class="amber"><rect x="35" y="416" width="690" height="72" rx="5"/><text class="th" x="380" y="440" text-anchor="middle">仅由具体风险触发扩写</text><text class="ts" x="380" y="460" text-anchor="middle">公共/外部兼容 · 不可逆迁移 · 安全合规 · 并发/复杂状态机 · 跨 owner · 正式审计</text><text class="ts" x="380" y="477" text-anchor="middle">按风险增加接口、探针、矩阵或独立审查；不恢复整套文档流水线</text></g>
+<path class="arr dash" d="M625 156 C690 132 700 132 700 106" marker-end="url(#arrow)"/><text class="ts lg" x="694" y="129" text-anchor="end">发现实质边界风险才扩写</text>
+
+<g class="purple"><rect x="35" y="526" width="10" height="10" rx="2"/></g><text class="ts lg" x="53" y="535">连续交付步骤</text>
+<g class="green"><rect x="162" y="526" width="10" height="10" rx="2"/></g><text class="ts lg" x="180" y="535">READY / 完成</text>
+<g class="amber"><rect x="285" y="526" width="10" height="10" rx="2"/></g><text class="ts lg" x="303" y="535">风险触发扩展（不是默认门禁）</text>
 </svg>

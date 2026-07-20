@@ -2,32 +2,37 @@
 
 ## Purpose
 
-Decide whether the work is a new project, an old project, or a new module inside an old project. This controls how much code scanning is required later.
+Identify only the repository context that changes implementation risk. Classification is evidence for the core contract, not a mandatory document gate.
 
 ## Entry Conditions
 
-- No `00-项目识别.md` exists for the feature, or it is incomplete.
-- The agent cannot tell whether existing code must be preserved, extended, or ignored.
+- The agent cannot tell whether existing behavior or shared conventions constrain the requested slice.
+- Project type affects a concrete compatibility, migration, ownership, or code-scan decision.
 
 ## Actions
 
-1. Inspect repository structure, package manifests, existing docs, and obvious entry points.
-2. Classify the work using the same tokens as `status.json`'s `projectType` enum:
-   - `new`: new project, no existing behavior to preserve.
-   - `existing`: old project, existing behavior may be affected.
-   - `new-module-in-existing`: new area in an old project, but shared conventions still apply.
-3. Record relevant files and areas that the interface/conflict stages must revisit.
-4. Avoid making final conflict conclusions here.
+1. Inspect repository structure, package manifests, relevant docs, tests, and obvious entry points.
+2. Classify internally using the same tokens as an enabled status source:
+   - `new`: no existing behavior must be preserved;
+   - `existing`: the requested behavior overlaps existing code;
+   - `new-module-in-existing`: the area is new but shared conventions or contracts still apply.
+3. Record only the relevant code homes, preserved behavior, and concrete boundaries that later work must respect.
+4. Do not infer that an old repository needs a dedicated conflict report. Create one only when a concrete legacy overlap, uncertain migration boundary, or other risk trigger from `00-feature-grading-and-splitting.md` exists.
+5. Decide an obvious classification from evidence without asking the user. Ask only when two plausible classifications would materially change project scope, observable behavior, public compatibility, data migration, or ownership.
 
 ## Output
 
-Create or update `docs/<module>/<feature>/<round>/00-项目识别.md` in Chinese, using these fixed section names (downstream agents and template checks depend on them):
+For ordinary work, add a one-line classification and its evidence to the structured requirement or existing task/PR; do not create `00-项目识别.md`.
 
-- `## 结论` — the classification and its basis,
-- `## 已读资料` — evidence read,
-- `## 后续接口层必须检查的区域` — areas requiring later code scan,
-- `## 本层不做` — explicit non-goals for this stage.
+Create a dedicated `00-项目识别.md` only for formal audit, a long-running handoff, or a genuinely disputed classification. When required, keep these sections concise:
+
+- `## 结论`
+- `## 证据`
+- `## 风险触发的后续检查`
+- `## 非目标`
+
+The dedicated file counts against the pre-code document budget in `00-feature-grading-and-splitting.md`.
 
 ## Stop Conditions
 
-Stop and ask the user if classification changes implementation risk or project scope.
+Stop only when the unresolved classification changes a material risk or scope decision. Otherwise record the evidence and continue in the same run.

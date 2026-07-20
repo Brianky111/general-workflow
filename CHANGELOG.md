@@ -2,6 +2,20 @@
 
 Skill package version is independent of the source document version (v3.8).
 
+## 0.10.0 - 2026-07-20
+
+Implementation readiness and existing-code reuse now outrank document completeness.
+
+- The router has a positive `READY` gate: once observable behavior, material contract deltas, the production write seam, and credible verification are clear, planning, red, and implementation may continue in the same run. Missing optional artifacts and approval timestamps no longer route work backward.
+- Lean incremental delivery is the default. Ordinary pre-code work is capped at two new artifacts, 160 non-empty Markdown lines, one human pause, and 20% of expected effort or 30 minutes unless a named risk justifies expansion. Blueprint batching is explicit opt-in.
+- Raw source, structured behavior, and BDD examples form the normal compact contract. Clarification asks only behavior-changing questions; a clean ambiguity pass records a concise result; separate interface, conflict, matrix, audit, and status documents are risk-triggered.
+- Existing-code work carries a stable production node (`N-ID`) through reuse scan, planning, testing, red replay, implementation, and review. Each node binds the current owner, real runtime/composition-root path, nearest existing test home, and reused assets.
+- `MODIFY_EXISTING` / `REUSE_EXTEND` is the default. New, replacement, or side-by-side owners require reuse-rejection evidence, a non-test runtime edge, wiring proof, and selection/retirement rules; unregistered `V2` implementations and parallel test harnesses are rejected.
+- Red tests now have an admissibility path for wrong-SUT, unexpected-green, setup/discovery failures, and stale topology. Invalid red evidence is superseded and replanned rather than used to justify a parallel implementation.
+- The default test strategy is a sparse behavior-to-proof map in the existing suite. Full cross-layer matrices and independent completeness artifacts are reserved for connection, safety, compatibility, audit, or multi-owner risk.
+- Scope firewalls, executor charters, and worktree closeout remain available without requiring duplicate status mirrors; durable status is updated only at a human pause, handoff, or closeout in one selected surface.
+- `check_consistency.py` now protects the cross-stage READY budget, stable production-node binding, sparse/risk-triggered mapping, invalid-red recovery, wiring, and review anchors in addition to reference integrity.
+
 ## 0.9.0 - 2026-07-14
 
 BDD behavior discovery is now a first-class stage between structured requirements and interface contracts.

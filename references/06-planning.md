@@ -2,79 +2,76 @@
 
 ## Purpose
 
-Convert the full-stack contract and conflict scan into an implementation plan plus traceable test strategy that preserves test-first discipline.
+Convert a ready compact contract and code-reality scan into the smallest executable, reuse-first code and verification plan. Planning exists to start safe implementation, not to create a second specification.
 
 ## Entry Conditions
 
-- Contract exists.
-- Conflict scan is complete or explicitly not applicable.
-- No actionable implementation plan exists, the test matrix is incomplete, or the plan/matrix draft is ready for its approval gate.
+- The raw/structured/BDD bundle is ready under `00-progress-router.md`; any material public/runtime boundary delta is explicit.
+- For existing-code work, `05-conflict-scan.md` has identified the current production owner, runtime/composition-root path, nearest existing test home, and reuse candidates.
+- No executable plan yet binds the changed behavior to those code and test anchors.
 
 ## Actions
 
-1. Re-read accepted requirements, BDD Rule/Examples, contracts, conflict scan, and status evidence before choosing strategy. Do not plan from code shape alone.
-2. If any module might need refactor, or the user asked for refactor/cleanup/rewrite/restructure/simplification, read `00-refactor-intake.md` and add the refactor preflight before coding.
-3. Choose the implementation strategy for each module, with stated reasons:
-   - from scratch,
-   - modify existing code,
-   - reuse and extend,
-   - refactor before implementing,
-   - strangler/side-by-side replacement.
-4. Assign each slice/module a track, then a tier for red/green work. The agent proposes tier and reasons; the user confirms or overrides at the planning gate:
-   - **Visual track:** pure presentation (layout, styling, interaction feel). No filler snapshot tests; deliver screenshots or previews, pass human-eye acceptance at integration, then record the visual regression baseline.
-   - **Red/green standard tier:** example-based red/green tests covering numbered S/E/B scenarios.
-   - **Red/green enhanced tier:** standard, plus property tests targeting `P` invariants, plus a pairwise combination table (PICT-style generation from the parameter matrix, covering all two-parameter interactions).
-   - **Red/green adversarial tier:** enhanced, plus an independent attack agent that reads only the contract, never the implementation (three-way independence between test writer, implementer, and attacker), plus a mutation-testing pass threshold.
-5. Split red/green work into behavior-sized micro-batches. Each batch names one or a few tightly related scenario/invariant IDs and cycles red -> green -> refactor before the next batch; do not plan one giant red phase for the whole feature.
-6. Read `06-test-strategy.md` and create `02-测试矩阵.md` with both the Feature Test Matrix coverage view and evidence register before asking for planning approval.
-7. List expected evidence: commands, screenshots, CI, traces, probes, or logs.
-8. If local subagent tools are available and the work is non-trivial, read `00-orchestration-policy.md` and design executor scopes. The main thread remains the orchestrator and must not implement a scope assigned to an executor.
+1. Read only the accepted compact contract, relevant boundary delta, code-reality/reuse map, and current Git/test evidence. Do not restate all upstream prose.
+2. Carry the same stable `N-ID` from the reuse map into the plan. For each changed behavior, name the current production owner, real runtime/registration path, nearest existing test home, reusable helpers/fixtures/fakes, exact write file or symbol, and verification command.
+3. Default existing-code work to `MODIFY_EXISTING` or `REUSE_EXTEND`. `NEW`, `REPLACEMENT`, or `SIDE_BY_SIDE` requires:
+   - the evaluated reuse candidates and concrete rejection evidence;
+   - the non-test caller, registration, route, export, or composition-root edge that will reach the new node;
+   - a wiring/assembly check through the real production selection path;
+   - for side-by-side work, the selection rule, coexistence invariant, rollback, and old-owner retirement condition.
+4. Keep one active default production owner per business responsibility. A cleaner name or easier unit test is not evidence for a second service/model/parser/client/store/harness.
+5. Add a scope firewall only for actual neighbors: exact write set, important read-only context, prohibited paths, and discovered out-of-scope failures. Existing-code write sets should name files or symbols; a broad directory glob is not sufficient unless every intended new node is listed.
+6. If refactor is requested or needed to expose a test seam, read `00-refactor-intake.md`. Prefer a characterization test and the smallest behavior-preserving seam refactor over creating a parallel implementation.
+7. Map each changed behavior to the cheapest trustworthy test in the existing suite. Add a real wiring/contract/integration check only when the connection itself can fail. Read `06-test-strategy.md` only when a named risk requires expanded coverage; do not build a full matrix for ordinary work.
+8. Split implementation into behavior-sized red -> green -> refactor batches, but keep the plan compact. Several ready batches may run continuously in the same execution turn.
+9. List the concrete commands or visual/runtime evidence that will prove target behavior, production wiring, and the relevant regression slice.
+10. If local subagent tools materially improve the work, read `00-orchestration-policy.md`. A writable executor/worktree gets a concise charter with objective, target ID, exact write set, evidence, handoff, and closeout; the main thread does not implement that same scope.
 
-## Required Tables
+## Minimum Executable Plan
 
-Consume every `C` conflict ID:
+Use one sparse table or equivalent bullets. Do not create separate conflict, topology, scope, and test tables when one row carries the needed facts.
 
 ```markdown
-| 冲突编号 | 处理方式 | 涉及代码 | 保留什么 | 替换/新增什么 | 测试覆盖 | 风险与回滚 |
+| Behavior | N-ID / kind | Current owner and production path | Existing test home / reused assets | Action and exact write set | Red / verification | Wiring or risk evidence |
 |---|---|---|---|---|---|---|
-| C1 | 修改现有代码 / 复用扩展 / 从零实现 / 延后并说明原因 | `<路径>` | <旧行为> | <目标改动> | S1/E1/P1 | <说明> |
+| R1/EX1 | N1 / EXISTING | `<route> -> <owner>` | `<nearby-test>` / `<fixture>` | MODIFY_EXISTING `<file#symbol>` | `<target command>` | `<real-entry check or N/A:no connection change>` |
 ```
 
-Map every method/message/UI flow to its `R/EX` behaviors, layer/module, and concrete path inside the feature's declared code homes. Include frontend, shared runtime contract, application/domain, adapter/persistence, downstream handlers, and E2E paths when applicable. Walk one accepted example through the entire slice. If boundaries or ownership need to change, route to `10-change-protocol.md` level A.
+For a real conflict or side-by-side replacement, append only the selected resolution and rollback/retirement facts; do not first write several candidate tables and defer the choice to another document.
 
-When orchestration is used, include an executor split table:
+When orchestration is used, the charter may be a plan row or an executor prompt rather than a separate artifact:
 
 ```markdown
-| Executor role | Module or scope | May edit | Must not edit | Required evidence | Handoff/status location |
-|---|---|---|---|---|---|
-| <role> | <module> | <paths> | <paths/contracts/tests> | <commands/report> | `99-进度.md#...` |
+| Executor role | Purpose | Target ID / N-ID | May edit | Must not edit | Required evidence | Handoff/status location | Closeout |
+|---|---|---|---|---|---|---|---|
+| <role> | <feature batch / bug fix / counterexample / review-only> | <behavior + production node> | <paths> | <paths/contracts/tests> | <commands/report> | <selected status surface or handoff message> | <merge/no-op/blocked/discard owner> |
 ```
 
-If the main thread executes a non-trivial plan directly, record why delegation is unavailable, unsafe, or lower value than direct execution.
+Vague goals such as "investigate", "continue", "fix failures", or "clean up" are read-only discovery, not writable charters.
 
 ## Validation Strength Triggers
 
-Read `00-feature-grading-and-splitting.md` for feature-level path. At module level, choose at least enhanced validation if any trigger applies:
+Read `00-feature-grading-and-splitting.md` for the lean budget and expansion rules. Add focused property, pairwise, mutation, adversarial, contract, or E2E evidence only for the risk it addresses. Typical triggers include:
 
 - three or more freely combinable input parameters,
 - high-cost or irreversible decisions,
 - external input parsing or protocol adaptation,
 - state machine or concurrency logic.
 
+The agent selects proportionate validation and proceeds. Ask the user only when validation cost or a safety tradeoff changes accepted scope or delivery expectations.
+
 ## Output
 
-Create or update the active round's `docs/<module>/<feature>/<round>/02-规划.md` and `02-测试矩阵.md` (or named plan and matrix sections of `00-功能.md` for lightweight features), written in Chinese.
+Record the minimum executable plan in the current task plan, handoff, or owning compact feature document. Create `02-规划.md` only when the repository already governs it, several owners need a durable handoff, or a named risk justifies it. Create a separate `02-测试矩阵.md` only when `06-test-strategy.md`'s expansion triggers apply.
 
-## Planning Gate
+## Execution Gate
 
-The plan is a document-PR human gate. After the plan and Feature Test Matrix are complete, stop and ask the user to review the conflict-handling table, implementation strategy decisions, full-slice walkthrough, track/tier assignments, coverage cells, stable test IDs, evidence-register execution details, and assembly-test choices. Do not write tests or implementation in the same run.
+The plan is executable when every changed behavior has a production `N-ID`, real runtime path, existing test home or justified new test location, exact action/write set, target verification, and any required wiring evidence. All discovered conflicts must have one selected handling; all writable executor charters must be concrete.
 
-The gate also checks coverage: every `D` decision and accepted `R/EX` behavior must trace to a contract clause, plan item, and Feature Test Matrix row. An unconsumed decision, example, or `C` conflict ID pushes the plan back.
+If the user authorized implementation and no material behavior, compatibility, safety, or scope choice remains, freeze the compact plan in place and start `07-red-tests.md` or `08-implementation.md` in the same run. Do not ask for a second planning approval, pre-generate parallel stubs, or wait for optional document/status completeness. A new production node begins in the red/green batch only after its `NEW/REPLACEMENT` evidence above is satisfied.
 
-For lightweight features this gate merges with the contract gate into the single `00-功能.md` document-PR review; do not run a second human pass.
-
-Once approved, the plan and the matrix's required coverage/owners freeze together; matrix status and evidence cells remain live. Strengthening coverage is allowed with a recorded reason, but weakening or deleting required coverage reopens the planning gate or change protocol. Generate code stubs from the frozen contracts for new methods and modules only (signatures plus Chinese comments plus `throw new Error('尚未实现')`); never overwrite existing implementations. CI compares doc and stub signatures. Then route the first micro-batch to `07-red-tests.md`; after each green/refactor step, return to the router for the next matrix row. Batches classified as pure refactor by `00-refactor-intake.md` route to `08-implementation.md` instead. Independent slices may now be implemented in parallel by executors.
+Strengthen verification freely when evidence exposes risk. Weakening accepted behavior or a material contract routes to `10-change-protocol.md`; correcting a wrong SUT or unexpectedly green plan routes back to the code-reality map without inventing a new implementation.
 
 ## Stop Conditions
 
-Stop if requirements/contracts cannot be recertified, if any scenario lacks a credible test-matrix row, if the plan requires scope expansion, architectural tradeoffs, or contract changes, and always at the planning gate before any test or implementation work.
+Stop only when the compact contract is not ready, no real production/test anchor can be established, a `NEW/REPLACEMENT` node lacks reuse-rejection or runtime wiring evidence, a writable executor lacks a concrete charter, an out-of-scope repair is being pulled in, or the plan requires an unresolved behavior/compatibility/safety/scope decision. Do not stop merely because a plan file, full matrix, approval timestamp, or status mirror is absent.

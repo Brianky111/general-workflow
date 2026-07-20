@@ -2,50 +2,53 @@
 
 ## Purpose
 
-Choose the project-level pacing before any feature work: blueprint (freeze all contracts first, then implement in parallel) or incremental (one feature loop at a time). The stages are the same in both modes; only the ordering and gate grouping differ.
+Choose project pacing without delaying the first verifiable vertical slice. Default to incremental lean delivery; use blueprint batching only when a named cross-feature risk requires coordinated freeze.
 
 ## Entry Conditions
 
-- Project kickoff is underway and no pacing mode is recorded.
-- `docs/workflow-state.json` has no `mode` field, or its value conflicts with how work is actually proceeding.
-- `mode` is `blueprint` and the agent is about to do feature-level work.
+- Project kickoff is underway and pacing affects the requested work.
+- Existing pacing evidence conflicts with how delivery is actually proceeding.
+- A proposed blueprint would hold several features behind a shared gate.
 
 ## Mode Selection
 
-- **Blueprint mode:** default for new projects and major versions. Freeze every contract before any implementation.
-- **Incremental mode:** default for additions and fixes on top of a shipped blueprint. Lightweight-path features and level B/C changes always belong here.
+- **Incremental lean:** default for new projects, additions, fixes, and ordinary feature work. Complete the core contract and READY check from `00-feature-grading-and-splitting.md`, then plan, test, and implement that slice without waiting for unrelated features.
+- **Blueprint:** opt in only when several in-scope features must agree on a shared public schema/event/state owner before any one can be implemented, a coordinated irreversible migration demands a single freeze, or formal multi-owner/regulatory approval requires a batch baseline.
 
-Record the decision in `docs/workflow-state.json` as `"mode": "blueprint" | "incremental"` (projects that disabled state files record it in kickoff notes or `architecture.md` instead), and scope the blueprint in `docs/requirements-index.md` (in-scope features plus a holding area for out-of-scope ideas). The user confirms mode and scope.
+Repository age, a major-version label, the number of features, or the availability of parallel agents does not by itself justify blueprint mode.
 
-## Blueprint Mode Rules
+When state files are enabled, record `"mode": "incremental" | "blueprint"` in the one chosen status source. Otherwise record the exceptional blueprint decision in the project or feature contract. A clear user implementation request plus the default incremental choice needs no separate mode confirmation.
 
-Blueprint mode is a staged bulldozer, not a per-feature pipeline. Each stage completes for **all** in-scope features and passes a batch review gate before the next stage starts:
+## Incremental Lean Rules
 
-1. **Requirements and BDD batch:** run requirements capture and BDD Example Mapping for every feature, producing `00-项目识别.md`, `00-原始需求.md`, `00-整理后需求.md`, `00-行为示例.md`, plus the project roster. Merge Rule/Example questions and requirement questions into **one consolidated list grouped by feature**; after answers refresh stale maps, then ambiguity-audit the whole set → requirements/behavior batch gate.
-2. **Interface batch:** run the contract stage for every feature (old projects and new modules in old projects also produce `01-代码冲突与重叠.md`). Shared entities live once in `domain-models.md`. After all drafts, the ambiguity audit also runs a **cross-contract consistency check**: same-named fields mean the same thing (against the glossary and shared models), runtime schemas agree across producers/consumers, event/state ownership has no gaps or duplicate owners, no methods conflict, and no feature edits shared models locally. → interface batch gate; passing it freezes **all contracts at once**.
-3. **Global planning and test strategy:** run the implementation plan and `02-测试矩阵.md` for every feature in one pass, including contract, cross-feature, UI, and E2E assembly coverage → planning batch gate.
-4. Only then do implementation, review, integration, and completeness audit open, with multiple agents working in parallel by feature and module; each feature still passes its own integration and Definition of Done gates.
+1. Apply the default document budget: at most two new pre-code artifacts, 160 nonblank lines, one human pause, and 20% of expected effort or 30 minutes.
+2. Preserve or link the raw source, write concise structured requirements with BDD examples, and run the READY check.
+3. Ask only questions whose answers change observable behavior or a named risk. Decide reversible internal implementation choices without a user gate.
+4. When READY, freeze the core contract and continue into planning, tests, and implementation in the same run.
+5. Add dedicated interface, conflict, matrix, fixture, or status material only for the risk triggers in `00-feature-grading-and-splitting.md`.
 
-Standing disciplines:
+## Blueprint Rules
 
-- Every external touchpoint must have probe-captured fixtures **before** the interface batch gate. Signing contracts against an imagined external world is blueprint mode's biggest risk.
-- Blueprint batches skip feature grading: the batch advances all features together, and the lightweight path exists only in incremental mode.
-- Blueprint mode trades later change cost for contract consistency and batch review efficiency; the later a design error is found, the more level-A changes it causes. Note this tradeoff when proposing the mode.
+Scope a blueprint to the shared risky surface, not automatically to every project feature. State which features and shared contracts are held by the batch and which independent slices may continue incrementally.
 
-## Incremental Mode Rules
+Use only the necessary batch gates:
 
-Run the single-feature loop: each feature passes stages from identification through completeness acceptance on its own. Document granularity is identical to blueprint mode (one folder per feature); only the gate grouping differs.
+1. align the affected requirements and BDD examples;
+2. freeze the shared public contracts, ownership, migration, or compliance baseline that triggered blueprint mode;
+3. record focused cross-feature verification and implementation ownership;
+4. release independent feature implementation as soon as its dependencies are frozen.
+
+Consolidate blocking questions and human review into one batch pause when possible. Do not repeat per-feature confirmation for faithful restatements already authorized by the user. If a blueprint exceeds the default document budget, record the triggering risk and why the batch evidence is necessary.
 
 ## Re-entry
 
-When the mode is already recorded, this file only tells you which gate applies; do not redo mode selection. In incremental mode, return to the router and proceed stage by stage. In blueprint mode, identify the current batch (requirements, interface, or planning): if the batch gate covering the work at hand has passed, return to the router and select the feature-level stage; if not, continue the batch and its gate before any later-stage work.
+Do not redo mode selection when current evidence is coherent. In incremental mode, evaluate the current feature's READY state. In blueprint mode, check only the unresolved shared dependency that actually blocks the requested slice; do not hold it for unrelated missing documents.
 
 ## Output
 
-- `docs/workflow-state.json` with the recorded `mode`.
-- For blueprint mode: `docs/requirements-index.md` scope roster and the current batch stage noted in status files.
-- User confirmation of mode and scope.
+- No dedicated pacing artifact is required for the default incremental mode.
+- For blueprint mode, record its trigger, bounded scope, blocking shared surface, approval evidence, and release condition in the one chosen project status or contract source.
 
 ## Stop Conditions
 
-Stop for user confirmation before recording or changing the mode, before expanding blueprint scope mid-batch, and before starting any implementation while a blueprint batch gate is unpassed.
+Stop only when choosing blueprint changes scope or delays authorized implementation, or when a shared compatibility, migration, security, or ownership decision truly requires human approval. Otherwise use incremental lean and continue.

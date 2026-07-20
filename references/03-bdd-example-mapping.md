@@ -2,116 +2,70 @@
 
 ## Purpose
 
-Turn structured requirements into shared, concrete behavior examples before interface design. BDD decides what observable behavior means; TDD later decides how to implement and prove it.
-
-## Contents
-
-- Position and Three Lenses
-- Actions and artifact shape
-- BDD Gate
-- Output and stop conditions
+Turn the structured requirement into a few concrete, observable examples that can guide tests and implementation. BDD is part of the lean core contract; it is not automatically a separate document or human gate.
 
 ## Entry Conditions
 
-- `00-整理后需求.md` has a goal, actors, and an initial `S/E/B` scenario roster.
-- The standard path lacks `00-行为示例.md`, or requirement answers made it stale.
-- A level-A change alters a rule, example, actor outcome, or failure bottom line.
+- The structured requirement states a goal and observable acceptance behaviors.
+- An accepted behavior changed or lacks a concrete example.
+- A named risk needs additional boundary or failure examples.
 
-Lightweight features keep a minimal `## BDD 行为示例` section inside `00-功能.md`. Pure refactors and level-B/C work reuse accepted examples unless they expose a behavior gap.
+Pure refactors and bug fixes reuse accepted behavior unless a counterexample proves a gap. Do not restate unchanged behavior merely to refresh a template.
 
-## Position in the Workflow
+## Lean Example Form
 
-```text
-Requirements Capture
-→ BDD Example Mapping
-→ Requirements Clarification
-→ refresh stale examples
-→ Ambiguity Audit
-→ human requirement/behavior confirmation
-→ Interface Contract
+For an ordinary feature, keep one stable acceptance ID from requirement through test evidence:
+
+```markdown
+### AC1：<可观察行为>
+- Given：<相关前置状态>
+- When：<一个业务触发>
+- Then：<可观察结果>
+- 失败底线：<不得发生的副作用；不适用时省略>
+- 验证：<最低可信层或命令，允许在实现时补具体路径>
 ```
 
-## Three Lenses
-
-Evaluate every map through three explicit lenses:
-
-- **Business/user:** goal, rule, value, and observable outcome.
-- **Development/system:** state, trigger, ownership boundary, and feasibility questions without choosing implementation.
-- **Test/risk:** counterexamples, forbidden side effects, boundaries, permissions, concurrency, recovery, and ambiguity.
-
-When three people are unavailable, perform three labeled passes. The user still owns product behavior decisions; the agent owns technical choices after behavior is settled.
+Do not create separate S/E/B, R/EX, D, P, and matrix-row IDs for the same lean behavior. Preserve an existing ID scheme when it is already authoritative. Use a separate Rule/Example index only when formal traceability, independent owners, or a genuinely large behavior set requires it.
 
 ## Actions
 
-1. Restate the Feature goal and actors; do not introduce behavior absent from raw requirements or recorded decisions.
-2. Extract rules as `R1`, `R2`... Each rule states one observable business truth and cites source `S/E/B/D` IDs.
-3. Add concrete examples as `EX1`, `EX2`... under each rule. Use Given/When/Then:
-   - **Given:** relevant preconditions and state, never an action sequence.
-   - **When:** one business trigger or user action.
-   - **Then:** observable outcome, including persistence or downstream results when relevant.
-   - **And / failure bottom line:** required side effects and effects that must not occur.
-4. Cover only applicable categories, but never omit one silently: normal, alternative, error, boundary, permission, illegal state, duplicate/concurrent, dependency failure, retry/recovery, refresh/persistence, UI state, and cross-feature event outcomes.
-5. Capture unknown behavior in `## 待确认反问` using the existing question template and exact `【答复】：` marker. Do not hide a question inside an example.
-6. Maintain a trace table from every requirement scenario to its rule/example IDs and back. One scenario may need several examples; every example must cite its source.
-7. Keep examples technology-neutral. Do not mention controllers, SQL, React state, selectors, queues, class names, or mock calls unless the technology itself is user-visible behavior.
-8. Use Markdown examples by default. Generate `.feature` files only when kickoff selected an executable BDD runner; the Markdown map remains the reviewed source or a generated/index view, never a competing truth.
+1. Reuse each structured requirement's acceptance ID and write at least one concrete Given/When/Then example.
+2. Keep Given to relevant state, When to one business trigger, and Then to observable outcomes. State forbidden side effects only when failure could otherwise cause them.
+3. Add alternative, error, boundary, permission, concurrency, recovery, persistence, UI, or cross-feature examples only when the request, code, or named risk makes them applicable. Do not prove every absent category with `N/A`.
+4. Trace an example directly to its source requirement by sharing the same ID or a simple link; do not build a bidirectional table when the relationship is already one-to-one and obvious.
+5. Keep examples technology-neutral unless a public technology or protocol is itself part of observable behavior.
+6. Route only genuine behavior choices to `03-requirements-clarification.md`. Decide reversible technical details without asking the user.
+7. Record a dedicated `.feature` file only when the project actually runs executable Gherkin; do not keep competing Markdown and Gherkin truths.
 
-## Artifact Shape
+## READY Gate
 
-```markdown
-# Feature：<功能名> 行为示例
+The behavior portion is sufficient when:
 
-## Example Map
-| Rule | 业务规则 | 来源 | Examples | Questions | 状态 |
-|---|---|---|---|---|---|
-| R1 | <可观察规则> | S1 / E1 / D1 | EX1, EX2 | Q1 | draft |
+- every accepted behavior has a concrete example;
+- examples do not contradict the raw source or each other;
+- every real failure risk names the observable result and any material forbidden side effect;
+- no unresolved question can change user-visible behavior, compatibility, data meaning, security, irreversible effects, or ownership;
+- a credible verification approach exists for each behavior.
 
-## R1：<规则名>
+Run the targeted check in `03-ambiguity-audit.md`. A clean result plus existing user authorization freezes the core contract without another confirmation. Then apply the READY check in `00-feature-grading-and-splitting.md` and continue into planning, tests, and implementation in the same run.
 
-### EX1：<正常或代表性示例>
-- Given：<相关前置状态>
-- And：<补充状态，可选>
-- When：<一个业务动作>
-- Then：<主要可观察结果>
-- And：<持久化、UI 或下游结果，可选>
-- 失败底线：<不得发生的副作用；成功示例可写 N/A>
-- 来源：S1 / D1
-- 后续追踪：合同待定；测试矩阵待定
+## Risk-Triggered Expansion
 
-## 场景追踪
-| Requirement scenario | Rule / Examples | 覆盖结论 |
-|---|---|---|
-| S1 | R1 / EX1 | covered |
+Expand examples only for the affected risk:
 
-## 待确认反问
-### Q1【R1/EX2】<行为问题>
-- A. <答案与后果>
-- B. <答案与后果>
-- 建议：<选项与理由>
-- 【答复】：
+- public/external compatibility: consumer and failure examples;
+- migration or irreversible effects: before/after and rollback outcomes;
+- security or permission boundaries: allowed and denied examples;
+- concurrency, idempotency, or complex state: interleavings, duplicates, and illegal transitions;
+- cross-owner events/state: producer, consumer, timing, and retry outcomes;
+- formal audit: explicit source-to-example traceability.
 
-## 决策记录
-```
-
-For large features, keep `00-行为示例.md` as the Rule/Example index and place detailed examples in the owning `use-cases/UC<n>-<slug>.md`; never define the same example twice.
-
-## BDD Gate
-
-The map is ready for ambiguity audit only when:
-
-- every accepted `S/E/B` scenario maps to at least one `R/EX` and every example traces back;
-- rules are observable and examples use concrete data or state, not vague adjectives;
-- applicable failure, permission, boundary, concurrency, recovery, persistence, UI, and cross-feature categories are covered or explicitly `N/A` with a reason;
-- failure examples name forbidden side effects;
-- Given/When/Then contains no hidden implementation design;
-- contradictions are resolved and `## 待确认反问` is empty.
-
-After `03-ambiguity-audit.md` passes, the user confirms the requirement scenario roster and behavior examples together. Record that approval as `behaviorExamplesConfirmedAt`; it freezes the accepted `R/EX` behavior before interface design.
+The expansion counts against the document budget unless the named risk exception explains why it must exceed it.
 
 ## Output
 
-Create or update `docs/<module>/<feature>/<round>/00-行为示例.md`, or the named lightweight section. Route through `03-requirements-clarification.md`; if answers change a rule/example, refresh this map, then run `03-ambiguity-audit.md` and the combined human requirement/behavior gate.
+Default to an inline BDD section in the structured requirement or `00-功能.md`. Create `00-行为示例.md` or use-case files only for a named expansion trigger. Do not add a separate behavior-confirmation timestamp when the same authorized core-contract reference proves acceptance.
 
 ## Stop Conditions
 
-Do not write interface contracts while a behavior question, contradiction, unmapped scenario, failed audit, or unapproved example remains. Do not turn a technical implementation preference into a business rule.
+Stop only for a blocking behavior decision or a contradiction that cannot be resolved from evidence. Missing optional categories, a separate trace table, or a dedicated BDD file do not block implementation.

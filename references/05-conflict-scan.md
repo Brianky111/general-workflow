@@ -1,19 +1,19 @@
-# Conflict Scan
+# Code Reality, Reuse, and Conflict Scan
 
 ## Purpose
 
-Find where the desired contract overlaps, contradicts, or can reuse existing code.
+Bind the compact contract to the code and test paths that the running system actually uses. Find reuse and real conflicts before planning; do not create a report merely because the repository already exists.
 
 ## Entry Conditions
 
-- The project is old or the feature touches existing modules.
-- The contract describes behavior that may already exist.
+- Existing code may already own or partially implement the behavior.
+- Planning does not yet name the current production owner, real runtime path, nearest existing test home, and reuse assets.
 
 ## Actions
 
-1. Search for existing routes, components, services, models, tests, and docs related to the feature.
+1. Search for existing routes, components, services, models, tests, and docs related to the feature. Record the searched code homes and queries; "nothing reusable found" without reproducible search evidence is not a result.
 2. Compare existing behavior against the contract.
-3. For each finding, record the difference between current and target behavior plus 2-3 candidate directions. Do not decide the handling here: reuse/modify/refactor/rebuild decisions belong to the conflict-handling table in `06-planning.md`, after the contract gate.
+3. For each real finding, record the difference between current and target behavior and select the smallest reversible handling when evidence makes it clear. Carry a material behavior/compatibility choice to `06-planning.md` or the user; do not manufacture 2-3 candidates only to defer an ordinary internal decision.
 4. Check at least:
    - public APIs, commands, events, routes, components, and config entries,
    - data models, persistence, cache, serialization formats,
@@ -23,41 +23,51 @@ Find where the desired contract overlaps, contradicts, or can reuse existing cod
    - external adapters, protocols, fixtures, and test doubles,
    - similar historical features.
 5. Note migration risks, compatibility risks, and duplicated concepts.
+6. Assign a stable `N-ID` to every relevant production topology node and keep that ID through planning, tests, implementation, and review. Record the current production owner, the real runtime/assembly entry, non-test incoming edges, and whether the node is existing, proposed-new, or proposed-replacement.
+7. For each target responsibility, name the nearest existing implementation, test home, runner, fixtures/factories, and other reuse assets. Existing-code work defaults to modifying or extending the existing owner; collect concrete reuse rejection evidence before proposing `NEW` or `REPLACEMENT`.
+8. Produce a code topology sketch for the feature slice: entry points, state owners, shared contracts/schemas, adapters, persistence, cross-feature calls, and test seams. Mark which nodes are in scope, read-only context, or out of scope.
+9. For a proposed `NEW` or `REPLACEMENT`, identify its planned non-test incoming edge and wiring verification. For side-by-side replacement, also identify the runtime selection point and retirement condition; unresolved fields are `GAP` and block planning.
+10. If the scan finds unrelated bugs, failing tests, dead code, or design smells, do not turn them into work. Record them as out-of-scope findings unless they contradict or block the accepted contract.
 
 ## Output
 
-Create or update the active round's `docs/<module>/<feature>/<round>/01-代码冲突与重叠.md`; use `conflicts/<sub>.md` only when the list is large, keeping the summary file as the index of all `C` IDs and their status.
+For ordinary work, put the `N-ID` reuse map directly in the minimum executable plan from `06-planning.md` or the current handoff. Create `01-代码冲突与重叠.md` or a focused conflict appendix only when there is a concrete legacy conflict, uncertain migration/cutover, independent owner handoff, or formal traceability need. No conflict means a concise scan result, not an empty report.
 
-Start the file with a summary section:
+Use one minimum reuse map:
 
 ```markdown
-## 总结
-- 扫描结论：无冲突 / 有冲突 / 有功能重叠 / 需要补充探针
-- 是否阻塞接口确认：是 / 否
-- 需要主导者理解的关键风险：<一两句>
+| N-ID | Production owner / kind | 真实运行/装配入口与非测试入边 | 最近既有测试归宿/复用资产 | 匹配点/缺口/搜索证据 | 计划动作与作用域 |
+|---|---|---|---|---|---|
+| N1 | `<symbol>` / EXISTING, NEW, or REPLACEMENT | `<route/DI/root -> owner>` | `<test>` + runner/fixture/helper | <可复用什么；为何不足> | MODIFY/EXTEND/NEW/REPLACE；可改/只读/不碰 |
 ```
 
-Use this item shape:
+For a real conflict, append one selected-resolution row. `NEW`/`REPLACEMENT` records 复用否决证据 and a non-test edge/wiring check; side-by-side records its 选择点和退场条件:
 
 ```markdown
-## C1：〈一句话说明冲突或重叠〉
-- 需求来源：S1 / E1 / B1 / BDD R1/EX1 / 决策 D1 / 接口方法 M1
-- 涉及现有代码：`<路径>` / `<函数或类>` / `<路由或组件>`
-- 当前行为：<现有代码实际做什么>
-- 目标行为：<需求或接口要求什么>
-- 类型：接口签名冲突 / 数据结构冲突 / 流程冲突 / 命名冲突 / 行为冲突 / 功能重叠 / 架构边界冲突 / 外部协议冲突 / 测试 fixture 冲突
-- 风险：<如果处理不好会发生什么>
-- 是否阻塞接口确认：是 / 否
-- 给主导者的解释：<不用代码术语也能理解的说明>
-- 留给规划层：待决策；候选方向可写 2-3 个，但不在本层拍板
+| C-ID | Acceptance / N-ID | Current -> target | Selected handling and reuse evidence | Runtime/wiring or cutover evidence | Risk/rollback |
+|---|---|---|---|---|---|
+| C1 | AC1 / N1 | <差异> | <修改/复用/替换及证据> | <真实入口验证；side-by-side 切换/退场> | <风险/回滚> |
+```
+
+Add an OOS row only for an actual neighboring finding:
+
+```markdown
+| OOS ID | Finding | Why outside this contract | Blocks current evidence? | Follow-up |
+|---|---|---|---|---|
+| OOS1 | <bug/failure/smell> | <scope reason> | yes/no | <issue/handoff> |
 ```
 
 ## Hard Rules
 
-- An old project with no conflict report, or one containing only vague statements, is incomplete; push it back.
+- Repository age alone never requires a conflict report; the code-reality/reuse evidence may live in the executable plan.
 - Every conflict item must point at concrete code locations.
-- Conflicts discovered later must be recorded back into this file before planning consumes them.
+- Never recycle an `N-ID`; later artifacts must reference the same ID for the same production responsibility.
+- Planning must not start for existing-code work until the topology section names the intended write paths, current production owner and entry, nearest existing test home/reuse assets, and important read-only/out-of-scope neighbors.
+- Existing-code work defaults to modifying or extending the existing owner. `NEW` or `REPLACEMENT` is not plan-ready without reuse rejection evidence, a planned non-test incoming edge, and wiring verification; side-by-side work additionally requires a selection point and retirement condition.
+- Do not introduce a parallel SUT, runner, harness, fixture system, or helper library merely to manufacture a red test. Treat unavoidable new test infrastructure as a conflict that needs evidence and an explicit executable-plan decision.
+- Conflicts discovered later must update the owning reuse map or focused appendix before planning consumes them; do not create a new document solely for synchronization.
+- Out-of-scope findings are not implementation permission. They need a user request, accepted change proposal, or proof that they directly block current evidence.
 
 ## Stop Conditions
 
-Stop if an existing behavior conflict requires changing the accepted contract or product intent.
+Stop if an existing behavior conflict requires changing the accepted contract or product intent, or if a proposed `NEW`/`REPLACEMENT` lacks reuse rejection evidence, a non-test incoming edge, wiring verification, or required side-by-side selection and retirement conditions.
