@@ -18,8 +18,9 @@ An implementation/test mismatch or drift covered by an existing compatibility pr
 1. Append the new durable source to the existing Delivery Anchor history and identify the affected acceptance IDs or contract clauses. Never edit or replace the original source or earlier accepted deltas.
 2. Record the accepted delta and effective Anchor transition: what changes, what remains stable, compatibility impact, and the finite verification obligations added, removed, or superseded. Use existing source/delta references; do not invent an Anchor ID system.
 3. Update only the affected structured requirement, BDD example, interface clause, and `TOS` rows as faithful projections of the new current Anchor state. Keep unaffected closed obligations closed; do not rerun or rewrite unaffected stages.
-4. Preserve prior accepted evidence, counterexamples, and superseded projections as history where the repository already keeps that history.
-5. Run a targeted ambiguity audit, apply READY, and continue into tests and implementation in the same run when no real blocking choice remains.
+4. Route each changed behavior/public/data clause to exactly one owning feature. Update a compact solution frame only when the aggregate outcome/non-goals, participant/owner map, dependency order, rollout/rollback, or aggregate proof changes; never copy child-feature behavior into the solution.
+5. Preserve prior accepted evidence, counterexamples, and superseded projections as history where the repository already keeps that history.
+6. Run a targeted ambiguity audit, apply READY, and continue into tests and implementation in the same run when no real blocking choice remains.
 
 The user's explicit change request or an accepted authoritative product/contract update authorizes a faithful delta and updates only the current effective Anchor state. External drift outside an existing compatibility promise does so only after explicit acceptance; inside that promise it is evidence against the same outcome, not a delta. A reviewer, test/discovery tool, executor, or orchestrator cannot self-accept expansion by relabeling a finding as a named risk. Such a finding cannot enter Anchor history or expand scope. Do not require a second change-proposal approval that merely restates an authoritative delta. Ask once only when implementation requires a materially different product, compatibility, data, security, irreversible-effect, or ownership decision.
 
@@ -36,6 +37,8 @@ For candidate reproducible bugs, property-test seeds, fuzz failures, integration
 ## Delta and Snapshot Policy
 
 Default to an append-only delta reference in the existing core contract, change note, issue, or PR. The original source plus ordered accepted deltas remains the Delivery Anchor history; derived snapshots show current effective behavior but never replace that history. Open a new round only when independent ownership, long-running handoff, or audit history needs it.
+
+Maintain one current effective contract per feature. Consolidate an accepted delta by changing only the affected clauses and their projections; do not concatenate complete historical snapshots or force readers through a chain of rounds to learn current behavior. Keep design choices, test/governance procedures, and optional robustness findings outside user requirements unless an accepted delta actually changes observable behavior, public/data semantics, compatibility, ownership, or a named safety boundary.
 
 Write a complete post-change snapshot only when public compatibility tooling, external consumers, formal audit, or regulation requires one authoritative full contract. State the named exception before exceeding the default pre-code budget from `00-feature-grading-and-splitting.md`.
 

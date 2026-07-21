@@ -10,7 +10,8 @@ Checks:
    Unreachable files are reported as warnings (the Reference Map alone does not
    count as reachable).
 4. Critical cross-stage policy anchors for original-request-first routing,
-   concrete request-gap gating, production-node identity, reuse,
+   concrete request-gap gating, solution/feature ownership separation,
+   current-contract/delta integrity, production-node identity, reuse,
    sparse/risk-triggered test mapping, red admissibility, wiring, review, a
    finite anchor-linked test boundary, bounded discovery, and mandatory
    workflow termination remain present.
@@ -37,6 +38,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "If no such gap exists, close or quarantine the finding",
         "Use a positive readiness test",
         "at most two new artifacts",
+        "Keep the stable module/feature ownership hierarchy separate from a goal-bounded solution delivery view",
+        "Keep the immutable original-plus-delta history separate from one current effective contract per feature",
         "that request is confirmation. Do not ask again for contract or planning approval",
         "Create only artifacts triggered by the current decision or risk",
         "enter red/green/refactor or implementation in the same run",
@@ -61,6 +64,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "name exactly one current `request_gap` before continuing",
         "If no valid `request_gap` can be named, do not enter requirements, planning, test, review, discovery, or implementation",
         "## Positive READY Gate",
+        "a minimal solution frame identifies each owned contribution and the aggregate proof",
         "The user's explicit request to implement counts as confirmation",
         "Do not route backward merely because an optional document",
         "## Lean Fast Path",
@@ -88,6 +92,21 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "at most two new artifacts",
         "20% of expected task effort or 30 minutes",
         "An exception does not upgrade the whole feature",
+    ),
+    "00-solution-framing.md": (
+        "Frame a finite, goal-bounded delivery that needs several independently owned features",
+        "A solution may cross modules, and one feature may participate in several solutions",
+        "Do not rename a stable module as a solution",
+        "Keep one current effective contract per feature",
+        "A feature is complete when its accepted owned behavior works through its intended production entry",
+        "A solution is complete only when every required feature contribution is complete",
+        "do not blueprint every child feature in detail before the first implementation",
+        "A review, test, tool, or executor cannot convert it into a child feature or solution blocker",
+    ),
+    "00-business-taxonomy.md": (
+        "Treat a goal-bounded cross-feature solution as an orthogonal delivery view",
+        "Let every feature retain its one current effective behavior contract",
+        "Do not use the solution as a second contract",
     ),
     "02-requirements-capture.md": (
         "The Delivery Anchor is the immutable original request/source plus the ordered set of explicitly accepted deltas",
@@ -213,6 +232,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "09-integration-acceptance.md": (
         "Execute only the acceptance behaviors assigned",
+        "keep two judgments distinct",
+        "record each result under its owning feature reference",
         "do not open a post-implementation red loop",
         "allow one aggregate repair",
         "When assigned obligations pass, mark them `VERIFIED`, stop integration",
@@ -236,6 +257,9 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "appending an accepted delta, without rewriting the original request or earlier accepted history",
         "Never edit or replace the original source or earlier accepted deltas",
         "Keep unaffected closed obligations closed",
+        "Route each changed behavior/public/data clause to exactly one owning feature",
+        "Maintain one current effective contract per feature",
+        "do not concatenate complete historical snapshots",
         "A reviewer, test/discovery tool, executor, or orchestrator cannot self-accept expansion",
         "A new discovery campaign or refreshed cap belongs to a new accepted delivery",
         "frozen probe ID, request/attempt, wall-clock, sanitization, and no-reset limits",
@@ -253,6 +277,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "- Delivery Anchor：<original source + ordered accepted delta refs；current state>",
         "- Anchor state / request_gap：<SATISFIED / UNMET + concrete existing ID or clause / BLOCKED + exact reason>",
         "Ordinary single-owner work needs no dedicated status document",
+        "A solution status references each owning feature's current contract and evidence",
         "Do not update status after every internal workflow stage",
         "Do not create or hand-maintain `workflow-state.json`, feature `status.json`, and `99-进度.md` in parallel",
         "choose one manual authority",

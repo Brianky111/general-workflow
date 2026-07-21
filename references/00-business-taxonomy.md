@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Use the business hierarchy — product, module, feature, use case, sub-feature, task — only to clarify ownership, acceptance, or independent delivery. Map behavior to the repository's existing vertical slice and avoid creating folders, rounds, or duplicate code homes solely to satisfy a taxonomy.
+Use the stable business hierarchy — product, module, feature, use case, sub-feature, task — only to clarify ownership, acceptance, or independent delivery. Treat a goal-bounded cross-feature solution as an orthogonal delivery view rather than another permanent containment level. Map behavior to the repository's existing vertical slice and avoid creating folders, rounds, or duplicate code homes solely to satisfy a taxonomy.
 
 ## Contents
 
-- Lean layout, optional governed layout, and change rounds
+- Lean layout, optional solution delivery view, governed layout, and change rounds
 - Level mapping and use-case splitting
 - Placement rules
 - Vertical feature slice and code layout
@@ -20,12 +20,17 @@ Prefer the repository's existing task/spec and code layout. When a durable featu
 docs/<module>/<feature>/00-功能.md   # source link + concise requirements + inline BDD + compact plan/evidence
 ```
 
+When a finite accepted outcome genuinely needs independently owned feature contributions, keep a compact solution frame in the existing issue/plan or, when durable coordination is triggered, one optional `docs/solutions/<solution>/00-方案.md`. It references feature contracts and never contains copies of them.
+
 Add `fixtures/`, interface/conflict appendices, a test matrix, round directories, archives, or one status source only when their named risk trigger in `00-feature-grading-and-splitting.md` applies. The following is an expanded governed layout, not a required template:
 
 ## Expanded Governed Layout
 
 ```text
 docs/
+├── solutions/                       # 可选：有终点的跨功能交付视图，不是功能真源
+│   └── <solution>/
+│       └── 00-方案.md                # 锚点、功能/owner映射、依赖、总体证据与关闭条件
 ├── architecture.md                  # 产品级：层级地图、代码归宿模板
 ├── glossary.md
 ├── domain-models.md
@@ -56,6 +61,14 @@ docs/
 
 Path convention: where a project already uses rounds, references write them as `docs/<module>/<feature>/<round>/...`, with `<round>` meaning the active governed round. Projects on the lean path may use their existing issue/spec location or one compact feature file and omit rounds, fixtures, and status files entirely.
 
+## Solution Delivery View
+
+A solution is a finite coordination projection of the Delivery Anchor for an aggregate outcome that cannot be faithfully owned or accepted by one feature. It may cross stable modules and may reference a feature that also participates in other solutions. A module remains a long-lived responsibility domain; a feature remains the single behavior owner; a round remains optional version/audit history.
+
+Use `00-solution-framing.md` only when independently owned feature contributions, cross-module sequencing, or aggregate integration/release/rollback proof is materially required. Let the solution own the aggregate outcome/non-goals, participating feature/owner map, dependencies, shared rollout decisions, and aggregate acceptance. Let every feature retain its one current effective behavior contract, public/data semantics, production owner, plan, and tests.
+
+Do not nest or duplicate feature contracts under the solution, copy shared schemas into it, or keep a completed feature open solely because another independent contribution remains. Do not hide unfinished feature behavior in aggregate status. Ordinary single-feature vertical work needs no solution artifact.
+
 ## Change Rounds
 
 - Do not open a round for every change. Default to a delta in the existing authoritative issue/contract. Open a governed round only for a public compatibility snapshot, formal audit/regulatory history, irreversible migration, or long-running independent-owner approval boundary.
@@ -69,6 +82,7 @@ Path convention: where a project already uses rounds, references write them as `
 | Level | Physical form | Home |
 |---|---|---|
 | 产品 / 系统 Product | repo-level docs | `architecture.md`, `requirements-index.md`, `glossary.md`, `domain-models.md` |
+| 总体解决方案 Solution | optional cross-feature delivery view | existing issue/plan or one compact `docs/solutions/<solution>/00-方案.md`; references owning features and aggregate proof |
 | 大功能模块 Module | **directory** | `docs/<module>/` with `00-模块概述.md`; one roster section in `requirements-index.md` |
 | 功能特性 Feature | existing issue/spec or optional directory | one authoritative compact contract; add status/fixtures/rounds only when triggered |
 | 变更轮 Round | optional directory | only for governed history or independent approval; stores a delta unless a full snapshot is required |
@@ -88,6 +102,7 @@ After splitting, keep one authoritative index and link detailed scenarios/exampl
 
 ## Placement Rules
 
+- If one accepted aggregate outcome requires independently owned feature contributions, frame the minimal solution/owner/dependency/aggregate-proof view through `00-solution-framing.md`, then place each behavior in exactly one owning feature. Do not use the solution as a second contract.
 - A request that spans business modules, or ships in independently acceptable parts, is not one feature: split it into features under their modules before capture (`00-feature-grading-and-splitting.md`).
 - A request that is really a use case or sub-feature of an existing feature is not a new feature: similarity triage merges it into the authoritative compact contract or records a revision delta (`02-requirements-capture.md`).
 - A use case that outgrows its feature — its own actors, acceptance, owner, and release rhythm — may be promoted through similarity triage; record the move only in the roster/status source the project already uses.

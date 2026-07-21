@@ -1,15 +1,17 @@
 # General Workflow Skill
 
-This repository develops the `general-workflow` Codex skill: an implementation-forward, evidence-driven workflow for discovering behavior with BDD and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
+This repository develops the `general-workflow` Codex skill: an implementation-forward, evidence-driven workflow for framing finite cross-feature solutions, discovering behavior with BDD, and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
 
 The skill helps Codex:
 
 - preserve the original request plus explicitly accepted deltas as the immutable Delivery Anchor, and decide whether that request is complete before selecting any workflow stage;
 - continue only from one named source-backed `request_gap`; unanchored findings, tests, risks, and review suggestions become follow-ups rather than new delivery work;
+- frame a goal-bounded solution only when one accepted aggregate outcome genuinely needs several independently owned features, while keeping each feature as the single source of truth for its behavior;
 - load only the reference document needed for that stage;
 - freeze the smallest sufficient behavior contract, then continue into code in the same run when no material decision is blocked;
 - treat documentation as a conditional decision/risk tool rather than a mandatory `00…99` checklist;
-- distinguish product/module/feature/use-case/task levels and map one feature across its full-stack code homes;
+- distinguish the stable product/module/feature/use-case/task ownership hierarchy from an optional cross-feature solution delivery view, and map one feature across its full-stack code homes;
+- preserve one current effective contract per feature while retaining the immutable original-plus-accepted-delta history, instead of concatenating historical snapshots or promoting governance findings into requirements;
 - turn concise requirements into BDD Rules and concrete Given/When/Then examples, asking only questions that change observable behavior;
 - bind existing-code plans and tests to the current production owner, real runtime/composition-root path, and nearest existing test suite;
 - freeze a finite anchor-linked test-obligation set in the sparse behavior-to-proof map, reject unanchored obligations, then consume only valid obligations with behavior-sized red-green-refactor loops;
@@ -31,6 +33,8 @@ A normal feature request uses the lean incremental pipeline. Structured behavior
 
 ![单功能主管线](docs/images/feature-pipeline.svg)
 
+When an aggregate outcome spans independently owned features or modules, the workflow adds a compact, goal-bounded solution frame as an orthogonal delivery view. The solution owns only the aggregate outcome and non-goals, feature/owner map, dependency order, rollout or rollback decisions, and cross-feature proof. Each feature keeps its authoritative behavior contract, production owner, plan, and tests. Work still advances incrementally through exactly one owning feature gap at a time; ordinary single-feature work creates no solution artifact.
+
 Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordinary work does not create empty conflict reports, all-`N/A` matrices, audit reports with no findings, or multiple status mirrors. Dedicated interface, test-matrix, integration, and completeness artifacts appear only when public compatibility, external protocols, migrations, security, concurrency/state-machine risk, cross-owner behavior, audit obligations, or multi-owner handoff justify them.
 
 ## Repository layout
@@ -44,6 +48,7 @@ Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordin
 │   ├── 00-progress-router.md
 │   ├── 00-orchestration-policy.md
 │   ├── 00-pacing-mode.md
+│   ├── 00-solution-framing.md
 │   ├── 00-refactor-intake.md
 │   └── ...
 ├── scripts/
@@ -67,11 +72,12 @@ The skill uses progressive disclosure:
 2. Always read `references/00-progress-router.md` first.
 3. Build the Delivery Anchor from the immutable original source and accepted deltas; evaluate its completion through the real production path before selecting a stage.
 4. If `ANCHOR-UNMET`, name one concrete `request_gap`; if no gap exists, close or quarantine the finding instead of continuing.
-5. Evaluate whether that gap's compact projection and repository evidence make it `READY` for code.
-6. Freeze only anchor-linked test obligations and discovery/admission budgets inside the executable plan.
-7. Load only the reference file needed to close the selected gap; every write batch must directly advance its acceptance predicate.
-8. Evaluate the Delivery Anchor and `DELIVERY-DONE` before any new red/review/discovery pass, and stop when they hold.
-9. Do not route backward solely because an optional artifact, unanchored finding, possible extra edge case, or approval timestamp is absent.
+5. If the aggregate outcome genuinely needs several independently owned feature contributions, use `references/00-solution-framing.md` to map owners, dependencies, and aggregate proof without copying feature truth; then select one owning feature gap.
+6. Evaluate whether that gap's compact projection and repository evidence make it `READY` for code.
+7. Freeze only anchor-linked test obligations and discovery/admission budgets inside the executable plan.
+8. Load only the reference file needed to close the selected gap; every write batch must directly advance its acceptance predicate.
+9. Evaluate the Delivery Anchor and `DELIVERY-DONE` before any new red/review/discovery pass, and stop when they hold.
+10. Do not route backward solely because an optional artifact, unanchored finding, possible extra edge case, or approval timestamp is absent.
 
 The orchestration model is explicit:
 
@@ -87,6 +93,7 @@ The orchestration model is explicit:
 | `references/00-progress-router.md` | Decide original-request completion first, then choose a subordinate stage only for one anchor gap. |
 | `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
 | `references/00-pacing-mode.md` | Default to incremental delivery; opt into blueprint only for justified shared freezes. |
+| `references/00-solution-framing.md` | Coordinate a finite cross-feature solution while preserving one behavior owner and current effective contract per feature. |
 | `references/00-refactor-intake.md` | Establish existing behavior and green-test protection without backfilling workflow docs. |
 | `references/03-bdd-example-mapping.md` | Map concise requirements into observable Rules and concrete Examples. |
 | `references/05-conflict-scan.md` | Find the real production owner/runtime path and reusable code and tests. |
@@ -111,7 +118,7 @@ $env:PYTHONUTF8 = 1   # required on GBK-default Windows: quick_validate.py reads
 python "<path-to-skill-creator>\scripts\quick_validate.py" (git rev-parse --show-toplevel)
 ```
 
-`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that Delivery-Anchor-first routing, concrete `request_gap` gating, READY/document-budget, N-ID/SUT-binding, finite anchor-linked TOS, discovery-budget, and `DELIVERY-DONE` stop anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
+`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that Delivery-Anchor-first routing, concrete `request_gap` gating, solution/feature ownership separation, current-contract/delta integrity, READY/document-budget, N-ID/SUT-binding, finite anchor-linked TOS, discovery-budget, and `DELIVERY-DONE` stop anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
 
 `git diff --check` may print CRLF conversion warnings on this Windows checkout; distinguish those from real whitespace errors.
 

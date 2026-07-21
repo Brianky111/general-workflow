@@ -12,6 +12,7 @@ Inspect, when available:
 - the current user request, especially refactor, cleanup, restructure, rewrite, simplification, delegation, parallel, or multi-agent wording
 - whether a local multi-agent/subagent tool is present in the active tool list
 - module boundaries, executor-sized tasks, independent review tasks, and any work that can safely be delegated
+- when one accepted aggregate outcome needs independently owned feature contributions: the compact solution outcome/non-goals, participating feature/owner/current-source map, dependency order, aggregate proof, and current aggregate gap
 - active worktrees, branches, executor owner fields, handoff notes, uncommitted changes, and unmerged executor output for the same feature or micro-batch
 - suspected bugs, failing tests, or design smells not mapped to the Delivery Anchor, and whether they actually falsify an anchor outcome or its minimum credible evidence
 - proposed worktree purpose, target requirement/bug ID, approved write set, expected evidence, and closeout rule
@@ -69,6 +70,7 @@ Evaluate this only for the selected `request_gap`, after `ANCHOR-UNMET`, and bef
 3. Any changed public API, event/schema, persistence meaning, or state transition is explicit; unchanged boundaries can be inherited from existing code and contracts.
 4. Existing-code work names the production owner/runtime path and the nearest existing test home; new work names the intended runtime integration point.
 5. At least one credible verification path exists for each changed behavior, with wiring/assembly evidence when a connection itself can fail.
+6. When the selected aggregate outcome genuinely requires independently owned features, a minimal solution frame identifies each owned contribution and the aggregate proof while exactly one owning feature gap is selected for immediate execution.
 
 The user's explicit request to implement counts as confirmation when the compact contract is a faithful restatement and no item 2 choice exists. If `READY`, route the selected anchor gap to code-reality planning, an admissible red, or implementation. Do not route backward merely because an optional document, approval timestamp, matrix cell, or status mirror is absent.
 
@@ -125,6 +127,7 @@ Do not consult this table until the first decision has produced one selected `re
 | A writable worktree/executor is requested but no concrete feature, micro-batch, bug/counterexample ID, write set, expected evidence, or closeout rule is defined | Worktree charter missing | `00-orchestration-policy.md`, then route to planning/status instead of opening it |
 | A new repository explicitly adopts project-wide workflow governance and lacks a decision needed for the first vertical slice | Minimal project kickoff | `00-project-kickoff.md` |
 | The user explicitly requests blueprint batching, or multiple owners require a shared pre-implementation freeze | Pacing mode | `00-pacing-mode.md` |
+| One accepted aggregate outcome requires independently owned feature contributions or crosses module ownership, but no minimal outcome/non-goal, feature-owner map, dependency order, or aggregate proof exists to select the owning feature gap | Solution framing | `00-solution-framing.md` |
 | A risk mapped to the selected anchor outcome/non-goal—including a governance rule predeclared as that outcome's minimum evidence—may require more than the lean budget or a split contract | Risk grading | `00-feature-grading-and-splitting.md` |
 | User asks to refactor/cleanup/restructure/rewrite/simplify, or a plan selects refactor-before-implementation, and this batch lacks a current classification/protection baseline | Refactor intake | `00-refactor-intake.md` |
 | The selected anchor item explicitly includes governance/CI behavior, or its only credible proof depends on changed guardrails (CI workflows, hooks, audit scripts, CODEOWNERS) or append-only fixtures | Governance audit | `00-governance-ci-hooks.md` |
@@ -166,6 +169,7 @@ For an authorized ordinary change, prefer this continuous path:
 immutable original request + accepted deltas = Delivery Anchor
 → classify ANCHOR-SATISFIED / ANCHOR-UNMET / ANCHOR-BLOCKED
 → if unmet, select one source-backed request_gap
+→ when independently owned feature contributions are required, frame the minimal solution and select one owning feature gap
 → concise structured behavior + BDD examples only as needed to judge that gap
 → actual-question clarification only
 → one cold read (findings or concise clean result)
@@ -204,6 +208,7 @@ Before opening any writable worktree, require the worktree charter in `00-orches
 - If the user explicitly asks for a later-stage task, check earlier evidence only for substantive blockers. Skip missing optional documents and do not report them as prerequisites.
 - If refactor is requested and this batch lacks a current classification/protection baseline, run refactor intake before code changes. Once that evidence is recorded, do not re-enter intake unless behavior/protection evidence changes. Never record the refactor as a new feature or requirement.
 - If an incoming request resembles an existing feature, run the similarity triage in `02-requirements-capture.md` before creating a new source of truth: one requirement owns one behavior source.
+- A solution is an aggregate delivery projection, not a scope authority or permanent parent in the module/feature taxonomy. Use it only to coordinate independently owned contributions and aggregate proof; keep each behavior in one feature contract, and do not detail-plan every participant before the first vertical result unless blueprint pacing is explicitly justified.
 - If clarification changes an accepted rule, example, precondition, outcome, or failure bottom line, route back to `03-bdd-example-mapping.md` before ambiguity audit or contract work.
 - If refactor intake classified the batch as pure refactor, skip behavior-red work. First verify any finite frozen characterization obligations as existing green evidence, then route to `08-implementation.md` with that protection baseline.
 - Red/green work advances one anchor-linked frozen obligation at a time, and several ready obligations may continue in the same run only while each closes a named anchor gap and until the finite `TOS` is exhausted. Re-evaluate the Delivery Anchor at meaningful checkpoints; do not continue merely because another obligation or possible test can be imagined.

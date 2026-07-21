@@ -20,6 +20,7 @@ Use a dedicated status/evidence source only when one applies:
 
 - work pauses across sessions with a real blocker;
 - multiple owners, executors, worktrees, or teams require handoff and closeout;
+- a goal-bounded solution needs durable aggregate state across independently owned feature contributions;
 - blueprint coordination holds several features behind a shared dependency;
 - migration, security, compliance, or formal audit requires durable approval/evidence state;
 - the user explicitly requires a persistent status artifact.
@@ -49,7 +50,7 @@ Prefer an already durable issue, PR, or project tracker. Otherwise choose exactl
 
 - `99-进度.md` for a human-readable multi-owner handoff;
 - feature `status.json` when automation consumes structured state;
-- a project status source for a blueprint or regulated cross-feature baseline.
+- a compact solution/project status source for a goal-bounded aggregate delivery, blueprint, or regulated cross-feature baseline.
 
 Record the chosen authority once. Legacy repositories may retain other files, but do not manually synchronize equivalent fields across them. Reconcile or retire stale mirrors at the next handoff/closeout instead of blocking current implementation solely to refresh them.
 
@@ -110,6 +111,7 @@ An OOS finding is not implementation permission. It remains read-only unless the
 ## Evidence Rules
 
 - Treat the immutable original source plus ordered explicitly accepted deltas as the Delivery Anchor. Requirements, BDD, plans, tests, reviews, and status are projections/evidence; none may rewrite Anchor history or self-accept a scope expansion.
+- A solution status references each owning feature's current contract and evidence, and owns only aggregate dependencies, proof, and closeout. It cannot copy or override feature behavior/status, and an open independent contribution does not make another feature incomplete unless its accepted result or only credible production proof depends on that contribution.
 - At every triggered status update, record the current Anchor state and one concrete `request_gap` first. Use `none` only when the anchored outcome, authorized writes, required production/gates, and known blockers support it; a vague “continue testing/review” is not a gap.
 - Prefer repository facts over manual status prose.
 - Every complete claim points to a path, command, commit, PR/CI result, screenshot, trace, or concise log evidence.

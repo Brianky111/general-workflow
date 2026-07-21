@@ -1,7 +1,7 @@
 interface:
   display_name: "General Workflow"
-  short_description: "Original-request-anchored delivery with finite tests"
-  default_prompt: "Use $general-workflow to treat my original request plus accepted deltas as the Delivery Anchor, first decide whether it is already complete through the real production path, and only when one concrete request_gap remains use concise BDD, existing-code reuse, finite anchor-linked tests, implementation, and verification to close it; stop immediately when the anchor is satisfied."
+  short_description: "Anchor-first delivery across solutions and features"
+  default_prompt: "Use $general-workflow to frame any required cross-feature solution without duplicating feature truth, then close one Delivery Anchor gap at a time through the real production path with finite verification."
 
 policy:
   allow_implicit_invocation: true

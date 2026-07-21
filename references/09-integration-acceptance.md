@@ -4,6 +4,8 @@
 
 Verify that one currently selected outcome from the original user request or an explicitly accepted delta works through the real vertical production slice and its declared cross-feature effects. Integration obligations and matrices are subordinate evidence for that anchor outcome.
 
+When `00-solution-framing.md` is active, keep two judgments distinct: each owning feature contribution passes its own production behavior/proof, while the solution passes only after the declared cross-feature assembly and aggregate evidence succeed. Do not copy feature contracts into the integration record or use another owner's open contribution to erase a feature's already supported completion unless its accepted result or only credible production proof depends on that contribution.
+
 ## Entry Conditions
 
 - A currently incomplete or uncertified original/accepted outcome depends on a recorded connection, persistence truth, cross-owner effect, public contract, or critical UI path, and its authoritative acceptance ID and real user/runtime entry are known.
@@ -18,15 +20,16 @@ Verify that one currently selected outcome from the original user request or an 
 5. For UI flows, drive behavior from the user's entry point. Exercise only applicable states named by the frozen contract/risk obligations; the generic loading/empty/success/validation/permission/network/server/retry/disabled/duplicate-submit list is a selection aid, not an instruction to create them all.
 6. When persistence truth is assigned, reload or start a new session after success to prove state is persisted/system truth, not only frontend memory.
 7. Exercise only declared cross-feature effects and assigned event-idempotency risks; verify downstream effects through the owning feature rather than direct database reach-through.
-8. Include dependency failure, retry/duplicate delivery, or concurrency paths only when the original/accepted outcome or its accepted risk selected them; a matrix entry alone cannot expand the outcome.
-9. Automate a passing integration/E2E scenario only when that automation is already a frozen obligation. Otherwise retain the current evidence and record optional automation as a follow-up; do not open a post-implementation red loop.
-10. Provide screenshot, trace, recording, preview link, or direct human walkthrough for UI; run selected accessibility checks and record visual baselines only after human approval.
+8. For a framed solution, record each result under its owning feature reference and record only the cross-feature seam/aggregate outcome at solution level. Leave an unfinished owned behavior with that feature; leave an independently blocked contribution as the solution's aggregate gap.
+9. Include dependency failure, retry/duplicate delivery, or concurrency paths only when the original/accepted outcome or its accepted risk selected them; a matrix entry alone cannot expand the outcome.
+10. Automate a passing integration/E2E scenario only when that automation is already a frozen obligation. Otherwise retain the current evidence and record optional automation as a follow-up; do not open a post-implementation red loop.
+11. Provide screenshot, trace, recording, preview link, or direct human walkthrough for UI; run selected accessibility checks and record visual baselines only after human approval.
 
 ## Output
 
 Record the anchor outcome, real production entry/result, environment, and subordinate per-scenario evidence in CI, the current handoff/PR, or an existing acceptance surface. Create `09-集成验收.md` only for an explicitly governed round, durable multi-owner handoff, or accepted high-risk need. Resolve planned proof to supported evidence; never use a bare checkmark.
 
-When the triggered integration evidence is green, return to the router. Ordinary work may close after review and regression evidence; read `09-feature-completeness.md` only when a governed/high-risk final independent audit is actually triggered.
+When the triggered integration evidence is green, return to the router. Ordinary work may close after review and regression evidence; a framed solution closes only when all required feature contributions and its finite aggregate proof are supported. Read `09-feature-completeness.md` only when a governed/high-risk final independent audit is actually triggered.
 
 ## Stop Conditions
 
