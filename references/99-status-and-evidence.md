@@ -20,7 +20,7 @@ Use a dedicated status/evidence source only when one applies:
 
 - work pauses across sessions with a real blocker;
 - multiple owners, executors, worktrees, or teams require handoff and closeout;
-- a goal-bounded solution needs durable aggregate state across independently owned feature contributions;
+- a goal-bounded solution needs durable aggregate state across independently acceptable feature contributions or staged construction batches;
 - blueprint coordination holds several features behind a shared dependency;
 - migration, security, compliance, or formal audit requires durable approval/evidence state;
 - the user explicitly requires a persistent status artifact.
@@ -50,7 +50,8 @@ Prefer an already durable issue, PR, or project tracker. Otherwise choose exactl
 
 - `99-进度.md` for a human-readable multi-owner handoff;
 - feature `status.json` when automation consumes structured state;
-- a compact solution/project status source for a goal-bounded aggregate delivery, blueprint, or regulated cross-feature baseline.
+- `docs/solutions/<solution>/99-进度.md` for a durable staged solution's single aggregate progress authority;
+- a compact project status source for a blueprint or regulated cross-feature baseline.
 
 Record the chosen authority once. Legacy repositories may retain other files, but do not manually synchronize equivalent fields across them. Reconcile or retire stale mirrors at the next handoff/closeout instead of blocking current implementation solely to refresh them.
 
@@ -69,6 +70,33 @@ Keep the chosen source concise:
 ```
 
 Add the following sections only when their condition applies. Omit them entirely rather than filling empty placeholders.
+
+## Durable Solution Progress
+
+For a durable staged solution, use `docs/solutions/<solution>/99-进度.md` as the only manually maintained aggregate status. The active `batches/NN-<stage>.md` owns its stage checkpoint; feature contracts/status own their behavior and evidence. The solution progress file links to those sources and owns only the aggregate view.
+
+Use this concise shape:
+
+```markdown
+## 总状态
+- Delivery Anchor：<source + accepted deltas>
+- Solution state / aggregate gap：<UNMET + one gap / BLOCKED + reason / SATISFIED>
+- 总进度：<completed required stages>/<total required stages>；aggregate gates <verified>/<total>
+- 当前施工阶段：<batch ref + status>
+- 下一步：<one action that advances the aggregate gap, or stop>
+
+## 施工阶段
+| 阶段 | 状态 | 参与 feature/current source | 阶段证据 | 解锁/阻塞 |
+|---|---|---|---|---|
+| <batch ref> | PENDING / IN_PROGRESS / BLOCKED / DONE | <links> | <evidence refs> | <dependency result> |
+
+## 总体验收
+| Aggregate gate | 状态 | 证据 |
+|---|---|---|
+| <assembly/migration/release/rollback/E2E gate> | PENDING / VERIFIED / BLOCKED | <ref> |
+```
+
+Use counts as the default total-progress record. Publish a percentage only when `00-方案.md` declares a stable formula based on required stage and aggregate-gate completion; never average subjective feature percentages. Update this source at a stage transition, owner/session handoff, blocker, aggregate verification, or closeout. Do not mirror the same fields into another manual status file.
 
 ## Conditional Scope Firewall
 
@@ -111,7 +139,7 @@ An OOS finding is not implementation permission. It remains read-only unless the
 ## Evidence Rules
 
 - Treat the immutable original source plus ordered explicitly accepted deltas as the Delivery Anchor. Requirements, BDD, plans, tests, reviews, and status are projections/evidence; none may rewrite Anchor history or self-accept a scope expansion.
-- A solution status references each owning feature's current contract and evidence, and owns only aggregate dependencies, proof, and closeout. It cannot copy or override feature behavior/status, and an open independent contribution does not make another feature incomplete unless its accepted result or only credible production proof depends on that contribution.
+- A solution status references each owning feature's current contract and evidence, and owns only construction-stage state, aggregate dependencies, proof, total progress, and closeout. It cannot copy or override feature behavior/status, and an open independent contribution does not make another feature incomplete unless its accepted result or only credible production proof depends on that contribution.
 - At every triggered status update, record the current Anchor state and one concrete `request_gap` first. Use `none` only when the anchored outcome, authorized writes, required production/gates, and known blockers support it; a vague “continue testing/review” is not a gap.
 - Prefer repository facts over manual status prose.
 - Every complete claim points to a path, command, commit, PR/CI result, screenshot, trace, or concise log evidence.

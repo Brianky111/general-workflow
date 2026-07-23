@@ -26,6 +26,10 @@ Structured requirements, BDD examples, plans, and tests are faithful projections
 
 Keep one authoritative contract for one behavior. Scan the feature roster when one exists, nearby structured requirements, module boundaries, glossary terms, and relevant code/tests.
 
+Before classifying a similar name as New/Merge/Revision, run the solution candidate gate in `00-solution-framing.md`. If the request describes an application, client, platform, program, migration, or rollout containing several independently acceptable capabilities, construction stages, or an aggregate acceptance result, frame/update the solution first and then triage each routed behavior against its owning feature. Never merge the aggregate request itself into a feature contract.
+
+Treat names only as discovery hints. A shared product prefix or a suffix such as Android, iOS, web, or desktop does not prove a shared behavior boundary. Decide from observable acceptance, whether one contract can own the whole result faithfully, participant sources/owners, construction dependencies, and aggregate proof. `btw-client-Android`, for example, may be an Android-client solution even if `btw-client` is an existing feature; only an Android-specific delta to the same capability qualifies for Merge or Revision.
+
 Classify the request:
 
 - **New:** independently observable and independently acceptable behavior. Create or use its own core contract and establish its Anchor from the durable source.

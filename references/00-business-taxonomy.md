@@ -20,7 +20,7 @@ Prefer the repository's existing task/spec and code layout. When a durable featu
 docs/<module>/<feature>/00-功能.md   # source link + concise requirements + inline BDD + compact plan/evidence
 ```
 
-When a finite accepted outcome genuinely needs independently owned feature contributions, keep a compact solution frame in the existing issue/plan or, when durable coordination is triggered, one optional `docs/solutions/<solution>/00-方案.md`. It references feature contracts and never contains copies of them.
+Before merging a request into a similarly named feature, run the solution candidate gate in `00-solution-framing.md`. When a finite accepted outcome needs independently acceptable feature contributions, staged cross-feature construction, or aggregate proof, keep a compact solution frame in the existing issue/plan for one-session work. For a durable or staged delivery, use the solution control surface under `docs/solutions/<solution>/`. It references feature contracts and never contains copies of them.
 
 Add `fixtures/`, interface/conflict appendices, a test matrix, round directories, archives, or one status source only when their named risk trigger in `00-feature-grading-and-splitting.md` applies. The following is an expanded governed layout, not a required template:
 
@@ -28,9 +28,15 @@ Add `fixtures/`, interface/conflict appendices, a test matrix, round directories
 
 ```text
 docs/
-├── solutions/                       # 可选：有终点的跨功能交付视图，不是功能真源
+├── solutions/                       # 有终点的跨功能/跨阶段交付视图，不是功能真源
 │   └── <solution>/
-│       └── 00-方案.md                # 锚点、功能/owner映射、依赖、总体证据与关闭条件
+│       ├── 00-方案.md                # 锚点、feature/owner映射、依赖、有限施工阶段账本
+│       ├── 01-共享边界.md            # 条件式：共享合同/模型/事件、owner 与兼容规则
+│       ├── 02-总体验收.md            # solution 级装配、迁移、发布/回滚与 E2E 判据
+│       ├── batches/
+│       │   ├── 01-<施工阶段>.md      # 阶段结果、贡献引用、施工顺序、证据与阶段进度
+│       │   └── NN-<施工阶段>.md
+│       └── 99-进度.md                # 唯一人工维护的 solution 总进度/aggregate gap
 ├── architecture.md                  # 产品级：层级地图、代码归宿模板
 ├── glossary.md
 ├── domain-models.md
@@ -63,11 +69,11 @@ Path convention: where a project already uses rounds, references write them as `
 
 ## Solution Delivery View
 
-A solution is a finite coordination projection of the Delivery Anchor for an aggregate outcome that cannot be faithfully owned or accepted by one feature. It may cross stable modules and may reference a feature that also participates in other solutions. A module remains a long-lived responsibility domain; a feature remains the single behavior owner; a round remains optional version/audit history.
+A solution is a finite coordination projection of the Delivery Anchor for an aggregate outcome that cannot be faithfully owned or accepted by one feature. It may coordinate several independently acceptable features owned by the same team, cross stable modules/applications, and reference a feature that also participates in other solutions. A module remains a long-lived responsibility domain; a feature remains the single behavior owner; a round remains optional version/audit history.
 
-Use `00-solution-framing.md` only when independently owned feature contributions, cross-module sequencing, or aggregate integration/release/rollback proof is materially required. Let the solution own the aggregate outcome/non-goals, participating feature/owner map, dependencies, shared rollout decisions, and aggregate acceptance. Let every feature retain its one current effective behavior contract, public/data semantics, production owner, plan, and tests.
+Use `00-solution-framing.md` before feature similarity triage when the request may be an application/client/platform/program outcome. Enter solution framing when independently acceptable feature contributions, cross-module/application sequencing, staged cross-feature construction, or aggregate integration/release/rollback proof is materially required. Let the solution own the aggregate outcome/non-goals, participating feature/owner map, dependencies, construction-stage ledger, shared rollout decisions, aggregate progress, and aggregate acceptance. Let every feature retain its one current effective behavior contract, public/data semantics, production owner, detailed plan, and tests.
 
-Do not nest or duplicate feature contracts under the solution, copy shared schemas into it, or keep a completed feature open solely because another independent contribution remains. Do not hide unfinished feature behavior in aggregate status. Ordinary single-feature vertical work needs no solution artifact.
+Do not nest or duplicate feature contracts under the solution, copy shared schemas into it, or keep a completed feature open solely because another independent contribution remains. A solution batch is a construction/coordination stage, not a feature contract, feature round, or red/green micro-batch. Do not hide unfinished feature behavior in aggregate status. Ordinary single-feature vertical work needs no solution artifact.
 
 ## Change Rounds
 
@@ -82,7 +88,7 @@ Do not nest or duplicate feature contracts under the solution, copy shared schem
 | Level | Physical form | Home |
 |---|---|---|
 | 产品 / 系统 Product | repo-level docs | `architecture.md`, `requirements-index.md`, `glossary.md`, `domain-models.md` |
-| 总体解决方案 Solution | optional cross-feature delivery view | existing issue/plan or one compact `docs/solutions/<solution>/00-方案.md`; references owning features and aggregate proof |
+| 总体解决方案 Solution | finite cross-feature/staged delivery view | one-session work may use an existing issue/plan; durable staged work uses `docs/solutions/<solution>/` with `00-方案.md`, `batches/`, `02-总体验收.md`, and one `99-进度.md` |
 | 大功能模块 Module | **directory** | `docs/<module>/` with `00-模块概述.md`; one roster section in `requirements-index.md` |
 | 功能特性 Feature | existing issue/spec or optional directory | one authoritative compact contract; add status/fixtures/rounds only when triggered |
 | 变更轮 Round | optional directory | only for governed history or independent approval; stores a delta unless a full snapshot is required |
@@ -102,7 +108,8 @@ After splitting, keep one authoritative index and link detailed scenarios/exampl
 
 ## Placement Rules
 
-- If one accepted aggregate outcome requires independently owned feature contributions, frame the minimal solution/owner/dependency/aggregate-proof view through `00-solution-framing.md`, then place each behavior in exactly one owning feature. Do not use the solution as a second contract.
+- Before feature similarity triage, run the solution candidate gate. A common name stem or Android/iOS/web/desktop suffix cannot prove that an aggregate client/application belongs inside one feature.
+- If one accepted aggregate outcome requires independently acceptable feature contributions, staged cross-feature construction, or aggregate proof, frame the minimal solution/owner/dependency/batch/aggregate-proof view through `00-solution-framing.md`, then place each behavior in exactly one owning feature. Do not use the solution as a second contract.
 - A request that spans business modules, or ships in independently acceptable parts, is not one feature: split it into features under their modules before capture (`00-feature-grading-and-splitting.md`).
 - A request that is really a use case or sub-feature of an existing feature is not a new feature: similarity triage merges it into the authoritative compact contract or records a revision delta (`02-requirements-capture.md`).
 - A use case that outgrows its feature — its own actors, acceptance, owner, and release rhythm — may be promoted through similarity triage; record the move only in the roster/status source the project already uses.

@@ -1,7 +1,7 @@
 interface:
   display_name: "General Workflow"
-  short_description: "Anchor-first delivery across solutions and features"
-  default_prompt: "Use $general-workflow to frame any required cross-feature solution without duplicating feature truth, then close one Delivery Anchor gap at a time through the real production path with finite verification."
+  short_description: "Anchor-first staged solution and feature delivery"
+  default_prompt: "Use $general-workflow to classify solution scope before feature merging, maintain staged construction and aggregate progress when required, then close one Delivery Anchor gap through the real production path."
 
 policy:
   allow_implicit_invocation: true
