@@ -1,7 +1,7 @@
 interface:
   display_name: "General Workflow"
-  short_description: "Anchor-first staged solution and feature delivery"
-  default_prompt: "Use $general-workflow to classify solution scope before feature merging, maintain staged construction and aggregate progress when required, then close one Delivery Anchor gap through the real production path."
+  short_description: "Batch-local and aggregate solution delivery"
+  default_prompt: "Use $general-workflow to classify solution scope before feature merging, maintain separate construction and progress sources for every batch plus root aggregate progress, then close one Delivery Anchor gap through the real production path."
 
 policy:
   allow_implicit_invocation: true

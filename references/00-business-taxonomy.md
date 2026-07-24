@@ -34,9 +34,13 @@ docs/
 │       ├── 01-共享边界.md            # 条件式：共享合同/模型/事件、owner 与兼容规则
 │       ├── 02-总体验收.md            # solution 级装配、迁移、发布/回滚与 E2E 判据
 │       ├── batches/
-│       │   ├── 01-<施工阶段>.md      # 阶段结果、贡献引用、施工顺序、证据与阶段进度
-│       │   └── NN-<施工阶段>.md
-│       └── 99-进度.md                # 唯一人工维护的 solution 总进度/aggregate gap
+│       │   ├── 01-<施工阶段>/
+│       │   │   ├── 00-施工.md        # 稳定阶段合同：结果、引用、顺序、边界、关闭条件
+│       │   │   └── 99-进度.md        # 该 batch 唯一可变进度：work/TOS、证据、blocker、交接
+│       │   └── NN-<施工阶段>/
+│       │       ├── 00-施工.md
+│       │       └── 99-进度.md
+│       └── 99-进度.md                # solution 聚合进度/依赖/总体验收/aggregate gap
 ├── architecture.md                  # 产品级：层级地图、代码归宿模板
 ├── glossary.md
 ├── domain-models.md
@@ -71,7 +75,7 @@ Path convention: where a project already uses rounds, references write them as `
 
 A solution is a finite coordination projection of the Delivery Anchor for an aggregate outcome that cannot be faithfully owned or accepted by one feature. It may coordinate several independently acceptable features owned by the same team, cross stable modules/applications, and reference a feature that also participates in other solutions. A module remains a long-lived responsibility domain; a feature remains the single behavior owner; a round remains optional version/audit history.
 
-Use `00-solution-framing.md` before feature similarity triage when the request may be an application/client/platform/program outcome. Enter solution framing when independently acceptable feature contributions, cross-module/application sequencing, staged cross-feature construction, or aggregate integration/release/rollback proof is materially required. Let the solution own the aggregate outcome/non-goals, participating feature/owner map, dependencies, construction-stage ledger, shared rollout decisions, aggregate progress, and aggregate acceptance. Let every feature retain its one current effective behavior contract, public/data semantics, production owner, detailed plan, and tests.
+Use `00-solution-framing.md` before feature similarity triage when the request may be an application/client/platform/program outcome. Enter solution framing when independently acceptable feature contributions, cross-module/application sequencing, staged cross-feature construction, or aggregate integration/release/rollback proof is materially required. Let each batch own a stable `00-施工.md` plus a separate batch-local `99-进度.md`; let the root solution own the aggregate outcome/non-goals, participating feature/owner map, dependencies, construction-stage ledger, shared rollout decisions, aggregate progress, and aggregate acceptance. Let every feature retain its one current effective behavior contract, public/data semantics, production owner, detailed plan, and tests.
 
 Do not nest or duplicate feature contracts under the solution, copy shared schemas into it, or keep a completed feature open solely because another independent contribution remains. A solution batch is a construction/coordination stage, not a feature contract, feature round, or red/green micro-batch. Do not hide unfinished feature behavior in aggregate status. Ordinary single-feature vertical work needs no solution artifact.
 
@@ -88,7 +92,7 @@ Do not nest or duplicate feature contracts under the solution, copy shared schem
 | Level | Physical form | Home |
 |---|---|---|
 | 产品 / 系统 Product | repo-level docs | `architecture.md`, `requirements-index.md`, `glossary.md`, `domain-models.md` |
-| 总体解决方案 Solution | finite cross-feature/staged delivery view | one-session work may use an existing issue/plan; durable staged work uses `docs/solutions/<solution>/` with `00-方案.md`, `batches/`, `02-总体验收.md`, and one `99-进度.md` |
+| 总体解决方案 Solution | finite cross-feature/staged delivery view | one-session work may use an existing issue/plan; durable staged work uses `00-方案.md`, per-batch `00-施工.md` + `99-进度.md`, `02-总体验收.md`, and one root aggregate `99-进度.md` |
 | 大功能模块 Module | **directory** | `docs/<module>/` with `00-模块概述.md`; one roster section in `requirements-index.md` |
 | 功能特性 Feature | existing issue/spec or optional directory | one authoritative compact contract; add status/fixtures/rounds only when triggered |
 | 变更轮 Round | optional directory | only for governed history or independent approval; stores a delta unless a full snapshot is required |

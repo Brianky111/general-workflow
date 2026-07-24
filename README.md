@@ -6,7 +6,7 @@ The skill helps Codex:
 
 - preserve the original request plus explicitly accepted deltas as the immutable Delivery Anchor, and decide whether that request is complete before selecting any workflow stage;
 - continue only from one named source-backed `request_gap`; unanchored findings, tests, risks, and review suggestions become follow-ups rather than new delivery work;
-- run a solution candidate gate before feature-name similarity triage, then frame a goal-bounded solution when one aggregate outcome needs several independently acceptable features, staged cross-feature construction, or aggregate proof, while keeping each feature as the single source of truth for its behavior;
+- run a solution candidate gate before feature-name similarity triage, then frame a goal-bounded solution when one aggregate outcome needs several independently acceptable features, staged cross-feature construction, or aggregate proof, with separate batch-local and aggregate progress while each feature remains the single source of truth for behavior;
 - load only the reference document needed for that stage;
 - freeze the smallest sufficient behavior contract, then continue into code in the same run when no material decision is blocked;
 - treat documentation as a conditional decision/risk tool rather than a mandatory `00…99` checklist;
@@ -33,9 +33,9 @@ A normal feature request uses the lean incremental pipeline. Structured behavior
 
 ![单功能主管线](docs/images/feature-pipeline.svg)
 
-Before a similarly named request is merged into a feature, the workflow asks whether one feature contract can faithfully own the whole outcome. A common product stem or a platform suffix such as Android, iOS, web, or desktop is only a discovery hint. When an aggregate outcome spans independently acceptable features, modules/applications, staged cross-feature construction, or aggregate proof, the workflow adds a goal-bounded solution frame as an orthogonal delivery view. A durable staged solution uses `00-方案.md`, construction documents under `batches/`, `02-总体验收.md`, and one aggregate `99-进度.md`; `01-共享边界.md` appears only when needed. Each feature keeps its authoritative behavior contract, production owner, detailed plan, and tests. Work still advances incrementally through exactly one owning feature gap at a time.
+Before a similarly named request is merged into a feature, the workflow asks whether one feature contract can faithfully own the whole outcome. A common product stem or a platform suffix such as Android, iOS, web, or desktop is only a discovery hint. When an aggregate outcome spans independently acceptable features, modules/applications, staged cross-feature construction, or aggregate proof, the workflow adds a goal-bounded solution frame as an orthogonal delivery view. A durable staged solution uses `00-方案.md`, one `batches/NN-阶段/` directory per batch containing stable `00-施工.md` and mutable batch-local `99-进度.md`, `02-总体验收.md`, and one root aggregate `99-进度.md`; `01-共享边界.md` appears only when needed. Each feature keeps its authoritative behavior contract, production owner, detailed plan, and tests. Work still advances incrementally through exactly one owning feature gap at a time.
 
-Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordinary feature work does not create empty conflict reports, all-`N/A` matrices, audit reports with no findings, or multiple status mirrors. Once staged durable solution coordination is positively identified, its plan, construction-batch, aggregate-acceptance, and single total-progress surfaces are the triggered control set rather than optional feature paperwork. Other dedicated interface, test-matrix, integration, and completeness artifacts still appear only when their named risks justify them.
+Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordinary feature work does not create empty conflict reports, all-`N/A` matrices, audit reports with no findings, or multiple status mirrors. Once staged durable solution coordination is positively identified, its plan, per-batch construction/progress pair, aggregate-acceptance, and root total-progress surfaces are the triggered control set rather than optional feature paperwork. Batch-local status owns work/TOS/evidence and the root status owns transitions/dependencies/totals, so these are scoped authorities rather than duplicate mirrors. Other dedicated artifacts still appear only when their named risks justify them.
 
 ## Repository layout
 
@@ -72,7 +72,7 @@ The skill uses progressive disclosure:
 2. Always read `references/00-progress-router.md` first.
 3. Build the Delivery Anchor from the immutable original source and accepted deltas; evaluate its completion through the real production path before selecting a stage.
 4. If `ANCHOR-UNMET`, name one concrete `request_gap`; if no gap exists, close or quarantine the finding instead of continuing.
-5. Before feature similarity triage, run the solution candidate gate. If the aggregate outcome needs several independently acceptable feature contributions, staged cross-feature construction, or aggregate proof, use `references/00-solution-framing.md` to map owners, construction batches, total progress, and aggregate proof without copying feature truth; then select one owning feature gap.
+5. Before feature similarity triage, run the solution candidate gate. If the aggregate outcome needs several independently acceptable feature contributions, staged cross-feature construction, or aggregate proof, use `references/00-solution-framing.md` to map owners, give every batch separate construction and progress sources, maintain root total progress, and define aggregate proof without copying feature truth; then select one owning feature gap.
 6. Evaluate whether that gap's compact projection and repository evidence make it `READY` for code.
 7. Freeze only anchor-linked test obligations and discovery/admission budgets inside the executable plan.
 8. Load only the reference file needed to close the selected gap; every write batch must directly advance its acceptance predicate.
@@ -93,7 +93,7 @@ The orchestration model is explicit:
 | `references/00-progress-router.md` | Decide original-request completion first, then choose a subordinate stage only for one anchor gap. |
 | `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
 | `references/00-pacing-mode.md` | Default to incremental delivery; opt into blueprint only for justified shared freezes. |
-| `references/00-solution-framing.md` | Classify solution scope before feature similarity triage, then coordinate staged construction and aggregate progress while preserving one behavior owner per feature. |
+| `references/00-solution-framing.md` | Classify solution scope before feature similarity triage, then coordinate per-batch construction/progress and root aggregate progress while preserving one behavior owner per feature. |
 | `references/00-refactor-intake.md` | Establish existing behavior and green-test protection without backfilling workflow docs. |
 | `references/03-bdd-example-mapping.md` | Map concise requirements into observable Rules and concrete Examples. |
 | `references/05-conflict-scan.md` | Find the real production owner/runtime path and reusable code and tests. |

@@ -56,29 +56,43 @@ docs/solutions/<solution>/
 ├── 01-共享边界.md             # 条件式：共享合同/事件/模型/兼容与 owner
 ├── 02-总体验收.md             # solution 级装配、迁移、发布/回滚、E2E 与关闭判据
 ├── batches/
-│   ├── 01-<施工阶段>.md       # 该阶段的贡献引用、施工顺序、证据与阶段进度
-│   └── NN-<施工阶段>.md
-└── 99-进度.md                 # 唯一人工维护的 solution 总进度与当前 aggregate gap
+│   ├── 01-<施工阶段>/
+│   │   ├── 00-施工.md         # 稳定的阶段结果、贡献引用、顺序、边界与关闭条件
+│   │   └── 99-进度.md         # 该 batch 唯一可变进度：work/TOS/gate、证据、blocker、下一步
+│   └── NN-<施工阶段>/
+│       ├── 00-施工.md
+│       └── 99-进度.md
+└── 99-进度.md                 # solution 聚合进度：batch 转换、依赖、总体验收与 aggregate gap
 ```
 
-`00-方案.md`, `02-总体验收.md`, at least one executable stage document, and `99-进度.md` form the core durable solution surface. Create `01-共享边界.md` only when two or more contributions consume a shared contract, event, model, compatibility rule, migration boundary, or other cross-feature decision. Do not create empty placeholders.
+`00-方案.md`, `02-总体验收.md`, at least one batch directory containing both `00-施工.md` and `99-进度.md`, and the root `99-进度.md` form the core durable solution surface. Create `01-共享边界.md` only when two or more contributions consume a shared contract, event, model, compatibility rule, migration boundary, or other cross-feature decision. Do not create empty placeholders.
 
-Define the finite stage ledger in `00-方案.md` and create one `batches/NN-<stage>.md` for each planned construction stage once its objective and dependencies are known. Keep detailed feature requirements, BDD, code plans, and test obligations in their owning feature sources; solution batch documents contain links and coordination facts only. This shallow staged plan does not authorize blueprinting every child feature's implementation before its turn.
+Define the finite stage ledger in `00-方案.md` and create one `batches/NN-<stage>/` directory for each planned construction stage once its objective and dependencies are known. Keep detailed feature requirements, BDD, code plans, and feature test obligations in their owning feature sources; solution batch documents contain links and coordination facts only. This shallow staged plan does not authorize blueprinting every child feature's implementation before its turn.
 
-Each stage document records only:
+Keep `00-施工.md` stable after the batch is executable. Record only:
 
 ```text
-Stage outcome / status: PENDING | IN_PROGRESS | BLOCKED | DONE
 Anchor-linked aggregate gap: <one gap this stage advances>
+Stage outcome and non-goals: <finite contribution-level result>
 Prerequisites and participating feature refs: <current owner/source links>
 Construction order and handoffs: <contribution-level sequence; no copied feature plan>
 Aggregate/write boundary: <shared integration or allowed coordination writes>
 Required stage evidence: <feature evidence refs + assembly/contract/runtime proof>
-Progress checkpoint: <completed/required contributions, blocker, next action>
-Closeout: <evidence refs and dependency unlocked>
+Exit and stop conditions: <evidence required to mark the batch DONE/BLOCKED>
 ```
 
-Treat `99-进度.md` as the single aggregate progress authority. It summarizes, but never overrides, batch and feature evidence. Record completed/total required stages and aggregate gates; if a percentage is useful, declare a stable evidence-based formula instead of averaging subjective feature percentages. Update it at a stage transition, handoff, blocker, aggregate verification, or closeout—not after every feature micro-step.
+Treat each batch's `99-进度.md` as the sole mutable authority for that batch. Record its `PENDING | IN_PROGRESS | BLOCKED | DONE` state, selected batch-local gap, completed/required work items, referenced contribution/TOS/gate states, evidence, blocker, next action, owner/handoff, and closeout/dependency-unlocked result. Update it at meaningful batch checkpoints, handoffs, blockers, or closeout; do not write mutable progress back into `00-施工.md`.
+
+Treat the root `99-进度.md` as the aggregate authority only. It links every batch-local `99-进度.md`, projects the latest batch state, and owns dependency transitions, completed/total batches, aggregate gates, current aggregate gap, and solution closeout. It must not copy batch work-item/TOS detail or become the only place where batch progress exists. If a percentage is useful, declare a stable evidence-based formula instead of averaging subjective feature percentages.
+
+### Existing Flat-Batch Migration
+
+When an existing durable solution uses `batches/NN-<stage>.md`, migrate its full finite batch ledger at the next batch checkpoint, handoff, or resumed execution—not by creating a parallel copy. Prefer one reviewable documentation change for all listed batches and references; do not leave an active solution with mixed flat-file and directory batch schemas.
+
+1. Move the stable outcome, dependencies, construction order, write boundary, required evidence, and stop conditions to `batches/NN-<stage>/00-施工.md`, preserving history where the repository supports moves.
+2. Move current state, mutable TOS/gate states, evidence, blocker, next action, owner/handoff, and closeout facts to `batches/NN-<stage>/99-进度.md`.
+3. Update `00-方案.md` and the root `99-进度.md` to link the new plan and batch-progress files.
+4. Remove the old flat files after every reference resolves. If the migration cannot complete safely, keep the old schema only and stop before publishing the new files; never retain flat and directory forms as two editable truths.
 
 ## Compact Solution Frame
 
@@ -114,7 +128,7 @@ After the minimal frame is sufficient to choose ownership and aggregate proof:
 1. Select the first dependency-ordered user-visible vertical result.
 2. Select exactly one owning feature and one anchor-linked `request_gap`.
 3. Run that feature through its current contract, code-reality scan, executable plan, finite `TOS`, implementation, and verification.
-4. Update the active solution batch at a stage checkpoint and `99-进度.md` only at a stage transition, material dependency change, handoff, blocker, aggregate verification, or closeout.
+4. Update the active batch's `99-进度.md` at a meaningful checkpoint. Update the root `99-进度.md` only when the batch state/dependency changes, a blocker affects the aggregate path, or aggregate verification/closeout occurs.
 5. Return to the Delivery Anchor before choosing another feature; do not blueprint every child feature in detail before the first implementation unless `00-pacing-mode.md` explicitly selects a justified blueprint.
 
 ## Change Routing
@@ -128,7 +142,7 @@ After the minimal frame is sufficient to choose ownership and aggregate proof:
 
 - No solution artifact for ordinary single-feature work.
 - For a non-staged one-session aggregate delivery, one compact solution frame plus references to authoritative feature contracts.
-- For a durable or staged solution, the core solution control surface: `00-方案.md`, `batches/NN-<stage>.md`, `02-总体验收.md`, and the single aggregate `99-进度.md`; add `01-共享边界.md` only when triggered.
+- For a durable or staged solution, the core solution control surface: `00-方案.md`, `batches/NN-<stage>/00-施工.md`, one batch-local `batches/NN-<stage>/99-进度.md` per batch, `02-总体验收.md`, and the root aggregate `99-进度.md`; add `01-共享边界.md` only when triggered.
 - One selected owning feature and `request_gap` for immediate execution, not a fully expanded plan for every participant.
 
 ## Stop Conditions

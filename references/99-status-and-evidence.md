@@ -12,7 +12,7 @@ Ordinary single-owner work needs no dedicated status document. Use the repositor
 2. an owner or executor handoff;
 3. closeout.
 
-Do not update status after every internal workflow stage. Do not create or hand-maintain `workflow-state.json`, feature `status.json`, and `99-进度.md` in parallel. If durable status is triggered, choose one manual authority; other views must be generated or treated as non-authoritative.
+Do not update status after every internal workflow stage. Do not create or hand-maintain equivalent `workflow-state.json`, feature `status.json`, and `99-进度.md` mirrors in parallel. If durable status is triggered, choose one manual authority per scope; other views at that same scope must be generated or treated as non-authoritative. A durable solution may have one batch-local authority per batch plus one non-overlapping aggregate authority.
 
 ## Status Triggers
 
@@ -46,14 +46,13 @@ Do not report an untriggered artifact as “missing.” The complete lean contra
 
 ## Source Selection
 
-Prefer an already durable issue, PR, or project tracker. Otherwise choose exactly one:
+Prefer an already durable issue, PR, or project tracker. For ordinary work, otherwise choose exactly one:
 
 - `99-进度.md` for a human-readable multi-owner handoff;
 - feature `status.json` when automation consumes structured state;
-- `docs/solutions/<solution>/99-进度.md` for a durable staged solution's single aggregate progress authority;
 - a compact project status source for a blueprint or regulated cross-feature baseline.
 
-Record the chosen authority once. Legacy repositories may retain other files, but do not manually synchronize equivalent fields across them. Reconcile or retire stale mirrors at the next handoff/closeout instead of blocking current implementation solely to refresh them.
+For a durable staged solution, choose the scoped hierarchy defined below: one `batches/NN-<stage>/99-进度.md` for each batch and one root `docs/solutions/<solution>/99-进度.md` for aggregate-only state. Record each authority once. Legacy repositories may retain other files, but do not manually synchronize equivalent fields across them. Reconcile or retire stale mirrors at the next handoff/closeout instead of blocking current implementation solely to refresh them.
 
 ## Minimal Status Shape
 
@@ -73,9 +72,31 @@ Add the following sections only when their condition applies. Omit them entirely
 
 ## Durable Solution Progress
 
-For a durable staged solution, use `docs/solutions/<solution>/99-进度.md` as the only manually maintained aggregate status. The active `batches/NN-<stage>.md` owns its stage checkpoint; feature contracts/status own their behavior and evidence. The solution progress file links to those sources and owns only the aggregate view.
+For a durable staged solution, give every batch its own `batches/NN-<stage>/99-进度.md`. It is the only manually maintained status for that batch; the batch's stable construction contract stays in `00-施工.md`, while feature contracts/status own feature behavior and evidence.
 
-Use this concise shape:
+Use this batch-local shape:
+
+```markdown
+## Batch 状态
+- Batch：<NN + name>
+- Batch state / selected gap：<PENDING / IN_PROGRESS + one gap / BLOCKED + reason / DONE>
+- 工作进度：<completed required work items>/<total required work items>
+- 当前负责人 / handoff：<owner or none>
+- 下一步：<one batch-closing action, or stop>
+
+## 贡献与证据
+| Work / contribution / TOS / gate ref | 状态 | 证据 | blocker / next |
+|---|---|---|---|
+| <owning source ref> | PENDING / RED / GREEN / VERIFIED / BLOCKED | <evidence ref> | <concise result> |
+
+## Batch 关闭
+- Exit criteria：<from 00-施工.md>
+- Closeout / dependency unlocked：<evidence-backed result or pending>
+```
+
+Use the root `docs/solutions/<solution>/99-进度.md` as the only manually maintained aggregate status. It links batch-local progress and owns dependency transitions, total progress, aggregate gates, current aggregate gap, and solution closeout. It never owns or copies the batch's work-item/TOS detail.
+
+Use this aggregate shape:
 
 ```markdown
 ## 总状态
@@ -86,9 +107,9 @@ Use this concise shape:
 - 下一步：<one action that advances the aggregate gap, or stop>
 
 ## 施工阶段
-| 阶段 | 状态 | 参与 feature/current source | 阶段证据 | 解锁/阻塞 |
+| 阶段 | Batch progress source | 状态 | 阶段证据摘要 | 解锁/阻塞 |
 |---|---|---|---|---|
-| <batch ref> | PENDING / IN_PROGRESS / BLOCKED / DONE | <links> | <evidence refs> | <dependency result> |
+| <batch plan ref> | <batch 99 ref> | PENDING / IN_PROGRESS / BLOCKED / DONE | <evidence refs> | <dependency result> |
 
 ## 总体验收
 | Aggregate gate | 状态 | 证据 |
@@ -96,7 +117,7 @@ Use this concise shape:
 | <assembly/migration/release/rollback/E2E gate> | PENDING / VERIFIED / BLOCKED | <ref> |
 ```
 
-Use counts as the default total-progress record. Publish a percentage only when `00-方案.md` declares a stable formula based on required stage and aggregate-gate completion; never average subjective feature percentages. Update this source at a stage transition, owner/session handoff, blocker, aggregate verification, or closeout. Do not mirror the same fields into another manual status file.
+Use counts as the default progress record at both scopes. Publish a percentage only when the owning `00-施工.md` or root `00-方案.md` declares a stable formula; never average subjective feature percentages. Update batch progress at meaningful work/evidence checkpoints. Update root progress only at a batch state/dependency transition, an aggregate-affecting blocker, aggregate verification, or closeout. A batch-local state may be summarized in the root table, but its detailed work/TOS rows exist only in the batch-local file.
 
 ## Conditional Scope Firewall
 
@@ -139,7 +160,7 @@ An OOS finding is not implementation permission. It remains read-only unless the
 ## Evidence Rules
 
 - Treat the immutable original source plus ordered explicitly accepted deltas as the Delivery Anchor. Requirements, BDD, plans, tests, reviews, and status are projections/evidence; none may rewrite Anchor history or self-accept a scope expansion.
-- A solution status references each owning feature's current contract and evidence, and owns only construction-stage state, aggregate dependencies, proof, total progress, and closeout. It cannot copy or override feature behavior/status, and an open independent contribution does not make another feature incomplete unless its accepted result or only credible production proof depends on that contribution.
+- A batch-local solution status references each owning feature's current contract and evidence and owns only that batch's work/evidence projection, blocker, handoff, and closeout. The root solution status owns only batch transitions, aggregate dependencies, proof, total progress, and solution closeout. Neither can copy or override feature behavior/status, and the root cannot replace batch-local progress.
 - At every triggered status update, record the current Anchor state and one concrete `request_gap` first. Use `none` only when the anchored outcome, authorized writes, required production/gates, and known blockers support it; a vague “continue testing/review” is not a gap.
 - Prefer repository facts over manual status prose.
 - Every complete claim points to a path, command, commit, PR/CI result, screenshot, trace, or concise log evidence.
@@ -159,7 +180,7 @@ At a triggered update point:
 1. Reconcile the Delivery Anchor's current effective state from the immutable original source and ordered accepted deltas; record the exact `request_gap` or evidence-backed `none` before any stage/test status.
 2. Compare that state and the chosen status source with Git, worktrees, tests, CI, PRs, and runtime evidence.
 3. Correct unsupported claims without rewriting Anchor history or promoting tool/reviewer findings into scope.
-4. Record only the current blocker, handoff, or closeout plus its next action; when applicable, include the frozen obligation count and any exhausted budget without reopening discovery.
+4. Record only the current blocker, handoff, checkpoint, or closeout plus its next action; update the owning batch-local status first, then refresh the root only when aggregate state changes. When applicable, include the frozen obligation count and any exhausted budget without reopening discovery.
 5. Include scope firewall, worktree closeout, or OOS sections only when their conditions apply.
 6. Keep the update within the document budget from `00-feature-grading-and-splitting.md`, or name the audit/coordination exception.
 
@@ -167,8 +188,9 @@ At a triggered update point:
 
 - Ordinary active work: no status-file write.
 - Human pause: one concise blocker update in the chosen durable source.
-- Handoff: one owner/evidence/closeout update, including a conditional worktree charter when applicable.
-- Closeout: one final evidence-backed state update.
+- Batch checkpoint/handoff: one update in the owning batch-local `99-进度.md`, including a conditional worktree charter when applicable; refresh the root only for a state/dependency transition.
+- Batch closeout: close the batch-local progress, then update the root aggregate transition once.
+- Solution closeout: one final evidence-backed root update after every required batch and aggregate gate closes.
 
 ## Stop Conditions
 
