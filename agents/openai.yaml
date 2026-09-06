@@ -1,7 +1,7 @@
 interface:
   display_name: "Project Development Workflow"
   short_description: "Greenfield architecture-to-release workflow"
-  default_prompt: "Guide this new project from its profile and requirements through architecture decisions, technology and repository scaffolding, a first vertical slice, TDD implementation, testing, CI/CD, release operations, and retrospective. Load only the reference for the current stage."
+  default_prompt: "Guide this new project from its profile and requirements through architecture decisions, technology and repository scaffolding, a first vertical slice, TDD implementation, testing, CI/CD, release operations, and retrospective. Resume from the workflow state file when one exists, take the LEAN fast path when the profile allows it, and load only the reference for the current stage."
 
 policy:
   allow_implicit_invocation: true

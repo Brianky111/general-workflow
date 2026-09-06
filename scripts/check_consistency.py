@@ -22,20 +22,35 @@ ARCHIVE = ROOT / "archive" / "general-workflow-v0.12.0"
 EXPECTED_REFERENCES = {
     "00-progress-router.md",
     "00-project-profile.md",
+    "00-lean-path.md",
     "01-requirements-and-goals.md",
     "02-scenarios-and-acceptance.md",
     "03-scope-and-nongoals.md",
     "04-constraints-quality-risks.md",
     "05-architecture-design.md",
+    "05a-mechanisms-and-contracts.md",
     "06-scaffolding-and-ci.md",
     "07-vertical-slice.md",
     "08-implementation-tdd.md",
     "09-testing-review-integration.md",
     "10-release-operations.md",
     "11-retrospective-evolution.md",
+    "99-state-and-handoff.md",
 }
 
-REFERENCE_NAME = re.compile(r"\b\d{2}-[a-z0-9][a-z0-9-]*\.md\b")
+# The always-loaded surface is SKILL.md plus the router; every other reference is
+# paid for only when its stage is entered. These budgets exist so that content
+# belonging to a stage document cannot quietly drift back into the entry path,
+# and so no single stage document grows back into a load spike.
+SIZE_BUDGETS = {
+    "SKILL.md": 9_500,
+    "00-progress-router.md": 9_500,
+}
+REFERENCE_BUDGET = 14_000
+CRLF = "\r\n"
+LF = "\n"
+
+REFERENCE_NAME = re.compile(r"\b\d{2}[a-z]?-[a-z0-9][a-z0-9-]*\.md\b")
 FRONTMATTER_FIELD = re.compile(r"(?m)^([a-z][a-z0-9_-]*):\s*(.+?)\s*$")
 
 POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
@@ -43,10 +58,12 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "Greenfield",
         "P0 项目画像与架构驱动",
         "第一条垂直切片",
-        "架构决策底线",
         "统一阶段规则",
         "交付完成条件",
         "运行反馈驱动演化",
+        "一个事实一个权威来源",
+        "证据胜过口头状态",
+        "不得用测试专属实现",
     ),
     "00-progress-router.md": (
         "## 第一次判断",
@@ -55,7 +72,9 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 阶段选择表",
         "## 全局门禁",
         "## 结束与回流",
+        "## 路径深度",
         "只加载当前 reference",
+        "docs/workflow-state.md",
     ),
     "00-project-profile.md": (
         "## 画像维度",
@@ -66,6 +85,14 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "STANDARD",
         "HIGH-RISK",
         "## 画像门禁",
+    ),
+    "00-lean-path.md": (
+        "## 入口条件",
+        "## 一页项目合同",
+        "## 快路径的最低要求",
+        "## 合并后的主线",
+        "## 升级触发",
+        "## 快路径门禁",
     ),
     "01-requirements-and-goals.md": (
         "## 需求提炼顺序",
@@ -108,17 +135,27 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 目录组织与模块边界",
         "## 运行时拓扑",
         "## 核心数据模型",
-        "## 关键机制决策",
-        "鉴权",
-        "异步任务",
-        "幂等",
-        "## API 与事件契约",
-        "统一响应和错误",
-        "## 配置、秘密与可观测性",
+        "## 关键机制与契约",
+        "现在必须有",
+        "明确不需要",
+        "由风险触发",
         "## 技术栈选择",
         "## 数据与基础设施匹配",
+        "## 部署拓扑与恢复",
         "## ADR 与验证计划",
         "## Architecture Ready 门禁",
+    ),
+    "05a-mechanisms-and-contracts.md": (
+        "## 关键机制决策",
+        "身份、授权和租户",
+        "异步任务与可靠副作用",
+        "幂等",
+        "事务、并发和缓存",
+        "## API 与事件契约",
+        "统一响应和错误",
+        "版本和兼容",
+        "## 配置、秘密与可观测性",
+        "## 机制门禁",
     ),
     "06-scaffolding-and-ci.md": (
         "## 落地顺序",
@@ -173,6 +210,15 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 下一条垂直切片",
         "## 回流条件",
         "## 复盘门禁",
+    ),
+    "99-state-and-handoff.md": (
+        "## 状态文件是游标和索引，不是第二份真相",
+        "## 位置与规模",
+        "## 状态文件模板",
+        "## 会话开始：读取并校验",
+        "## 会话结束：更新",
+        "## 反模式",
+        "仓库事实赢",
     ),
 }
 
@@ -313,6 +359,28 @@ def check_policy_anchors(texts: dict[str, str], errors: list[str]) -> None:
                 errors.append(f"{source} is missing policy anchor: {anchor}")
 
 
+def check_size_budgets(texts: dict[str, str], errors: list[str]) -> None:
+    """Keep the entry path small and stage documents load-on-demand.
+
+    A stage rule restated in SKILL.md is a second authority that drifts, and a
+    stage document that absorbs a neighbouring stage stops being loadable on
+    demand. Both show up first as size growth, so the budgets are the cheap
+    mechanical guard; exceeding one means split the file or push detail down,
+    not raise the number.
+    """
+
+    for name, text in texts.items():
+        # Normalize newlines: with core.autocrlf the working tree differs by one
+        # byte per line across platforms, and a budget must not depend on that.
+        size = len(text.replace(CRLF, LF).encode("utf-8"))
+        budget = SIZE_BUDGETS.get(name, REFERENCE_BUDGET)
+        if size > budget:
+            errors.append(
+                f"{name} is {size} bytes, over its {budget}-byte budget; "
+                "move stage detail into the reference that owns it"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     actual = {path.name for path in REFS.glob("*.md")} if REFS.exists() else set()
@@ -337,6 +405,7 @@ def main() -> int:
     check_stage_order(skill_text, texts.get("00-progress-router.md", ""), errors)
     check_archive(skill_text, texts, errors)
     check_policy_anchors(texts, errors)
+    check_size_budgets(texts, errors)
 
     # Empty active references are almost always an accidental placeholder.
     for name, text in texts.items():

@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.1.0 - 2026-09-06
+
+Tuned the Greenfield main line for how it actually gets executed: less constant
+cost, fewer load spikes, a real fast path, and state that survives a session
+boundary. No change to the eleven-stage lifecycle or to the Greenfield-only
+scope.
+
+- Added `references/00-lean-path.md`: LEAN projects merge stages 1-4 into a
+  single project contract with explicit minimums and escalation triggers, so
+  the fast path is executable instead of a paragraph in the router.
+- Split `references/05-architecture-design.md` (16.7 KB) into shape/boundary/
+  data/stack/deployment decisions plus `05a-mechanisms-and-contracts.md` for
+  auth, async, transactions, API/event contracts, and observability. The
+  mechanisms file loads only when the architecture stage marks an item as
+  required or risk-triggered.
+- Added `references/99-state-and-handoff.md`: a cursor-and-index state file in
+  the target repository, with read/verify rules on session start and update
+  rules on session end. It holds pointers, never copies; repository facts win
+  on conflict.
+- Removed the architecture, implementation, and verification checklists that
+  `SKILL.md` restated from stages 5, 8, and 9, keeping only cross-stage policy.
+  The anti-fake-green rule moved into the evidence principle rather than being
+  dropped.
+- Routed the new entry points: the router now looks for the state file first,
+  branches on path depth, and lists the mechanisms document as its own row.
+- Added size budgets to `check_consistency.py` for the always-loaded entry path
+  and for any single reference, so stage detail cannot drift back into
+  `SKILL.md` unnoticed. Reference names may now carry a letter suffix (`05a`).
+
 ## 1.0.0 - 2026-09-04
 
 Reframed the skill around Greenfield project delivery, using the supplied `project-dev-workflow` package as the baseline and expanding it for architecture-led development.

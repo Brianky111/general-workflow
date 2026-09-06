@@ -47,17 +47,20 @@
 ├── references/                         # 当前 Greenfield 主线
 │   ├── 00-progress-router.md
 │   ├── 00-project-profile.md
+│   ├── 00-lean-path.md
 │   ├── 01-requirements-and-goals.md
 │   ├── 02-scenarios-and-acceptance.md
 │   ├── 03-scope-and-nongoals.md
 │   ├── 04-constraints-quality-risks.md
 │   ├── 05-architecture-design.md
+│   ├── 05a-mechanisms-and-contracts.md
 │   ├── 06-scaffolding-and-ci.md
 │   ├── 07-vertical-slice.md
 │   ├── 08-implementation-tdd.md
 │   ├── 09-testing-review-integration.md
 │   ├── 10-release-operations.md
-│   └── 11-retrospective-evolution.md
+│   ├── 11-retrospective-evolution.md
+│   └── 99-state-and-handoff.md
 ├── scripts/check_consistency.py
 ├── archive/general-workflow-v0.12.0/   # 旧版只读参考
 ├── CHANGELOG.md
@@ -68,23 +71,30 @@
 
 ## 使用方式
 
-1. 先读 `references/00-progress-router.md`。
-2. 建立项目画像，判断当前生命周期阶段和流程档位。
+1. 先读 `references/00-progress-router.md`。它会先查找状态文件，再建立画像。
+2. 建立项目画像，判断当前生命周期阶段、流程档位和路径深度。
 3. 每次只读当前阶段需要的一个 reference。
 4. 通过阶段门禁后继续下一阶段；只有遇到会改变行为、范围、数据、安全、兼容性、成本或不可逆效果的决策才暂停询问。
 5. 在第一条真实垂直切片上验证架构，再进入后续迭代。
+6. 每轮结束更新状态文件，让下一次会话可以直接从游标接手。
 
-### 最小路径
+### 快路径（LEAN）
 
-适用于低风险、单运行单元、单团队项目：
+适用于低风险、单运行单元、单团队、无对外兼容承诺的项目。阶段 1–4 合并成 `00-lean-path.md` 的一页项目合同，主线其余阶段不变：
 
 ```text
-项目画像 → 需求/场景/范围 → 轻量架构 → 仓库与 CI → 一条垂直切片 → 测试 → 发布
+项目画像 → 一页项目合同 → 轻量架构 → 仓库与 CI → 一条垂直切片 → 测试 → 发布
 ```
 
-### 扩展路径
+合并的是文档不是决策：真实入口、成功与失败场景、非目标、数据敏感度和一条可跑的验证路径仍然必须有答案。`00-lean-path.md` 里的升级触发一旦成立，立即切回完整路径，已有产出直接搬运。
 
-只有在多服务、多客户端、多团队、公共接口、支付/隐私/合规、不可逆迁移、严格性能/可用性或高恢复成本等信号出现时，才增加详细 ADR、合同测试、安全审查、容量测试、迁移演练、灰度发布或独立评审。
+### 完整与加深路径
+
+STANDARD 逐阶段推进，机制与契约按需加载 `05a-mechanisms-and-contracts.md`。只有在多服务、多客户端、多团队、公共接口、支付/隐私/合规、不可逆迁移、严格性能/可用性或高恢复成本等信号出现时，才升到 HIGH-RISK，增加详细 ADR、合同测试、安全审查、容量测试、迁移演练、灰度发布或独立评审。
+
+### 跨会话接手
+
+项目状态写在目标仓库的 `docs/workflow-state.md`（或根目录 `WORKFLOW-STATE.md`）。它是游标和索引，不是第二份真相：记录当前阶段、路径深度、当前切片、未决决策和证据入口，用指针引用需求、ADR、测试和发布记录的权威位置。与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
 ## 与旧版的关系
 
@@ -104,7 +114,8 @@ git diff --check
 - Reference Map 与实际文件是否一一对应；
 - 引用是否可解析、是否能从 router 到达；
 - 11 个 Greenfield 阶段和 P0 是否存在并且顺序正确；
-- 需求、架构、脚手架、切片、实现、测试、发布和复盘的关键门禁是否存在；
+- 需求、架构、机制、脚手架、切片、实现、测试、发布、复盘和状态交接的关键门禁是否存在；
+- 常驻入口（`SKILL.md` 与 router）和单份 reference 是否超出体积预算——超出说明阶段内容漂回了入口，或某一阶段吞并了相邻阶段；
 - 旧版归档是否存在且没有被当前主线引用为必需阶段。
 
 ## 许可
