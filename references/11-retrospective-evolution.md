@@ -91,11 +91,13 @@
 | 场景或权限边界新增/冲突 | 02-scenarios-and-acceptance.md |
 | 版本承诺或非目标改变 | 03-scope-and-nongoals.md |
 | 新质量风险/未知 | 04-constraints-quality-risks.md |
-| 形态、数据、接口或机制不再成立 | 05-architecture-design.md |
+| 形态、模块边界、数据所有权或技术栈不再成立 | 05-architecture-design.md |
+| 鉴权、异步、事务/缓存或对外契约不再成立 | 05a-mechanisms-and-contracts.md |
 | 工具链/环境不可重复 | 06-scaffolding-and-ci.md |
-| 新行为准备实现 | 07/08 |
+| 新行为准备实现 | 07-vertical-slice.md → 08-implementation-tdd.md |
 | 证据不足但范围不变 | 09-testing-review-integration.md |
 | 新发布/恢复风险 | 10-release-operations.md |
+| 快路径的升级触发成立 | 00-lean-path.md 的升级触发表所指阶段 |
 
 ## Closeout 模板
 

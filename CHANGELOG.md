@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.1 - 2026-09-07
+
+Closed four routing defects found while auditing the 1.1.0 branch points.
+
+- The LEAN row in the router's stage table stated a mode ("tier is LEAN"), not
+  an unmet fact, so it matched for the whole life of a LEAN project and routed
+  finished work back to the project contract. It now states the deficiency, and
+  the table says explicitly that satisfied rows are skipped.
+- The profile gate hardcoded stage 1 as its successor, so a project whose tier
+  was just set to LEAN could not reach the fast path by following the profile
+  document's own gate. The gate now branches on tier.
+- The retrospective's return table still sent mechanism failures to stage 5
+  after mechanisms moved to 05a, and wrote "07/08" as bare numbers rather than
+  resolvable links. Both fixed, plus a row for fast-path escalation.
+- The state cursor was only mentioned at end of round, while stages may advance
+  several at a time. Cursor advance is now part of the shared stage gate, so it
+  applies at every gate rather than once per conversation.
+- Added check_return_table to check_consistency.py: every reference the router
+  can route into must also appear in the retrospective's return table, so the
+  two routing tables cannot drift apart again.
+
 ## 1.1.0 - 2026-09-06
 
 Tuned the Greenfield main line for how it actually gets executed: less constant
