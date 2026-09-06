@@ -1,7 +1,7 @@
 interface:
-  display_name: "General Workflow"
-  short_description: "Batch-local and aggregate solution delivery"
-  default_prompt: "Use $general-workflow to classify solution scope before feature merging, maintain separate construction and progress sources for every batch plus root aggregate progress, then close one Delivery Anchor gap through the real production path."
+  display_name: "Project Development Workflow"
+  short_description: "Greenfield architecture-to-release workflow"
+  default_prompt: "Guide this new project from its profile and requirements through architecture decisions, technology and repository scaffolding, a first vertical slice, TDD implementation, testing, CI/CD, release operations, and retrospective. Load only the reference for the current stage."
 
 policy:
   allow_implicit_invocation: true

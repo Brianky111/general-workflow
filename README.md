@@ -1,160 +1,112 @@
-# General Workflow Skill
+# General Workflow：Greenfield Project Development
 
-This repository develops the `general-workflow` Codex skill: an implementation-forward, evidence-driven workflow for framing finite cross-feature solutions, discovering behavior with BDD, and delivering vertical features across UI, runtime contracts, backend logic, infrastructure, and E2E acceptance.
+这个仓库现在维护的是一套面向**从零开始搭建软件项目**的通用开发工作流。它把架构设计、技术栈搭建、垂直切片、TDD、测试集成、CI/CD、发布运营和复盘串成一条可执行主线。
 
-The skill helps Codex:
+## 主线
 
-- preserve the original request plus explicitly accepted deltas as the immutable Delivery Anchor, and decide whether that request is complete before selecting any workflow stage;
-- continue only from one named source-backed `request_gap`; unanchored findings, tests, risks, and review suggestions become follow-ups rather than new delivery work;
-- run a solution candidate gate before feature-name similarity triage, then frame a goal-bounded solution when one aggregate outcome needs several independently acceptable features, staged cross-feature construction, or aggregate proof, with separate batch-local and aggregate progress while each feature remains the single source of truth for behavior;
-- load only the reference document needed for that stage;
-- freeze the smallest sufficient behavior contract, then continue into code in the same run when no material decision is blocked;
-- treat documentation as a conditional decision/risk tool rather than a mandatory `00…99` checklist;
-- distinguish the stable product/module/feature/use-case/task ownership hierarchy from an optional cross-feature solution delivery view, and map one feature across its full-stack code homes;
-- preserve one current effective contract per feature while retaining the immutable original-plus-accepted-delta history, instead of concatenating historical snapshots or promoting governance findings into requirements;
-- turn concise requirements into BDD Rules and concrete Given/When/Then examples, asking only questions that change observable behavior;
-- bind existing-code plans and tests to the current production owner, real runtime/composition-root path, and nearest existing test suite;
-- freeze a finite anchor-linked test-obligation set in the sparse behavior-to-proof map, reject unanchored obligations, then consume only valid obligations with behavior-sized red-green-refactor loops;
-- declare the Delivery Anchor/current gap once per plan, reuse existing AC/R/EX IDs in rows, and omit unused campaign/counter ledgers on the ordinary path;
-- cap property, fuzz, mutation, adversarial, review-sampling, and counterexample admission cumulatively for the accepted delivery, with no reset through rerouting, new executors, or renamed campaigns;
-- reject red tests against test-local surrogates, unregistered `V2` implementations, or parallel test harnesses;
-- stop immediately when every original/accepted outcome is delivered through the intended production entry and only its minimum anchor-linked proof, writes, wiring, gates, and regression satisfy `DELIVERY-DONE`;
-- prove frontend/backend contracts, cross-feature effects, user flows, and final Definition of Done;
-- keep the main conversation as the orchestrator while subagents act as scoped executors;
-- handle refactors, implementation, review, verification, and change recovery without reading the full source workflow every time.
+```text
+项目画像
+  → 需求与目标
+  → 场景与验收
+  → 范围与非目标
+  → 约束、质量属性与风险
+  → 架构评估与设计
+  → 技术栈、仓库骨架与 CI
+  → 第一条垂直切片
+  → 红—绿—重构实现
+  → 测试、评审与集成
+  → 发布、监控与回滚
+  → 复盘与下一条切片
+```
 
-## Workflow overview
+项目画像不是最终架构；它用于判断流程深度。架构决策要由需求、质量属性、数据和运行边界驱动。第一条垂直切片必须经过真实入口，既验证用户结果，也验证关键架构假设。
 
-Every request enters through the progress router. The immutable original source plus explicitly accepted deltas form the Delivery Anchor. The router first absorbs existing production evidence and classifies it as `ANCHOR-SATISFIED`, `ANCHOR-UNMET`, or `ANCHOR-BLOCKED`; only `ANCHOR-UNMET` with one concrete `request_gap` may query the stage table or the subordinate positive `READY` predicate. Refactors never become new behavior features; similar requirements are triaged (merge / revise / new) before a second behavior source is created:
+## 核心架构问题
 
-![请求入口与路由](docs/images/routing-map.svg)
+架构阶段按证据决定，而不是套固定模板：
 
-A normal feature request uses the lean incremental pipeline. Structured behavior and BDD examples are faithful projections of the Delivery Anchor, not new scope authorities; one cold read checks that projection and records only source-backed findings. Once the selected gap's behavior, production write seam, and credible verification are clear, planning declares the Anchor/gap once and freezes a finite Test Obligation Set (`TOS`) whose rows reuse existing acceptance IDs. Ordinary work has no discovery campaign and writes no all-zero budget ledger; campaign IDs and counters appear only when triggered or consumed. Review or tool output may discharge the set but cannot extend it. A candidate changes scope only after an accepted user/authoritative-source delta, while a reproducible production counterexample may enter only when it actually falsifies an anchor outcome and fits the frozen cap. Budgets do not reset on reroute. At every meaningful checkpoint the workflow asks again whether the original request is complete; once it is delivered with minimum credible evidence, it closes once and stops without another review, red test, or discovery pass. Blueprint batching remains explicit opt-in for shared high-risk freezes:
+- 采用简单单体、模块化单体、应用加 worker、多服务还是事件驱动？
+- 代码采用直接分层、纯模块化、模块化加分层，还是有依据的混合结构？
+- 哪个模块拥有哪类数据，哪些不变量必须保持？
+- 是否需要鉴权、授权、审计、多租户或服务间身份？
+- 是否需要异步任务、幂等、重试、死信、补偿或定时调度？
+- API/事件采用何种风格，如何版本化并统一错误表达？
+- 是否需要事务、缓存、限流、文件、搜索、通知或 feature flag？
+- 如何管理配置、秘密、日志、指标、追踪、健康检查和告警？
+- 技术栈和目录结构为什么适合当前团队、风险和生命周期？
+- 如何构建、迁移、部署、观察、回滚和恢复？
 
-![单功能主管线](docs/images/feature-pipeline.svg)
+小项目不必强行使用完整分层或微服务；高风险项目即使代码量很小，也不能省略安全、迁移、兼容和恢复判断。
 
-Before a similarly named request is merged into a feature, the workflow asks whether one feature contract can faithfully own the whole outcome. A common product stem or a platform suffix such as Android, iOS, web, or desktop is only a discovery hint. When an aggregate outcome spans independently acceptable features, modules/applications, staged cross-feature construction, or aggregate proof, the workflow adds a goal-bounded solution frame as an orthogonal delivery view. A durable staged solution uses `00-方案.md`, one `batches/NN-阶段/` directory per batch containing stable `00-施工.md` and mutable batch-local `99-进度.md`, `02-总体验收.md`, and one root aggregate `99-进度.md`; `01-共享边界.md` appears only when needed. Each feature keeps its authoritative behavior contract, production owner, detailed plan, and tests. Work still advances incrementally through exactly one owning feature gap at a time.
-
-Numbered documents (`00-…` to `99-…`) are conditional dashboard slots. Ordinary feature work does not create empty conflict reports, all-`N/A` matrices, audit reports with no findings, or multiple status mirrors. Once staged durable solution coordination is positively identified, its plan, per-batch construction/progress pair, aggregate-acceptance, and root total-progress surfaces are the triggered control set rather than optional feature paperwork. Batch-local status owns work/TOS/evidence and the root status owns transitions/dependencies/totals, so these are scoped authorities rather than duplicate mirrors. Other dedicated artifacts still appear only when their named risks justify them.
-
-## Repository layout
+## 仓库结构
 
 ```text
 .
 ├── SKILL.md
-├── agents/
-│   └── openai.yaml
-├── references/
+├── agents/openai.yaml
+├── references/                         # 当前 Greenfield 主线
 │   ├── 00-progress-router.md
-│   ├── 00-orchestration-policy.md
-│   ├── 00-pacing-mode.md
-│   ├── 00-solution-framing.md
-│   ├── 00-refactor-intake.md
-│   └── ...
-├── scripts/
-│   └── check_consistency.py
-├── 通用开发工作流-v3.8-环节拆分版.md
+│   ├── 00-project-profile.md
+│   ├── 01-requirements-and-goals.md
+│   ├── 02-scenarios-and-acceptance.md
+│   ├── 03-scope-and-nongoals.md
+│   ├── 04-constraints-quality-risks.md
+│   ├── 05-architecture-design.md
+│   ├── 06-scaffolding-and-ci.md
+│   ├── 07-vertical-slice.md
+│   ├── 08-implementation-tdd.md
+│   ├── 09-testing-review-integration.md
+│   ├── 10-release-operations.md
+│   └── 11-retrospective-evolution.md
+├── scripts/check_consistency.py
+├── archive/general-workflow-v0.12.0/   # 旧版只读参考
 ├── CHANGELOG.md
-└── README.md
+└── LICENSE
 ```
 
-Important distinction:
+`archive/` 不属于安装包，也不参与当前路由。根目录的 v3.8 源材料已经随旧版一并归档，避免旧流程和新流程同时成为权威。
 
-- `SKILL.md`, `agents/`, and `references/` are the reusable Codex skill package.
-- `通用开发工作流-v3.8-环节拆分版.md` is source material for the split references.
-- `README.md` documents this repository; it is not required inside the installed skill package.
+## 使用方式
 
-## Skill behavior
+1. 先读 `references/00-progress-router.md`。
+2. 建立项目画像，判断当前生命周期阶段和流程档位。
+3. 每次只读当前阶段需要的一个 reference。
+4. 通过阶段门禁后继续下一阶段；只有遇到会改变行为、范围、数据、安全、兼容性、成本或不可逆效果的决策才暂停询问。
+5. 在第一条真实垂直切片上验证架构，再进入后续迭代。
 
-The skill uses progressive disclosure:
+### 最小路径
 
-1. Start from `SKILL.md`.
-2. Always read `references/00-progress-router.md` first.
-3. Build the Delivery Anchor from the immutable original source and accepted deltas; evaluate its completion through the real production path before selecting a stage.
-4. If `ANCHOR-UNMET`, name one concrete `request_gap`; if no gap exists, close or quarantine the finding instead of continuing.
-5. Before feature similarity triage, run the solution candidate gate. If the aggregate outcome needs several independently acceptable feature contributions, staged cross-feature construction, or aggregate proof, use `references/00-solution-framing.md` to map owners, give every batch separate construction and progress sources, maintain root total progress, and define aggregate proof without copying feature truth; then select one owning feature gap.
-6. Evaluate whether that gap's compact projection and repository evidence make it `READY` for code.
-7. Freeze only anchor-linked test obligations and discovery/admission budgets inside the executable plan.
-8. Load only the reference file needed to close the selected gap; every write batch must directly advance its acceptance predicate.
-9. Evaluate the Delivery Anchor and `DELIVERY-DONE` before any new red/review/discovery pass, and stop when they hold.
-10. Do not route backward solely because an optional artifact, unanchored finding, possible extra edge case, or approval timestamp is absent.
+适用于低风险、单运行单元、单团队项目：
 
-The orchestration model is explicit:
+```text
+项目画像 → 需求/场景/范围 → 轻量架构 → 仓库与 CI → 一条垂直切片 → 测试 → 发布
+```
 
-- the current conversation is the orchestrator;
-- subagents are executors;
-- once a scope is assigned to an executor, the main thread must not implement the same scope in parallel;
-- the main thread owns integration, conflict resolution, final verification, and user communication.
+### 扩展路径
 
-## Key references
+只有在多服务、多客户端、多团队、公共接口、支付/隐私/合规、不可逆迁移、严格性能/可用性或高恢复成本等信号出现时，才增加详细 ADR、合同测试、安全审查、容量测试、迁移演练、灰度发布或独立评审。
 
-| File | Purpose |
-|---|---|
-| `references/00-progress-router.md` | Decide original-request completion first, then choose a subordinate stage only for one anchor gap. |
-| `references/00-orchestration-policy.md` | Define main-thread orchestration and subagent executor boundaries. |
-| `references/00-pacing-mode.md` | Default to incremental delivery; opt into blueprint only for justified shared freezes. |
-| `references/00-solution-framing.md` | Classify solution scope before feature similarity triage, then coordinate per-batch construction/progress and root aggregate progress while preserving one behavior owner per feature. |
-| `references/00-refactor-intake.md` | Establish existing behavior and green-test protection without backfilling workflow docs. |
-| `references/03-bdd-example-mapping.md` | Map concise requirements into observable Rules and concrete Examples. |
-| `references/05-conflict-scan.md` | Find the real production owner/runtime path and reusable code and tests. |
-| `references/06-planning.md` | Build the smallest executable, reuse-first plan and freeze its finite test boundary. |
-| `references/06-test-strategy.md` | Map a finite obligation set sparsely to existing test homes and budgeted risk evidence. |
-| `references/07-red-tests.md` | Consume one frozen pending obligation with an admissible red against the approved production node. |
-| `references/08-implementation.md` | Modify the selected production owner and reject shadow implementations. |
-| `references/09-review-and-verification.md` | Verify behavior, evidence, ownership, and acceptance. |
-| `references/09-feature-completeness.md` | Run a final independent evidence audit for governed or high-risk work. |
-| `references/10-counterexample-recovery.md` | Admit and repay one deduplicated counterexample without recursive discovery. |
+## 与旧版的关系
 
-## Validate
+旧版是以 feature/change round、Delivery Anchor、TOS 和复杂状态治理为中心的流程，已完整保存在 [`archive/general-workflow-v0.12.0/`](archive/general-workflow-v0.12.0/)。新版本暂时只针对 Greenfield，不删除旧材料，也不让旧材料阻塞新项目的正常开工。
 
-There is no application build system. Useful checks:
+## 校验
+
+在修改 `SKILL.md` 或 `references/` 后运行：
 
 ```powershell
-Get-ChildItem -Force
-Select-String -Path *.md -Pattern '^#{1,4}\s+'
-git diff --check
 python scripts/check_consistency.py
-$env:PYTHONUTF8 = 1   # required on GBK-default Windows: quick_validate.py reads UTF-8 files without declaring an encoding
-python "<path-to-skill-creator>\scripts\quick_validate.py" (git rev-parse --show-toplevel)
+git diff --check
 ```
 
-`check_consistency.py` verifies that `references/*.md`, the `SKILL.md` Reference Map, and cross-file mentions stay in sync, that every reference is reachable from the router, and that Delivery-Anchor-first routing, concrete `request_gap` gating, solution/feature ownership separation, current-contract/delta integrity, READY/document-budget, N-ID/SUT-binding, finite anchor-linked TOS, discovery-budget, and `DELIVERY-DONE` stop anchors remain present across stages. Run it before committing changes to `SKILL.md` or `references/`.
+校验器会检查：
 
-`git diff --check` may print CRLF conversion warnings on this Windows checkout; distinguish those from real whitespace errors.
+- Reference Map 与实际文件是否一一对应；
+- 引用是否可解析、是否能从 router 到达；
+- 11 个 Greenfield 阶段和 P0 是否存在并且顺序正确；
+- 需求、架构、脚手架、切片、实现、测试、发布和复盘的关键门禁是否存在；
+- 旧版归档是否存在且没有被当前主线引用为必需阶段。
 
-## Install or sync locally
+## 许可
 
-To use this checkout as the local Codex skill, copy only the skill package files:
-
-Validate the source checkout first (see above), then copy:
-
-```powershell
-$src = git rev-parse --show-toplevel
-$dst = Join-Path $env:USERPROFILE ".codex\skills\general-workflow"
-
-New-Item -ItemType Directory -Path $dst -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $src "SKILL.md") -Destination (Join-Path $dst "SKILL.md") -Force
-robocopy (Join-Path $src "agents") (Join-Path $dst "agents") /MIR
-robocopy (Join-Path $src "references") (Join-Path $dst "references") /MIR
-```
-
-Note: `/MIR` mirrors — it deletes files in the target that no longer exist in the source, so local patches in the installed copy are overwritten. robocopy exit codes 0-7 all mean success; only >=8 is failure.
-
-Then validate the installed copy:
-
-```powershell
-python "<path-to-skill-creator>\scripts\quick_validate.py" $dst
-```
-
-## Development notes
-
-- Keep `SKILL.md` concise; move stage details into `references/`.
-- Keep references one level deep and directly discoverable from `SKILL.md`.
-- Do not duplicate long workflow text across files.
-- Treat a Feature as a vertical user capability, not a synonym for one backend folder or one API endpoint.
-- Update `agents/openai.yaml` when the trigger behavior or default prompt changes.
-- Do not store secrets, credentials, private host details, or project-specific business data in the skill.
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+MIT，见 [LICENSE](LICENSE)。
