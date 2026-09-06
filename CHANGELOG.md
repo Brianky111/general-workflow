@@ -2,7 +2,7 @@
 
 ## 1.1.1 - 2026-09-07
 
-Closed four routing defects found while auditing the 1.1.0 branch points.
+Closed five routing defects found while auditing the 1.1.0 branch points.
 
 - The LEAN row in the router's stage table stated a mode ("tier is LEAN"), not
   an unmet fact, so it matched for the whole life of a LEAN project and routed
@@ -17,6 +17,10 @@ Closed four routing defects found while auditing the 1.1.0 branch points.
 - The state cursor was only mentioned at end of round, while stages may advance
   several at a time. Cursor advance is now part of the shared stage gate, so it
   applies at every gate rather than once per conversation.
+- The fast path emitted only A-IDs while stages 5, 7, and 9 name R-ID and Q-ID
+  in their entry conditions, so a LEAN project reached stage 5 against a gate it
+  could never satisfy. `00-lean-path.md` now maps must entries to R-ID and
+  quality_targets to Q-ID, and names the two cases that must escalate instead.
 - Added check_return_table to check_consistency.py: every reference the router
   can route into must also appear in the retrospective's return table, so the
   two routing tables cannot drift apart again.
