@@ -52,12 +52,14 @@
 | p95 above Q-01 after canary | dashboard/run | latency risk | run capacity experiment | ops | 2026-09-10 |
 ~~~
 
-将每个观察分类为：
+将每个观察分类为，并按 00-progress-router.md 的阶段选择表定位回流阶段：
 
-- 当前范围缺陷：回到需求/场景或实现修复；
+- 当前范围缺陷：回到 02-scenarios-and-acceptance.md 或直接修实现；
 - 已接受风险：继续观察并记录阈值；
-- 新需求：回到 01/03，重新定义结果和范围；
-- 架构假设失效：回到 04/05，先做实验和 ADR；
+- 新需求：回到 01-requirements-and-goals.md 与 03-scope-and-nongoals.md；
+- 架构假设失效：回到 04-constraints-quality-risks.md 与 05-architecture-design.md，先做实验和 ADR；机制或对外契约失效则是 05a-mechanisms-and-contracts.md；
+- 工具链或环境不可重复：回到 06-scaffolding-and-ci.md；
+- 发布或恢复出现新风险：回到 10-release-operations.md；
 - 仅优化建议：进入后续队列，不阻塞已完成版本。
 
 ## 架构演化规则
@@ -84,22 +86,6 @@
 沿用 07-vertical-slice.md 的地图和门禁——首条与后续切片用同一套文档，只是选择权重不同；不要预先为所有未来功能设计完整架构。
 
 台账中已无 remaining 且无 in-slice 时，当前范围交付完毕：记录 closeout 并停止，不要为了继续迭代而自造新范围。
-
-## 回流条件
-
-| 证据 | 回到 |
-| --- | --- |
-| 用户问题/结果改变 | 01-requirements-and-goals.md |
-| 场景或权限边界新增/冲突 | 02-scenarios-and-acceptance.md |
-| 版本承诺或非目标改变 | 03-scope-and-nongoals.md |
-| 新质量风险/未知 | 04-constraints-quality-risks.md |
-| 形态、模块边界、数据所有权或技术栈不再成立 | 05-architecture-design.md |
-| 鉴权、异步、事务/缓存或对外契约不再成立 | 05a-mechanisms-and-contracts.md |
-| 工具链/环境不可重复 | 06-scaffolding-and-ci.md |
-| 新行为准备实现 | 07-vertical-slice.md → 08-implementation-tdd.md |
-| 证据不足但范围不变 | 09-testing-review-integration.md |
-| 新发布/恢复风险 | 10-release-operations.md |
-| 快路径的升级触发成立 | 00-lean-path.md 的升级触发表所指阶段 |
 
 ## Closeout 模板
 

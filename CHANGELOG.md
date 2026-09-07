@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.3.0 - 2026-09-07
+
+A subtraction pass. Nothing was added: six places said the same thing twice,
+and the fast path had only been made fast in its front half.
+
+- Cut the return table from stage 11. The router's stage table, stage 11's own
+  observation classification, and that table were three statements of one
+  mapping; the classification list survives and now names files rather than
+  bare stage numbers. Removed check_return_table with it -- a guard that keeps
+  two copies in sync is worth less than not having two copies.
+- Compressed SKILL.md's twelve principles to six. Ten of the twelve were
+  restated by the stage document that owns them; what remains is what has to
+  be true before you know which stage you are in.
+- Replaced the six prose completion conditions in SKILL.md with the ledger
+  test: no remaining and no in-slice rows. Stages 9 and 10 own the gates that
+  move rows, so the entry file no longer summarizes them.
+- Merged the back half of the LEAN path. It collapsed stages 1-4 but left six
+  stages standing behind them; LEAN is now four steps, with the clean-clone
+  check and one CI pipeline as its single non-negotiable gate.
+- Cut stage 9's CI layering block (a restatement of the 运行时机 column in its
+  own table), stage 8's scope firewall (owned by stage 3), and stage 5's
+  decision-order list (a prose table of contents for its own sections).
+- Narrowed stage 5's deployment section to the four decisions that constrain
+  the data model and contracts; the execution checklist belongs to stage 10.
+- Tightened the size budgets to lock the reduction in: SKILL.md 8000, any
+  single reference 13000.
+
 ## 1.2.0 - 2026-09-07
 
 Made the line past the first slice as well specified as the line up to it.

@@ -85,18 +85,7 @@
 
 评审可以发现遗漏，但不能自行创造新的验收范围。新行为回到需求/范围阶段；架构边界问题回到 05。
 
-## CI 分层
-
-建议流水线：
-
-~~~text
-每次 push: format/lint/typecheck/unit/build
-PR:       + integration/contract + architecture checks
-合并前:   + key E2E + risk-triggered checks
-发布前:   + migration/recovery/performance/security evidence
-~~~
-
-缓存只加速，不改变结果；失败日志、测试报告、覆盖率和产物应可下载。偶发失败要记录并修复，不要简单重跑到绿色。
+流水线按测试层次表的“运行时机”列分层即可，不另立一套。缓存只加速，不改变结果；失败日志、测试报告和产物应可下载。偶发失败要记录并修复，不要简单重跑到绿色。
 
 ## Definition of Done
 

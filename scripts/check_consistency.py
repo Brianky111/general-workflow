@@ -43,10 +43,10 @@ EXPECTED_REFERENCES = {
 # belonging to a stage document cannot quietly drift back into the entry path,
 # and so no single stage document grows back into a load spike.
 SIZE_BUDGETS = {
-    "SKILL.md": 9_500,
+    "SKILL.md": 8_000,
     "00-progress-router.md": 9_500,
 }
-REFERENCE_BUDGET = 14_000
+REFERENCE_BUDGET = 13_000
 CRLF = "\r\n"
 LF = "\n"
 
@@ -60,7 +60,6 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "第一条垂直切片",
         "统一阶段规则",
         "交付完成条件",
-        "运行反馈驱动演化",
         "一个事实一个权威来源",
         "证据胜过口头状态",
         "不得用测试专属实现",
@@ -211,7 +210,6 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 证据与决策表",
         "## 架构演化规则",
         "## 下一条垂直切片",
-        "## 回流条件",
         "## 复盘门禁",
     ),
     "99-state-and-handoff.md": (
@@ -365,42 +363,6 @@ def check_policy_anchors(texts: dict[str, str], errors: list[str]) -> None:
                 errors.append(f"{source} is missing policy anchor: {anchor}")
 
 
-def section(text: str, heading: str) -> str | None:
-    """Return the body of a level-2 section, or None when it is absent."""
-
-    match = re.search(
-        r"(?ms)^## " + re.escape(heading) + r"\s*\n(.*?)(?=^## |\Z)", text
-    )
-    return match.group(1) if match else None
-
-
-def check_return_table(texts: dict[str, str], errors: list[str]) -> None:
-    """The retrospective's return table is a second router; keep it in sync.
-
-    Stage 11 routes work back into earlier stages, so every destination the
-    forward table can reach must also be reachable backwards. When the two
-    drift, a stage becomes enterable but not returnable -- which is how a
-    section that moves to a new file silently loses its inbound edge.
-    """
-
-    forward = section(texts.get("00-progress-router.md", ""), "阶段选择表")
-    backward = section(texts.get("11-retrospective-evolution.md", ""), "回流条件")
-    if forward is None:
-        errors.append("00-progress-router.md has no ## 阶段选择表 section")
-        return
-    if backward is None:
-        errors.append("11-retrospective-evolution.md has no ## 回流条件 section")
-        return
-
-    # Stage 11 owns the return table; it is a forward destination, not a target.
-    targets = reference_mentions(forward) - {"11-retrospective-evolution.md"}
-    for name in sorted(targets - reference_mentions(backward)):
-        errors.append(
-            f"11-retrospective-evolution.md return table is missing {name}, "
-            "which the router can route into"
-        )
-
-
 def check_size_budgets(texts: dict[str, str], errors: list[str]) -> None:
     """Keep the entry path small and stage documents load-on-demand.
 
@@ -447,7 +409,6 @@ def main() -> int:
     check_stage_order(skill_text, texts.get("00-progress-router.md", ""), errors)
     check_archive(skill_text, texts, errors)
     check_policy_anchors(texts, errors)
-    check_return_table(texts, errors)
     check_size_budgets(texts, errors)
 
     # Empty active references are almost always an accidental placeholder.
