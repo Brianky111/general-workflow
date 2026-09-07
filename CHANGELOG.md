@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.4.0 - 2026-09-07
+
+Pulled the test-first discipline forward from implementation to requirements,
+without restoring the archived obligation-set machinery that did it before.
+
+- Stage 2 scenarios must now be written in executable shape: a concrete
+  entrypoint, concrete input values, a concrete assertion, the forbidden
+  effect, and the seam the assertion needs. A scenario you cannot turn into a
+  failing assertion is an unfinished requirement, not a testing problem. The
+  assertions are not run yet -- the scaffold arrives at stage 6 -- but they
+  become stage 8's red tests unchanged.
+- The seam column is the new link between requirements and module boundaries.
+  Naming what a test must double is a boundary decision made against observed
+  behavior rather than imagined layering.
+- Stage 5 takes the union of those seams as input to module boundaries, and
+  states the limit: seams fix the outer edges, domain modelling fills the
+  inside. Letting acceptance tests drive internal layering produces modules
+  that mirror test cases instead of domain boundaries.
+- Stage 3 decides the MVP by deletion -- "remove this row; is the desired
+  outcome still observable?" -- rather than by Must/Should/Could judgement,
+  with security and data-integrity boundaries as the stated exception. Where
+  deletion and the priority label disagree, deletion wins.
+- The LEAN contract template carries the same seam column and deletion rule.
+
 ## 1.3.1 - 2026-09-07
 
 First forward test: a LEAN internal CLI taken from profile to delivered

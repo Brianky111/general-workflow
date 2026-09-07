@@ -106,6 +106,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "02-scenarios-and-acceptance.md": (
         "## 场景写法",
+        "## 可执行形状",
+        "接缝",
         "Given",
         "When",
         "Then",
@@ -115,6 +117,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "03-scope-and-nongoals.md": (
         "## 范围分层",
+        "MVP 用删除法判定",
         "Must",
         "Should",
         "Could",
@@ -135,6 +138,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 决策顺序",
         "## 系统形态选择",
         "## 目录组织与模块边界",
+        "seam 并集",
         "## 运行时拓扑",
         "## 核心数据模型",
         "## 关键机制与契约",

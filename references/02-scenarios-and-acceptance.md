@@ -42,12 +42,27 @@ Scenario: <行为名称>
 
 不是每个项目都需要所有边界；要记录“明确不适用”的理由，避免把遗漏误认为决定。
 
+## 可执行形状
+
+场景必须写到「照着它就能敲出一条会失败的断言」的程度。写不出断言，说明需求还没落地，不是测试的问题。
+
+四条具体化要求：
+
+- **入口**具体到命令、函数、路由或事件名，不是“API”“页面”；
+- **输入**是具体值，不是“一个有效的项”；
+- **断言**是具体判断，不是“返回成功”“正确处理”；
+- **接缝**：写这条断言需要哪个 SUT，哪些外部系统必须用替身隔离。
+
+第四项是本阶段的新产出，也是需求与模块边界之间的那根线。写断言时被迫命名的替身位置，就是一个真实的边界候选——它比凭空设想的分层更可信。所有 A-ID 的接缝取并集，带到 05-architecture-design.md 作为模块边界的输入。
+
+此时不需要真的运行：仓库骨架要到阶段 6 才有。阶段 6 完成后，这些断言直接成为阶段 8 的红测，不重写。
+
 ## 验收矩阵
 
 ~~~markdown
-| A-ID | R-ID | actor | entrypoint | precondition | action | observable result | forbidden effect | evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A-01 | R-01 | user | POST /items | authenticated | create valid item | 201 + item visible | other tenant cannot read | API test + E2E |
+| A-ID | R-ID | actor | entrypoint | precondition | action | observable result | forbidden effect | seam | evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A-01 | R-01 | user | POST /items | 已登录 user_a | body {"name":"x"} | 201，GET /items 含 name=x | user_b 读不到 | SUT=HTTP 应用；替身=支付网关 | API test + E2E |
 ~~~
 
 evidence 是计划中的证据类型，不是提前声称通过。实现后将它映射到具体测试、命令、日志或发布记录。
@@ -55,7 +70,7 @@ evidence 是计划中的证据类型，不是提前声称通过。实现后将�
 ## 场景质量检查
 
 - 场景从真实用户/系统入口开始，不能只描述内部函数；
-- 结果可观察且可重复，避免“系统正确处理”之类不可验证的句子；
+- 结果可观察且可重复，避免“系统正确处理”之类不可验证的句子；每条场景都能照着写出一条具体断言；
 - 成功与关键失败路径都有明确边界；
 - 权限、状态和副作用不会被默认假设掩盖；
 - 每个 Must 需求至少有一个场景，多个场景不重复表达不同含义；
