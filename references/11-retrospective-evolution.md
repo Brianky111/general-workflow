@@ -74,14 +74,16 @@
 
 ## 下一条垂直切片
 
-下一条切片按以下优先级选择：
+候选来自状态文件范围台账中 status 为 remaining 的 A-ID（见 99-state-and-handoff.md）。在这些候选里按以下优先级排序：
 
 1. 直接改善未达到的核心用户结果；
 2. 关闭最高风险且最有信息量的未知；
 3. 修复属于当前范围的可复现缺陷；
 4. 为已确认的后续目标建立可复用边界。
 
-沿用 07-vertical-slice.md 的地图和门禁；不要预先为所有未来功能设计完整架构。
+沿用 07-vertical-slice.md 的地图和门禁——首条与后续切片用同一套文档，只是选择权重不同；不要预先为所有未来功能设计完整架构。
+
+台账中已无 remaining 且无 in-slice 时，当前范围交付完毕：记录 closeout 并停止，不要为了继续迭代而自造新范围。
 
 ## 回流条件
 
@@ -110,6 +112,7 @@
 - incidents_and_cost: <summary>
 - architecture_assumptions: <confirmed/refuted>
 - accepted_risks: <owner + trigger>
+- remaining_acceptance: <台账中仍为 remaining 的 A-ID，或 none>
 - next_slice: <one bounded outcome>
 - return_stage: <if any>
 - decision: continue | fix | pause | cancel

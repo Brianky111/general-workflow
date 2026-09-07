@@ -96,6 +96,12 @@ STANDARD 逐阶段推进，机制与契约按需加载 `05a-mechanisms-and-contr
 
 项目状态写在目标仓库的 `docs/workflow-state.md`（或根目录 `WORKFLOW-STATE.md`）。它是游标和索引，不是第二份真相：记录当前阶段、路径深度、当前切片、未决决策和证据入口，用指针引用需求、ADR、测试和发布记录的权威位置。与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
+其中的**范围台账**回答“还欠多少、做完了没有”：一行一个 A-ID，状态取 `remaining` / `in-slice` / `delivered` / `deferred` / `dropped`。进入 `delivered` 的唯一条件是通过阶段 9 的 Definition of Done 并填上证据指针；已交付不可退回，要重开必须走变更协议。台账无 `remaining` 且无 `in-slice`，即当前范围交付完毕。
+
+### 一条还是多条切片
+
+阶段 7 同时服务第一条和其后的每一条切片，共用同一套地图和门禁。差别只在选择权重：第一条必须触及一个未验证的架构假设，后续切片改为优先关闭台账里未交付的 Must，架构假设填 `none` 是合法结论。
+
 ## 与旧版的关系
 
 旧版是以 feature/change round、Delivery Anchor、TOS 和复杂状态治理为中心的流程，已完整保存在 [`archive/general-workflow-v0.12.0/`](archive/general-workflow-v0.12.0/)。新版本暂时只针对 Greenfield，不删除旧材料，也不让旧材料阻塞新项目的正常开工。

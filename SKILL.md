@@ -116,9 +116,9 @@ P0 项目画像与架构驱动
 - `05-architecture-design.md`：完成系统形态、模块边界、数据所有权、技术栈和部署决策。
 - `05a-mechanisms-and-contracts.md`：完成鉴权、异步、事务/缓存、API/事件契约和可观测性等机制决策。
 - `06-scaffolding-and-ci.md`：把架构决策落成可运行的仓库、环境、工具链和基础 CI。
-- `07-vertical-slice.md`：选择并准备第一条真实的端到端垂直切片。
+- `07-vertical-slice.md`：选择并准备真实的端到端垂直切片，首条与后续共用同一套地图和门禁。
 - `08-implementation-tdd.md`：执行行为大小的红—绿—重构实现循环。
 - `09-testing-review-integration.md`：完成测试分层、架构约束、评审和真实集成验收。
 - `10-release-operations.md`：完成发布、迁移、监控、告警、回滚和运行准备。
 - `11-retrospective-evolution.md`：根据运行证据复盘、演化架构并选择下一条切片。
-- `99-state-and-handoff.md`：维护跨会话的状态游标、权威来源索引和交接校验。
+- `99-state-and-handoff.md`：维护跨会话的状态游标、范围台账（还欠哪些 A-ID）、权威来源索引和交接校验。

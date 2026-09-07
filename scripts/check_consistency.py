@@ -169,6 +169,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "07-vertical-slice.md": (
         "## 选择标准",
+        "首条与后续切片的权重差别",
+        "## 交付完成的判定",
         "## 切片地图",
         "真实入口",
         "architecture_hypothesis",
@@ -214,6 +216,9 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "99-state-and-handoff.md": (
         "## 状态文件是游标和索引，不是第二份真相",
+        "## 范围台账规则",
+        "delivered",
+        "remaining",
         "## 位置与规模",
         "## 状态文件模板",
         "## 会话开始：读取并校验",

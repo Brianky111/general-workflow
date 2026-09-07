@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.0 - 2026-09-07
+
+Made the line past the first slice as well specified as the line up to it.
+Surveyed how the highest-starred agent workflow projects track outstanding
+scope -- superpowers, spec-kit, OpenSpec, BMAD-METHOD, and claude-task-master
+-- and adopted the two conventions they share.
+
+- Generalized `07-vertical-slice.md` from the first slice to every slice. The
+  map and the gates are shared; only the selection weights differ, and the
+  document now states that difference in a table. An architecture hypothesis of
+  `none` is a legitimate result for a later slice rather than a blank to fill.
+  None of the surveyed projects keeps a separate document for the first
+  iteration, and neither does this one now.
+- Added a scope ledger to the state file: one row per A-ID with a status of
+  remaining, in-slice, delivered, deferred, or dropped, plus an evidence
+  pointer. It holds identifiers and pointers only, never scenario text.
+- A row reaches `delivered` only by passing the stage 9 Definition of Done with
+  an evidence pointer filled in, and `delivered` is monotonic -- reopening
+  scope goes through the change protocol in stage 3 rather than editing the
+  ledger backwards. Both rules come from the survey: BMAD refuses status moves
+  that go backwards, and OpenSpec makes delivery a move between directories so
+  a status field cannot drift from reality.
+- "Current scope is delivered" now has one authoritative answer: no remaining
+  and no in-slice rows. Stage 11 selects the next slice from the remaining
+  rows and reports what is left in its closeout.
+
 ## 1.1.1 - 2026-09-07
 
 Closed five routing defects found while auditing the 1.1.0 branch points.
