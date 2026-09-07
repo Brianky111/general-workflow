@@ -12,9 +12,7 @@
 
 ## 第一次判断
 
-先找状态文件：`docs/workflow-state.md` 或根目录 `WORKFLOW-STATE.md`。存在就按 99-state-and-handoff.md 读取并校验游标，把它作为路由起点；不存在就按下面的步骤推导，并在本轮结束时建立它。
-
-状态文件只是游标和索引，不是权威内容；它与仓库事实冲突时以仓库为准。
+先找状态目录 `docs/workflow/`。存在就跑 `python scripts/workflow_status.py`，按它的输出和 99-state-and-handoff.md 校验游标，把它作为路由起点；退出码非零表示有必须先处理的问题。不存在就按下面的步骤推导，并在本轮结束时建立它。
 
 再收集最小上下文：
 

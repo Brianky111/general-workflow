@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.5.0 - 2026-09-08
+
+Made the workflow safe for a second person to join at any moment, which meant
+sharding the state and shipping the first gate an agent cannot talk itself past.
+
+- Split the single state file into `docs/workflow/`: `project.md` for what
+  rarely changes, `backlog.md` for which slice owns each acceptance id, and one
+  file per slice for the rest. A slice is the natural unit of ownership -- no
+  one claims half a slice -- so status updates, the most frequent write, only
+  ever touch a file with a single owner.
+- Moved `stage` from the project to the slice. Two people working two slices
+  are genuinely at two different stages; a shared field cannot express that,
+  and merging it is not a resolution because both values are correct. This is
+  a modelling fix, not a merge workaround.
+- `backlog.md` records assignment only, never status, so the two never disagree.
+- Added claim rules: claiming edits the file you are claiming, so it cannot
+  conflict; do not take a slice whose owner has fresh evidence; check
+  `write_scope` against in-flight slices before starting, because overlapping
+  scopes collide in code rather than on paper; hold one slice at a time.
+- Added `scripts/workflow_status.py`, shipped to projects using the workflow.
+  It reports slice owners, stages, unclaimed ids and whether scope is complete,
+  and exits non-zero on delivered-without-evidence, backlog/slice disagreement,
+  an id in two slices, overlapping write scopes, deferred or dropped without a
+  change record, and owner set without a claim date. Sharding makes it
+  necessary -- "how much is still owed" no longer fits in one file -- and it is
+  the only gate here that does not rely on an agent judging itself.
+- Same layout for solo projects. A conditional guarantee of "anyone can join"
+  is not a guarantee, and the migration would land exactly when someone is
+  trying to join.
+
 ## 1.4.0 - 2026-09-07
 
 Pulled the test-first discipline forward from implementation to requirements,

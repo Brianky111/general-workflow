@@ -61,7 +61,9 @@
 │   ├── 10-release-operations.md
 │   ├── 11-retrospective-evolution.md
 │   └── 99-state-and-handoff.md
-├── scripts/check_consistency.py
+├── scripts/
+│   ├── check_consistency.py            # 校验本仓库自身
+│   └── workflow_status.py              # 随 skill 分发，在目标项目里跑
 ├── archive/general-workflow-v0.12.0/   # 旧版只读参考
 ├── CHANGELOG.md
 └── LICENSE
@@ -94,7 +96,18 @@ STANDARD 逐阶段推进，机制与契约按需加载 `05a-mechanisms-and-contr
 
 ### 跨会话接手
 
-项目状态写在目标仓库的 `docs/workflow-state.md`（或根目录 `WORKFLOW-STATE.md`）。它是游标和索引，不是第二份真相：记录当前阶段、路径深度、当前切片、未决决策和证据入口，用指针引用需求、ADR、测试和发布记录的权威位置。与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
+项目状态写在目标仓库的 `docs/workflow/` 下，**分片存放**，这样第二个人可以随时插入：
+
+```text
+docs/workflow/
+  project.md          档位、路径、生命周期、权威来源、已确认决策   ← 罕见变更
+  backlog.md          每个 A-ID 归属哪条切片，或未认领/已延后/已取消
+  slices/S-01.md      owner、认领、stage、验收状态、证据、写入范围 ← 单一 owner 独占
+```
+
+关键是 **`stage` 属于切片而不是项目**：甲在 S-01 上做阶段 8、乙在 S-02 上做阶段 5，一个共享的 `stage` 字段表达不了这件事——那不是合并冲突，是模型缺陷。状态只写在切片文件里，backlog 只记归属，所以最频繁的操作（改状态）永远只碰一个单人独占的文件。
+
+状态是游标和索引，不是第二份真相；与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
 其中的**范围台账**回答“还欠多少、做完了没有”：一行一个 A-ID，状态取 `remaining` / `in-slice` / `delivered` / `deferred` / `dropped`。进入 `delivered` 的唯一条件是通过阶段 9 的 Definition of Done 并填上证据指针；已交付不可退回，要重开必须走变更协议。台账无 `remaining` 且无 `in-slice`，即当前范围交付完毕。
 
@@ -108,12 +121,19 @@ STANDARD 逐阶段推进，机制与契约按需加载 `05a-mechanisms-and-contr
 
 ## 校验
 
-在修改 `SKILL.md` 或 `references/` 后运行：
+两个脚本面向不同对象。修改 `SKILL.md` 或 `references/` 后，在**本仓库**运行：
 
-```powershell
+```bash
 python scripts/check_consistency.py
-git diff --check
 ```
+
+`scripts/workflow_status.py` 不校验本仓库，它随 skill 分发，在**使用这套工作流的项目**里运行：
+
+```bash
+python workflow_status.py --root . --json
+```
+
+它读 `docs/workflow/`，输出每条切片的 owner、stage 和进度、未认领的 A-ID、是否交付完毕；发现 delivered 无证据、backlog 与切片不一致、两条在途切片写入范围重叠、deferred/dropped 无变更记录等问题时退出码非零。这是这套工作流里**唯一一个不靠 agent 自我判定的门禁**。
 
 校验器会检查：
 

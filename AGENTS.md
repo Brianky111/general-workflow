@@ -28,6 +28,12 @@ python scripts/check_consistency.py
 
 `check_consistency.py` must pass (0 errors) after any change to `SKILL.md` or `references/`.
 
+The two scripts have different audiences. `check_consistency.py` validates this
+repository's own contract. `workflow_status.py` is shipped to projects that use
+the workflow and reads their `docs/workflow/` directory; it has nothing to say
+about this repository, so exercise it against a scratch project rather than
+here.
+
 After a skill folder exists, validate it with the Skill Creator validator:
 
 ```powershell
