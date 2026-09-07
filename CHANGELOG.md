@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.3.1 - 2026-09-07
+
+First forward test: a LEAN internal CLI taken from profile to delivered
+acceptance. Six defects surfaced; five are closed here.
+
+- The fast-path gate required "a verification path you can run" and the ledger
+  required a change record for deferred and dropped rows, but the one-page
+  contract template had a field for neither. Both fields added -- a gate that
+  asks for something the template cannot hold is not a gate.
+- Restored the constraint-conflict check the merge had dropped. The full path
+  gates on "conflicts between quality goals are explicitly recorded"; nothing
+  carried it into the fast path, so the test run wrote a contract requiring
+  both "never send dependency lists to third parties" and "look up known
+  vulnerabilities" and no check caught it until the architecture stage. The new
+  sixth minimum also requires re-checking after a resolution, because the first
+  fix attempted (cutting vulnerability scanning) did not remove the conflict.
+- Narrowed the fast-path entry condition from "privacy" to "personal privacy or
+  regulatory compliance". Internal secrets are not by themselves an escalation
+  reason, only sending them to a third party is -- the old wording would have
+  pushed most internal tools onto the eleven-stage path.
+- Said which gate governs after a merge: the merged stages' own gates remain
+  the floor, and the fast path's boundary list is a waiver list against them.
+- Defined "real entrypoint" to include calling the composition root in-process,
+  so a subprocess is not mistaken for a higher standard.
+
+Not fixed, needs a decision: a LEAN run still reads 66% of the document set
+(66.6 KB of 100.5 KB), because 00-lean-path.md says what is relaxed rather than
+what to do, so stages 6 through 10 still get read in full.
+
 ## 1.3.0 - 2026-09-07
 
 A subtraction pass. Nothing was added: six places said the same thing twice,
