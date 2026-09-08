@@ -118,4 +118,4 @@ approval or policy gate
 - 可执行 runbook、发布人和值班人；
 - 没有属于当前范围的未关闭阻塞风险。
 
-门禁通过后发布，保持同一产物晋级，并将运行证据带到 11-retrospective-evolution.md。
+Release Ready 证明发布准备完成。若用户的交付终点仅为发布准备，在此记录证据并交接；若已要求发布到指定环境，则在授权范围内发布，保持同一产物晋级，完成观察窗口，并将运行证据带到 11-retrospective-evolution.md。不能用验收台账清空或 Release Ready 代替实际发布与观察证据。终止规则见 99-state-and-handoff.md。

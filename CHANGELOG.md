@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.5.1 - 2026-09-08
+
+Strengthened requirement coverage, verification, and handoff; closed six review
+findings in completion and the status gate.
+
+- Define completion boundaries from the original request and accepted changes in
+  the existing Goal/LEAN contract before decomposition. Map every promised outcome
+  to acceptance and verify the full result again at integration and closeout.
+  MVP deletion analysis cannot silently defer explicit commitments; ledger
+  completion does not prove that the original requirement was fully decomposed.
+
+- Added module-scoped `AGENTS.md` guidance to slice preparation, implementation,
+  and review. Read applicable instructions before editing, create local guidance
+  only for distinct module rules, and update it when verified boundaries,
+  entrypoints, or validation commands change. P0 returns also recheck affected guidance.
+- Connected BDD scenario semantics to TDD evidence in the existing acceptance
+  mapping. Review actual assertions, production wiring, test execution, and
+  available Red/Green evidence without copying requirements into agent documents
+  or treating a checklist as proof of passing tests.
+- Added a P0 return path when decomposition exposes ambiguous intent,
+  conflicting core goals, or invalid project assumptions. Resolve intent from
+  existing decisions or a targeted user question, update affected contracts and
+  acceptance, then revalidate the earliest affected gates. LEAN uses the same
+  return path; local requirement or assertion issues stay in stages 1–4.
+- Centralized completion rules in the handoff reference. Claiming all IDs no
+  longer satisfies stage 7; passing stage 9 completes acceptance scope only.
+  Closeout also requires the delivery target already requested by the user,
+  including release and observation when those are in scope.
+- Added `acceptance_source` to project state, pointing directly to the current
+  version's authoritative Markdown acceptance table, with an optional exact
+  heading. The gate rejects missing, extra, duplicate, or unreadable IDs instead
+  of deriving the expected set from backlog. Undefined draft scope is incomplete.
+- Added `delivery_target` as a pointer to the authorized handoff endpoint. Existing
+  projects fill these fields from their current contract and request, preserving
+  IDs and evidence. The script does not verify source authenticity or release results.
+- Resolved write scopes relative to the project, including dot segments,
+  existing links, and Windows case normalization. Reject unsupported globs and
+  paths outside the project; require valid owners, claim dates, and write scopes
+  on live slices, with at most one live slice per owner.
+- Invoke the installed skill's script by absolute path with an explicit target
+  `--root`. Missing partial state now fails; uninitialized projects remain usable,
+  and both cases preserve JSON output and cannot report completion.
+- Added consumer-project CLI regression tests for completion, source coverage,
+  path conflicts, ownership, and invocation outside the skill and project folders.
+
 ## 1.5.0 - 2026-09-08
 
 Made the workflow safe for a second person to join at any moment, which meant

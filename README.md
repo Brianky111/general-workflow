@@ -21,6 +21,8 @@
 
 项目画像不是最终架构；它用于判断流程深度。架构决策要由需求、质量属性、数据和运行边界驱动。第一条垂直切片必须经过真实入口，既验证用户结果，也验证关键架构假设。
 
+主线有回路：任意阶段发现拆解与原始意图冲突、核心目标有歧义或画像前提失效，先回 P0 核实，再更新受影响的目标合同、验收和门禁，从最早受影响阶段继续。已有要求足以纠正理解时直接修正；只有真正未决的含义才询问用户。局部需求、断言、范围或质量问题分别回 01/02/03/04。规则见 `references/00-project-profile.md` 的“拆解失败与 P0 回流”。
+
 ## 核心架构问题
 
 架构阶段按证据决定，而不是套固定模板：
@@ -109,11 +111,17 @@ docs/workflow/
 
 状态是游标和索引，不是第二份真相；与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
-其中的**范围台账**回答“还欠多少、做完了没有”：一行一个 A-ID，状态取 `remaining` / `in-slice` / `delivered` / `deferred` / `dropped`。进入 `delivered` 的唯一条件是通过阶段 9 的 Definition of Done 并填上证据指针；已交付不可退回，要重开必须走变更协议。台账无 `remaining` 且无 `in-slice`，即当前范围交付完毕。
+其中的**范围台账**回答“还欠哪些验收”：一行一个 A-ID，状态取 `remaining` / `in-slice` / `delivered` / `deferred` / `dropped`。进入 `delivered` 必须通过阶段 9 的 Definition of Done 并填上证据指针。脚本通过 `project.md` 中的 `acceptance_source` 直接读取权威验收表，防止台账漏项；来源未定义或状态有错时不会输出范围完成。
+
+完成边界先从原始需求及已接受变更确定，写进目标合同或 LEAN 一页合同，再映射到验收和切片。它覆盖本次全部承诺结果、必要约束和交付位置；删除法不能静默缩减已承诺范围。
+
+`scope_complete` 只表示验收台账完成。任务何时结束统一见 `references/99-state-and-handoff.md` 的“范围完成与任务结束”：还要沿 `delivery_target` 回到合同，逐项核对原始承诺及实际证据，包含发布时继续完成阶段 10 及观察。旧项目从现有要求补齐来源和完成边界，沿用原 ID 和证据；来源格式与迁移步骤见同一 reference。
 
 ### 一条还是多条切片
 
 阶段 7 同时服务第一条和其后的每一条切片，共用同一套地图和门禁。差别只在选择权重：第一条必须触及一个未验证的架构假设，后续切片改为优先关闭台账里未交付的 Must，架构假设填 `none` 是合法结论。
+
+具有独立职责、特殊约束或验证方式的模块，在阶段 7 按需建立 `AGENTS.md`，阶段 8 随真实边界/入口/命令变化维护，阶段 9 检查一致性。模块指引引用权威 BDD 场景与验证入口；验收沿用“A-ID → 测试断言 → 生产入口 → 运行结果”的证据映射，不为每个需求复制一份 agent 文档。P0 回流时复核受影响的模块指引。
 
 ## 与旧版的关系
 
@@ -125,17 +133,20 @@ docs/workflow/
 
 ```bash
 python scripts/check_consistency.py
+python -B -X utf8 -m unittest discover -s tests -p "test_*.py"
 ```
 
-`scripts/workflow_status.py` 不校验本仓库，它随 skill 分发，在**使用这套工作流的项目**里运行：
+`scripts/workflow_status.py` 随 skill 分发。用已安装 skill 的绝对路径调用它，`--root` 指向**使用这套工作流的项目**；目标仓库无需复制脚本：
 
 ```bash
-python workflow_status.py --root . --json
+python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
 ```
 
-它读 `docs/workflow/`，输出每条切片的 owner、stage 和进度、未认领的 A-ID、是否交付完毕；发现 delivered 无证据、backlog 与切片不一致、两条在途切片写入范围重叠、deferred/dropped 无变更记录等问题时退出码非零。这是这套工作流里**唯一一个不靠 agent 自我判定的门禁**。
+它核对权威验收集合、backlog 和切片，输出 owner、stage、剩余 A-ID、`scope_verified` 和 `scope_complete`。发现验收遗漏、delivered 无证据、切片归属不一致、实际写入路径重叠、认领信息缺失或同一 owner 持有多条在途切片等问题时退出码非零。完全未初始化时仍可开始工作；状态只剩部分文件时报错，`--json` 始终返回 JSON。
 
-校验器会检查：
+脚本检查当前文件的一致性和证据指针是否填写；用户授权、来源是否被错误删改、证据是否真实通过以及发布结果，仍需按阶段规则核验。
+
+仓库一致性校验器会检查：
 
 - Reference Map 与实际文件是否一一对应；
 - 引用是否可解析、是否能从 router 到达；

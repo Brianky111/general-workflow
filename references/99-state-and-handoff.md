@@ -47,11 +47,13 @@ updated: <YYYY-MM-DD> / <commit>
 - lifecycle: IDEA | DEFINED | ARCHITECTURE-READY | BOOTSTRAPPED | SLICE-READY | BUILDING | RELEASE-CANDIDATE | OPERATING | PAUSED | CANCELLED
 - tier: LEAN | STANDARD | HIGH-RISK
 - path: lean | full
+- acceptance_source: <项目相对路径.md#当前版本验收所在标题；尚无验收时填 ->
+- delivery_target: <指向目标合同/一页合同的完成边界，含用户已要求的交付终点及环境>
 
 ## Authoritative sources
 | 事实 | 权威位置 |
 | --- | --- |
-| 需求与验收 | <路径 / issue> |
+| 需求与验收 | <同 acceptance_source，或其对应的 issue> |
 | 架构决策 | <ADR 目录 / 决策表> |
 | 变更记录 | <路径> |
 | 测试与证据 | <CI 链接 / 命令> |
@@ -68,6 +70,17 @@ updated: <YYYY-MM-DD> / <commit>
 ~~~
 
 `lifecycle` 是项目级的；**`stage` 不在这里**，它属于切片。
+
+### 可校验的验收来源
+
+`acceptance_source` 直接指向当前版本的权威验收表，例如 `docs/contract.md#验收场景`；`#` 后是唯一标题的原文（非 URL slug），省略时读取整个文件。脚本读取所选范围内以 `A-ID` 为首列的 Markdown 表，忽略代码围栏中的示例。A-ID 使用 `A-` 加字母、数字、点、下划线或连字符。
+
+- 来源必须是项目内、`docs/workflow/` 外的 UTF-8 Markdown 文件；不要从 backlog 反向生成“权威清单”。若权威在 issue 系统，先导出当前版本验收表并核对来源与版本，状态只指向该导出。
+- 选中范围保留本版本所有已纳入的 A-ID，包括后来 deferred/dropped 的行；未纳入的未来候选放在别的章节。来源集合与 backlog 必须相等，缺行、额外行、重复 ID、来源缺失或空表都会阻止完成判定。
+- IDEA/DEFINED 且还没有台账行和切片时可填 `-`；这是未定义范围，`scope_verified=false`、`scope_complete=false`，不阻止继续澄清。验收形成后填写来源再建立台账。
+- 来源与台账若同时被错误删改，脚本无法证明原承诺；范围变更仍须保留决策和 diff。它检查当前文件的一致性，不验证用户授权或外部系统导出是否最新。
+
+旧项目首次使用新版脚本时，从已有项目合同/验收矩阵补上 `acceptance_source`，从现有请求补上 `delivery_target`；保留既有 ID 和证据，按差异补回台账，不重新定义承诺来消除错误。
 
 ## backlog.md
 
@@ -91,10 +104,10 @@ updated: <YYYY-MM-DD> / <commit>
 
 ~~~markdown
 # Slice S-01: <名称>
-- owner: <谁>
+- owner: <稳定且唯一的个人/agent 标识>
 - claimed: <YYYY-MM-DD> / <commit>
 - stage: <编号与名称>
-- write_scope: <本切片会写的路径，用于和其他切片交叉检查>
+- write_scope: <项目相对路径，多个路径用逗号或分号分隔；例如 src/items; tests/items>
 - architecture_hypothesis: <H-ID，或 none>
 
 ## Acceptance
@@ -117,21 +130,36 @@ updated: <YYYY-MM-DD> / <commit>
 4. **deferred 和 dropped 必须指向变更记录。** 范围缩小是一个决策，不是一次静默删行。
 5. **状态只写在切片文件里，backlog 只写归属。** 同一个事实不要两处都写。
 
-“当前范围是否交付完毕”：backlog 中没有 `-`，且所有切片文件中没有 `in-slice`。
+## 范围完成与任务结束
+
+这里是完成判定的权威定义，其余阶段引用本节：
+
+1. **验收范围完成**：权威 A-ID 集合已成功读取且与 backlog 相等，状态校验没有错误，没有 remaining，也没有 in-slice，所有 delivered 均有证据指针。脚本只有在这些条件同时成立时才输出 `scope_complete=true`。来源尚未定义或不可验证时不得判完成。
+2. **任务结束**：验收范围完成后，对照原始请求及已接受变更，逐项核对 `delivery_target` 所指合同完成边界的全部承诺结果、必要约束和实际证据。只要求实现和测试时可在 09 后结束；要求发布准备时必须完成 10 的 Release Ready；要求上线时必须完成指定环境的发布及观察窗口。台账清空不证明需求拆解完整，脚本退出码 0 也只表示状态有效。
+
+完成边界在 01 或 LEAN 合同中确定，按 03 的变更协议维护；状态只保存指针。收尾发现原始承诺遗漏时，按原因回 02 补验收、08 补实现，涉及意图歧义则回 P0；保留已有 ID 和证据，按变更协议补项，不能删改承诺凑出完成。
+
+交付终点来自已有授权，不为填写字段重复确认，也不由 skill 自动扩大。用户限定只做设计、搭骨架等阶段任务时，以该阶段已约定的产出收尾，保留未完成台账，不宣称整个范围已完成。实际权限或外部条件阻塞时记录阻塞与下一动作，不伪造完成。
 
 ## 认领规则
 
 第二个人加入时，第一分钟应该能做的事：跑一次状态脚本，看见哪些 A-ID 未认领，认领一条，开工。
 
-1. **认领即在自己的切片文件里写上 owner 和 claimed**，同时把 backlog 中对应 A-ID 的 slice 列指向该切片。认领动作编辑的正是自己要独占的文件，因此认领本身不冲突。
+1. **认领即在自己的切片文件里写上 owner 和 claimed**，同时把 backlog 中对应 A-ID 的 slice 列指向该切片。认领会修改共享 backlog；开始工作前同步认领记录并重跑校验，不能把文件分片当作跨分支的原子锁。
 2. **不要抢一个 owner 有新鲜证据的切片**——近期提交、CI 运行、刚更新的 evidence。要接手先与该 owner 或用户确认。
-3. **认领前检查 write_scope 是否与在途切片重叠。** 重叠说明两条切片会在代码里撞车，不只是在文档里；先调整切片边界或排序，不要同时开工。
-4. **一次一条。** 一个人同时持有多条在途切片，等于把并发冲突搬进一个人的脑子。
+3. **在途切片必须有 owner、有效 claimed 日期和 write_scope。** 路径必须是项目内的真实文件/目录范围，支持 `.` 表示整个项目，不支持 glob。脚本解析 `.`、`..`、已有链接及 Windows 大小写后检查重叠；重叠先调整边界或排序，不同时开工。
+4. **一次一条。** 同一 owner（忽略大小写）只能持有一条含 in-slice 的切片；全部 delivered 后可以认领下一条。
 5. 接手一条 stale 切片（owner 已久无证据）时，在该切片文件里记录交接原因和日期。
 
 ## 会话开始：读取并校验
 
-先跑 `python scripts/workflow_status.py`。它给出当前切片、owner、未认领项和违规项；退出码非零表示有必须先处理的问题。
+定位本次加载的 `SKILL.md` 所在目录，从那里调用脚本，显式传入目标项目。替换下面两个绝对路径；不要假设目标项目自带此脚本，也不要把工作目录切到 skill 后漏掉 `--root`：
+
+```powershell
+python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
+```
+
+它给出当前切片、owner、未认领项和违规项；退出码非零先修状态。没有状态目录时返回 `state_status=uninitialized` 且范围未完成；已有目录却缺必需文件时报错。`--json` 在这些情况下仍输出 JSON。旧状态缺少验收来源时按上面的迁移说明补齐。
 
 脚本给不出的部分靠三次廉价校验：
 
