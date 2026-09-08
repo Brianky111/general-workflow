@@ -32,11 +32,20 @@ STATE_DIR = Path("docs") / "workflow"
 # Horizontal whitespace only: \s would match the newline and let an empty value
 # swallow the following line.
 FIELD = re.compile(r"(?m)^-[^\S\n]*([a-z_]+):[^\S\n]*(.*)$")
-UNSET = {"", "-", "none", "n/a", "tbd"}
+# Empty-value markers in both languages the templates are written in. A value
+# that only says "nothing here yet" must not satisfy a gate that wants evidence.
+UNSET = {
+    "", "-", "--", "—", "–", "?", "none", "na", "n/a", "tbd", "todo", "pending",
+    "无", "暂无", "待补", "待定", "未定", "未知",
+}
 TERMINAL = {"deferred", "dropped"}
 IN_FLIGHT = "in-slice"
 DELIVERED = "delivered"
 A_ID = re.compile(r"A-[A-Za-z0-9][A-Za-z0-9._-]*")
+# A change record must be locatable: an id such as C-03, a path, or a link.
+POINTER = re.compile(
+    r"https?://\S+|\S+\.md(?:#\S+)?|\S*/\S+|(?<![A-Za-z0-9])[A-Za-z]{1,6}-[A-Za-z0-9][A-Za-z0-9._-]*"
+)
 
 
 @dataclass
@@ -49,8 +58,8 @@ class Slice:
     acceptance: list[tuple[str, str, str]] = field(default_factory=list)
 
 
-def table_rows(text: str, section: str | None = None) -> list[list[str]]:
-    """Read A-ID tables in an optional exact heading, ignoring fenced examples."""
+def visible_lines(text: str) -> list[str]:
+    """Drop fenced blocks so template examples cannot be read as real state."""
     lines: list[str] = []
     fence = ""
     for line in text.splitlines():
@@ -63,6 +72,27 @@ def table_rows(text: str, section: str | None = None) -> list[list[str]]:
             fence = marker[1]
             continue
         lines.append(line)
+    return lines
+
+
+def header_lines(text: str) -> list[str]:
+    """The field block only: everything above the first section heading.
+
+    Fields stop at the first heading so that prose further down cannot redefine
+    them -- a handover note in Blockers reading "- owner: waiting on alice" is
+    narrative, not a claim, and must not silently become the slice's owner.
+    """
+    lines: list[str] = []
+    for line in visible_lines(text):
+        if re.match(r"^#{2,6}\s", line):
+            break
+        lines.append(line)
+    return lines
+
+
+def table_rows(text: str, section: str | None = None) -> list[list[str]]:
+    """Read A-ID tables in an optional exact heading, ignoring fenced examples."""
+    lines = visible_lines(text)
 
     if section is not None:
         headings = [
@@ -96,13 +126,24 @@ def table_rows(text: str, section: str | None = None) -> list[list[str]]:
     return rows
 
 
-def fields_of(text: str) -> dict[str, str]:
-    return {name: value.strip() for name, value in FIELD.findall(text)}
+def fields_of(text: str, errors: list[str] | None = None, source: str = "") -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in header_lines(text):
+        match = FIELD.match(line)
+        if not match:
+            continue
+        name = match[1]
+        if name in values:
+            if errors is not None:
+                errors.append(f"{source}: '{name}' is set twice; one field, one value")
+            continue
+        values[name] = match[2].strip()
+    return values
 
 
 def is_set(value: str) -> bool:
     value = value.strip()
-    return value.lower() not in UNSET and not (value.startswith("<") and value.endswith(">"))
+    return value.casefold() not in UNSET and not (value.startswith("<") and value.endswith(">"))
 
 
 def normalize(root: Path, path: str) -> Path:
@@ -110,6 +151,8 @@ def normalize(root: Path, path: str) -> Path:
     path = path.strip().replace("\\", "/")
     if not is_set(path) or any(char in path for char in "*?[]"):
         raise ValueError("expected a literal project-relative path (no globs)")
+    if any(char in path for char in "<>`#"):
+        raise ValueError("expected a literal path, not template or markup text")
     if Path(path).is_absolute() or PureWindowsPath(path).drive:
         raise ValueError("expected a project-relative path")
     resolved = (root / path).resolve()
@@ -153,13 +196,18 @@ def load_slices(root: Path, errors: list[str]) -> list[Slice]:
     slices: list[Slice] = []
     for path in sorted((root / STATE_DIR / "slices").glob("*.md")):
         text = path.read_text(encoding="utf-8-sig")
-        values = fields_of(text)
+        values = fields_of(text, errors, path.name)
+        # Validate before splitting: the unedited placeholder contains the
+        # separators it documents, so splitting first turns one rejected value
+        # into fragments that each pass as a plausible path.
+        raw_scope = values.get("write_scope", "")
         item = Slice(
             id=path.stem,
             owner=values.get("owner", ""),
             claimed=values.get("claimed", ""),
             stage=values.get("stage", ""),
-            write_scope=[p.strip() for p in re.split(r"[,;]", values.get("write_scope", "")) if p.strip()],
+            write_scope=[p.strip() for p in re.split(r"[,;；，]", raw_scope) if p.strip()]
+            if is_set(raw_scope) else [],
         )
         for row in table_rows(text, "Acceptance"):
             if len(row) >= 3:
@@ -174,7 +222,7 @@ def check(root: Path) -> tuple[dict, list[str]]:
     errors: list[str] = []
     state = root / STATE_DIR
 
-    project = fields_of((state / "project.md").read_text(encoding="utf-8-sig"))
+    project = fields_of((state / "project.md").read_text(encoding="utf-8-sig"), errors, "project.md")
     backlog: dict[str, tuple[str, str]] = {}
     for row in table_rows((state / "backlog.md").read_text(encoding="utf-8-sig")):
         if len(row) < 2:
@@ -190,8 +238,13 @@ def check(root: Path) -> tuple[dict, list[str]]:
 
     pointer = project.get("acceptance_source", "")
     expected = acceptance_ids(root, pointer, errors) if is_set(pointer) else None
-    if not is_set(pointer) and (backlog or slices or project.get("lifecycle") not in {"IDEA", "DEFINED"}):
+    # Undefined draft scope is allowed; tracked scope must name both what is
+    # promised and where the handover ends, or closeout has nothing to check.
+    tracking = bool(backlog or slices) or project.get("lifecycle") not in {"IDEA", "DEFINED"}
+    if not is_set(pointer) and tracking:
         errors.append("project.md: acceptance_source is required before tracking or completing scope")
+    if not is_set(project.get("delivery_target", "")) and tracking:
+        errors.append("project.md: delivery_target is required before tracking or completing scope")
     if expected is not None:
         for aid in sorted(expected - backlog.keys()):
             errors.append(f"backlog.md: missing authoritative A-ID {aid}")
@@ -199,7 +252,20 @@ def check(root: Path) -> tuple[dict, list[str]]:
             errors.append(f"backlog.md: {aid} is not in acceptance_source")
     scope_verified = expected is not None and set(backlog) == expected
 
-    live = [item for item in slices if any(s == IN_FLIGHT for _, s, _ in item.acceptance)]
+    def in_flight(item: Slice) -> bool:
+        """A slice holds its owner and paths from claim until every row lands.
+
+        Claiming happens before the acceptance rows are written, so an owner
+        alone is enough to be in flight; a slice whose rows are all delivered is
+        finished and releases its paths to the next claim.
+        """
+        if any(status == IN_FLIGHT for _, status, _ in item.acceptance):
+            return True
+        return is_set(item.owner) and not any(
+            status == DELIVERED for _, status, _ in item.acceptance
+        )
+
+    live = [item for item in slices if in_flight(item)]
     owners: dict[str, str] = {}
     scopes: dict[str, list[Path]] = {}
     for item in slices:
@@ -237,6 +303,11 @@ def check(root: Path) -> tuple[dict, list[str]]:
             seen[aid] = item.id
             if aid not in backlog:
                 errors.append(f"{item.id}: {aid} is not listed in backlog.md")
+            elif backlog[aid][0] in TERMINAL:
+                errors.append(
+                    f"{aid}: backlog marks it {backlog[aid][0]}; drop its row from {item.id} so "
+                    "the ledger keeps one status"
+                )
             elif backlog[aid][0] != item.id:
                 errors.append(
                     f"{aid}: backlog assigns it to '{backlog[aid][0]}' but it lives in {item.id}"
@@ -250,6 +321,11 @@ def check(root: Path) -> tuple[dict, list[str]]:
         if assignment in TERMINAL:
             if not is_set(note):
                 errors.append(f"backlog.md: {aid} is {assignment} without a change record")
+            elif not POINTER.search(note):
+                errors.append(
+                    f"backlog.md: {aid} is {assignment} but its note does not point at a change "
+                    "record (an id such as C-03, a path, or a link)"
+                )
         elif is_set(assignment):
             if assignment not in by_id:
                 errors.append(f"backlog.md: {aid} points at unknown slice '{assignment}'")

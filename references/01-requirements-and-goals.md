@@ -72,6 +72,7 @@
 - assumptions: <尚未证实的假设>
 - constraints: <已知约束>
 - open_decisions: <会改变范围/行为/安全/成本的决策>
+- delivery_endpoint: implementation-and-tests | release-ready | deployed:<环境>
 
 ## 完成边界
 | 本次承诺的结果及需求来源 | 使用条件、入口与交付位置 | 通过判据及必要约束 | 验证方式 / 关联验收 |
@@ -80,6 +81,10 @@
 ~~~
 
 指标不必一开始都精确，但要标出基线和数据来源；“用户更满意”“高性能”不能直接作为验收条件。
+
+`delivery_endpoint` 记录用户**已经授权**的交付终点，三选一，写进状态的 `delivery_target`：
+只要实现和测试的到 09 结束；要发布准备的必须过 10 的 Release Ready；要上线的必须完成指定环境的
+发布和观察窗口。它取自原始请求，不由 skill 自行扩大或缩小；收尾判定见 99-state-and-handoff.md。
 
 ## 需求质量检查
 

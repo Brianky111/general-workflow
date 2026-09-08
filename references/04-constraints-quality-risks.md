@@ -51,10 +51,11 @@
 
 ## 风险登记与最小实验
 
-按“假设→实验→通过条件→结果→处置”记录高风险未知：
+按“假设→实验→通过条件→结果→处置”记录高风险未知。K-ID 用 `K-` 加数字，
+被 05-architecture-design.md 的 ADR `drivers` 和架构验证计划引用：
 
 ~~~markdown
-| Risk-ID | hypothesis | impact | likelihood | experiment | pass_condition | result | decision | revisit_when |
+| K-ID | hypothesis | impact | likelihood | experiment | pass_condition | result | decision | revisit_when |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | K-01 | provider supports idempotency key | duplicate side effect | medium | sandbox replay | repeated request has one effect | pending | adopt/change | provider contract changes |
 ~~~

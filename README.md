@@ -66,6 +66,7 @@
 ├── scripts/
 │   ├── check_consistency.py            # 校验本仓库自身
 │   └── workflow_status.py              # 随 skill 分发，在目标项目里跑
+├── tests/                              # workflow_status.py 的回归测试
 ├── archive/general-workflow-v0.12.0/   # 旧版只读参考
 ├── CHANGELOG.md
 └── LICENSE
@@ -84,13 +85,13 @@
 
 ### 快路径（LEAN）
 
-适用于低风险、单运行单元、单团队、无对外兼容承诺的项目。合并的不只是前四个阶段——LEAN 全程四步：
+适用于低风险、单运行单元、单团队、无对外兼容承诺的项目。**真正合并成一份文档的只有阶段 1–4**：
 
 ```text
-项目画像 → 一页项目合同 → 轻量架构 → 骨架与第一条路径 → 实现与交付
+项目画像 → 一页项目合同（1–4） → 05 → 06 → 07 → 08 → 09 → 10 → 11
 ```
 
-合并的是文档不是决策：真实入口、成功与失败场景、非目标、数据敏感度和一条可跑的验证路径仍然必须有答案。`00-lean-path.md` 里的升级触发一旦成立，立即切回完整路径，已有产出直接搬运。
+05 之后阶段照常路由，LEAN 改变的是每个阶段要求的证据量——减免清单只有 `00-lean-path.md` 里那一份，没有列到的门禁照原样执行。合并的是文档不是决策：真实入口、成功与失败场景、非目标、数据敏感度和一条可跑的验证路径仍然必须有答案。升级触发一旦成立，立即切回完整路径，已有产出直接搬运。
 
 ### 完整与加深路径
 
@@ -111,9 +112,11 @@ docs/workflow/
 
 状态是游标和索引，不是第二份真相；与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
-其中的**范围台账**回答“还欠哪些验收”：一行一个 A-ID，状态取 `remaining` / `in-slice` / `delivered` / `deferred` / `dropped`。进入 `delivered` 必须通过阶段 9 的 Definition of Done 并填上证据指针。脚本通过 `project.md` 中的 `acceptance_source` 直接读取权威验收表，防止台账漏项；来源未定义或状态有错时不会输出范围完成。
+其中的**范围台账分两列**，这是分片能生效的前提：切片文件的 `status` 只取 `in-slice` 和 `delivered`；backlog 的 `slice` 列取切片 ID、`-`（即 remaining）、`deferred`、`dropped`，后两者的 note 必须指向变更记录。进入 `delivered` 必须通过阶段 9 的**单条 A-ID 完成条件**并填上证据指针——`无`、`待补`、`TODO` 这类占位不算证据。脚本通过 `project.md` 中的 `acceptance_source` 直接读取权威验收表，防止台账漏项；来源未定义或状态有错时不会输出范围完成。
 
-完成边界先从原始需求及已接受变更确定，写进目标合同或 LEAN 一页合同，再映射到验收和切片。它覆盖本次全部承诺结果、必要约束和交付位置；删除法不能静默缩减已承诺范围。
+不做某条切片了不是把行删掉：按 `99-state-and-handoff.md` 的**归还与改判**规则，未完成的 A-ID 行退出切片文件，backlog 改回 `-` 或改判 deferred/dropped 并指向变更记录。
+
+完成边界先从原始需求及已接受变更确定，写进目标合同或 LEAN 一页合同，再映射到验收和切片。它覆盖本次全部承诺结果、必要约束和交付位置；删除法不能静默缩减已承诺范围。合同里的 `delivery_endpoint` 三选一——`implementation-and-tests`、`release-ready`、`deployed:<环境>`——写进状态的 `delivery_target`，决定收尾停在 09、10 还是发布后的观察窗口。它取自用户已给的授权，脚本要求它已填写，但不验证授权本身。
 
 `scope_complete` 只表示验收台账完成。任务何时结束统一见 `references/99-state-and-handoff.md` 的“范围完成与任务结束”：还要沿 `delivery_target` 回到合同，逐项核对原始承诺及实际证据，包含发布时继续完成阶段 10 及观察。旧项目从现有要求补齐来源和完成边界，沿用原 ID 和证据；来源格式与迁移步骤见同一 reference。
 
@@ -142,7 +145,7 @@ python -B -X utf8 -m unittest discover -s tests -p "test_*.py"
 python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
 ```
 
-它核对权威验收集合、backlog 和切片，输出 owner、stage、剩余 A-ID、`scope_verified` 和 `scope_complete`。发现验收遗漏、delivered 无证据、切片归属不一致、实际写入路径重叠、认领信息缺失或同一 owner 持有多条在途切片等问题时退出码非零。完全未初始化时仍可开始工作；状态只剩部分文件时报错，`--json` 始终返回 JSON。
+它核对权威验收集合、backlog 和切片，输出 owner、stage、剩余 A-ID、`scope_verified` 和 `scope_complete`。发现验收遗漏、`delivery_target` 未填、delivered 无证据（中英文占位符都算无证据）、deferred/dropped 的 note 不指向变更记录、切片归属不一致、实际写入路径重叠、认领信息缺失或同一 owner 持有多条在途切片等问题时退出码非零。字段只从第一个 `##` 之前的头部读取，围栏示例和 Blockers 里的叙述不会被当成认领；`write_scope` 在拆分前先校验，未编辑的占位符不会变成一串假路径。已认领但还没写验收行的切片同样占住写入范围。完全未初始化时仍可开始工作；状态只剩部分文件时报错，`--json` 始终返回 JSON。
 
 脚本检查当前文件的一致性和证据指针是否填写；用户授权、来源是否被错误删改、证据是否真实通过以及发布结果，仍需按阶段规则核验。
 
@@ -152,8 +155,12 @@ python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝
 - 引用是否可解析、是否能从 router 到达；
 - 11 个 Greenfield 阶段和 P0 是否存在并且顺序正确；
 - 需求、架构、机制、脚手架、切片、实现、测试、发布、复盘和状态交接的关键门禁是否存在；
-- 常驻入口（`SKILL.md` 与 router）和单份 reference 是否超出体积预算——超出说明阶段内容漂回了入口，或某一阶段吞并了相邻阶段；
+- 常驻入口（`SKILL.md` 与 router）和单份 reference 是否超出体积预算——超出说明阶段内容漂回了入口，或某一阶段吞并了相邻阶段；用量达到 90% 时给出 WARN，不算失败；
+- 门禁小节是否还有正文——anchor 在自己的小节内检查，留下标题清空正文不再算通过；
+- `scripts/workflow_status.py`、`tests/` 是否存在，以及文档里出现的每个 `scripts/*.py` 路径是否可解析；
 - 旧版归档是否存在且没有被当前主线引用为必需阶段。
+
+它不检查 `README.md` 和 `CHANGELOG.md`，也不运行 `workflow_status.py` 的测试——那是上面第二条命令的职责。
 
 ## 许可
 

@@ -1,5 +1,92 @@
 # Changelog
 
+## 1.6.0 - 2026-09-08
+
+Closed the review findings that let a project report completion it had not
+reached, and the ones that made the concurrency guard pass while two people
+held the same paths.
+
+- Split stage 9's Definition of Done into "a single A-ID may be marked
+  delivered" and "this batch may enter stage 10". They were one batch-scoped
+  list, so marking one acceptance id required evidence for all of them plus
+  artifact traceability and a rollback checklist -- questions a single behavior
+  cannot answer. The ledger rule in the handoff reference now points at the
+  first section.
+- `delivery_target` gains an endpoint: `implementation-and-tests`,
+  `release-ready` or `deployed:<env>`. It is written in the goal contract and
+  the LEAN one-pager as `delivery_endpoint`, and the status script now requires
+  the field before it will report scope completion. It was previously reported
+  and never checked, so a project whose user asked for a release could close out
+  after stage 9 with the gate green.
+- Empty-value markers are recognized in both languages the templates are written
+  in. `无`, `待补`, `TODO`, `—` and `pending` were all accepted as an evidence
+  pointer, which made `scope_complete=true` reachable with no evidence at all.
+- `deferred` and `dropped` now need a note that actually points somewhere -- an
+  id such as C-03, a path, or a link. "以后再说" satisfied the old check, so a
+  backlog could be emptied into terminal states and still report complete. The
+  change record's shape, C-ID numbering and home file are now defined in stage 3
+  and registered in the state's authoritative sources; the LEAN one-pager points
+  at that definition instead of being the only place it existed.
+- Fields are read from the slice header only, above the first `##`. A handover
+  note in Blockers reading `- owner: waiting on carol` used to win over the real
+  owner field, which silently disabled the one-live-slice-per-owner check. Code
+  fences are skipped, and a field set twice is an error rather than
+  last-one-wins.
+- `write_scope` is validated before it is split. The unedited placeholder
+  contains the separators it documents, so splitting first turned one rejected
+  value into fragments that each passed as a plausible path and overlapped with
+  nobody.
+- A slice is in flight from the moment it has an owner, not from its first
+  `in-slice` row. Claiming happens before acceptance rows are written, so a
+  fresh claim was invisible to owner uniqueness, claim dates and scope overlap.
+  A slice whose rows are all delivered still releases its paths.
+- Added release and mid-flight scope adjustment to the claim rules. Stage 7
+  tells an agent to abandon a slice whose architecture hypothesis failed, but
+  nothing said how to give one back, so the obvious move looked like the
+  "delete rows to look finished" anti-pattern.
+- The slice file has one format. Stage 7's slice map used the same heading as
+  the state file's slice template with a different set of fields; a file written
+  from stage 7 failed the status gate with an error that pointed at the backlog.
+  The map is now a `## Slice map` section inside that file, and owner, claimed
+  and write_scope joined the Slice Ready gate.
+- `H-ID` is created in stage 5's architecture validation plan. Three stages
+  consumed it and none produced it, so slices invented a hypothesis nobody had
+  approved. Stage 4's risk table header now matches its own example (`K-ID`).
+- Renamed the profile's fields to the ones the state file and the script
+  actually read: `lifecycle` for the lifecycle state, `maintenance_horizon` for
+  the maintenance dimension, `tier` for the risk tier. `lifecycle` named two
+  different things across the two documents, and `risk tier` could never match
+  the field pattern, so the tier read as unknown.
+- The LEAN reduction list is reachable from the router. Stages 9-11's reductions
+  existed only inside the fast-path document, which a later session at stage 10
+  never loads, and stage 10's Release Ready gate demanded a staging environment
+  and a three-way environment split with no LEAN equivalent. Those two bullets
+  are now tier-qualified and the fast path states the local equivalent.
+- Stage 6's CI gate accepts a local equivalent when there is no remote or CI
+  provider: commit the pipeline definition, run the same commands once in a
+  clean directory, and record `ci: local-only` as an open decision. Repeatability
+  was the requirement; a hosting provider was not.
+- Fixed three routing rows: the LEAN row lost the fast path's entry conditions
+  and outranked "we do not know whose problem this is"; the 05a row was narrower
+  than the mechanism list that owns it; and nothing said whether a slice that
+  passes stage 9 goes to release or back to claim the next one.
+- Corrected SKILL.md's description of LEAN. Only stages 1-4 merge into one
+  document; the rest keep routing and get a reduction list.
+- Policy anchors are checked inside their own section, which must still have a
+  body. Emptying three whole sections of the release reference while keeping
+  their headings used to pass. Bare-word anchors became the table cell or
+  template line that carries the rule.
+- The checker now asserts `scripts/workflow_status.py` and `tests/` exist and
+  that every `scripts/*.py` path mentioned in the docs resolves -- it required
+  the archived scripts while the live one could be deleted with the checker
+  green -- and warns at 90% of a size budget instead of only failing at 100%.
+- `AGENTS.md` binds the unittest suite to changes under `scripts/` and `tests/`.
+  Disabling a check in the status gate left the consistency checker green.
+- Added the compatibility surface to the profile and to the P0 return triggers,
+  so a project that turns out to be brownfield at stage 6 has a defined return
+  path rather than a one-time question at first contact.
+- Untracked `scripts/__pycache__` and added a `.gitignore`.
+
 ## 1.5.1 - 2026-09-08
 
 Strengthened requirement coverage, verification, and handoff; closed six review

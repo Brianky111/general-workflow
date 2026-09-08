@@ -28,10 +28,11 @@ class WorkflowStatusTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
-    def project(self, source="docs/acceptance.md#Current version", lifecycle="BUILDING"):
+    def project(self, source="docs/acceptance.md#Current version", lifecycle="BUILDING",
+                target="release to staging", extra=""):
         self.write(self.state / "project.md", (
             f"# Project\n- lifecycle: {lifecycle}\n- tier: LEAN\n- path: lean\n"
-            f"- acceptance_source: {source}\n- delivery_target: release to staging\n"
+            f"- acceptance_source: {source}\n- delivery_target: {target}\n{extra}"
         ))
 
     def source(self, ids=("A-01",)):
@@ -211,6 +212,68 @@ class WorkflowStatusTests(unittest.TestCase):
         self.two_live_slices("src", "src", second_owner="alice")
         self.slice(status="delivered", evidence="pytest: PASS at abc123", scope="src")
         self.assertEqual(self.run_status()[0], 0)
+
+    def test_claimed_slice_holds_its_scope_before_rows_exist(self):
+        # Claiming precedes writing acceptance rows, so an owner alone is a claim.
+        self.two_live_slices(second_owner="bob")
+        self.backlog(("A-01", "S-01", ""), ("A-02", "-", ""))
+        self.write(self.state / "slices/S-02.md", (
+            "# Slice S-02\n- owner: bob\n- claimed: 2026-09-08 / abc123\n"
+            "- stage: 7 slice\n- write_scope: src/a\n"
+        ))
+        self.assert_invalid("write_scope overlap")
+
+    def test_empty_value_markers_are_not_evidence(self):
+        for marker in ("\u65e0", "\u5f85\u8865", "TODO", "\u2014", "pending"):
+            with self.subTest(marker=marker):
+                self.slice(status="delivered", evidence=marker)
+                self.assert_invalid("evidence")
+
+    def test_delivery_target_is_required_before_completion(self):
+        for target in ("-", "<\u6307\u5411\u5b8c\u6210\u8fb9\u754c>"):
+            with self.subTest(target=target):
+                self.project(target=target)
+                self.assert_invalid("delivery_target")
+
+    def test_unedited_write_scope_placeholder_is_rejected(self):
+        # Verbatim from 99-state-and-handoff.md: the placeholder contains the
+        # separators it documents, so splitting before validating would turn one
+        # rejected value into fragments that each pass as a plausible path.
+        self.slice(scope="<\u9879\u76ee\u76f8\u5bf9\u8def\u5f84\uff1b"
+                         "\u4f8b\u5982 src/items; tests/items>")
+        self.assert_invalid("write_scope")
+
+    def test_prose_below_a_heading_does_not_redefine_a_field(self):
+        # A handover note in Blockers used to win over the real owner field.
+        self.two_live_slices(second_owner="alice")
+        path = self.state / "slices/S-02.md"
+        self.write(path, path.read_text(encoding="utf-8")
+                   + "\n## Blockers\n- owner: \u7b49 carol \u786e\u8ba4\u6743\u9650\n")
+        self.assert_invalid("holds two live slices")
+
+    def test_fenced_field_example_is_not_read_as_state(self):
+        path = self.state / "slices/S-01.md"
+        text = path.read_text(encoding="utf-8")
+        self.write(path, text.replace(
+            "- owner: alice",
+            "- owner: alice\n\n```markdown\n- owner: <template>\n```\n"))
+        self.assertEqual(self.run_status()[0], 0)
+
+    def test_a_field_set_twice_is_rejected(self):
+        self.project(extra="- lifecycle: internal long-lived tool\n")
+        self.assert_invalid("set twice")
+
+    def test_terminal_note_must_point_at_a_change_record(self):
+        (self.state / "slices/S-01.md").unlink()
+        self.backlog(("A-01", "dropped", "\u4ee5\u540e\u518d\u8bf4"))
+        self.assert_invalid("change record")
+        self.backlog(("A-01", "dropped", "\u53d8\u66f4\u8bb0\u5f55 C-03"))
+        self.assertEqual(self.run_status()[0], 0)
+
+    def test_terminal_id_must_leave_its_slice(self):
+        self.backlog(("A-01", "dropped", "docs/changes.md#C-02"))
+        report = self.assert_invalid("drop its row")
+        self.assertTrue(any("S-01" in error for error in report["errors"]), report)
 
 
 if __name__ == "__main__":

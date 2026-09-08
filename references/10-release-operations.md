@@ -8,7 +8,7 @@
 
 入口：
 
-- 09-testing-review-integration.md 已通过 Definition of Done；
+- 09-testing-review-integration.md 的“当前批次：可以进入 10”已全部满足；
 - 已有可部署产物、版本、迁移和环境配置；
 - 发布负责人、值班人、观察窗口和回滚权限已明确。
 
@@ -110,8 +110,8 @@ approval or policy gate
 发布当前范围前必须有：
 
 - 已验证的不可变产物和版本追踪；
-- dev/staging/prod 配置、秘密和访问权限；
-- staging smoke/集成/E2E 及迁移演练结果；
+- dev/staging/prod 配置、秘密和访问权限（STANDARD 起；LEAN 的等价物见 00-lean-path.md）；
+- staging smoke/集成/E2E 及迁移演练结果（STANDARD 起，或存在真实部署环境时）；
 - 备份、恢复点、回滚/前滚/补偿方案；
 - 选定的滚动/蓝绿/灰度/分批策略和停止阈值；
 - 日志、指标、追踪、健康检查、告警和观察窗口；

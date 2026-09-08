@@ -47,20 +47,23 @@
 
 ## 切片地图
 
+切片地图不是另一个文件，而是 `docs/workflow/slices/S-0N.md` 里的一节。该文件的头部字段
+（owner、claimed、stage、write_scope、architecture_hypothesis）和 `## Acceptance` 表由
+99-state-and-handoff.md 定义并被状态脚本校验；本阶段负责补上下面这一节：
+
 ~~~markdown
-# Slice S-01: <名称>
+## Slice map
 - user_outcome: <对应目标>
-- requirements: R-01, ...
-- acceptance: A-01, A-02, ...
-- architecture_hypothesis: H-01 <要验证的假设；后续切片通常为 none>
+- requirements: R-01, ...      # 快路径用 must 条目，见 00-lean-path.md 的对接表
+- acceptance: A-01, A-02, ...  # 与本文件 ## Acceptance 表的 A-ID 一致
 - real_entrypoint: <HTTP/CLI/event/scheduled>
 - path:
-  1. input and identity
-  2. validation
-  3. application use case
-  4. domain rule/state transition
-  5. database or external dependency
-  6. result/event/observable side effect
+  1. 输入与身份
+  2. 校验
+  3. 应用用例
+  4. 领域规则/状态转换
+  5. 数据库或外部依赖
+  6. 结果/事件/可观察副作用
 - failure_paths: <关键失败和可见语义>
 - data_changes: <迁移、索引、所有权>
 - observability: <日志、指标、追踪、告警>
@@ -68,6 +71,9 @@
 - deploy_and_rollback: <如何进入 staging、如何撤回>
 - out_of_scope: <明确不做>
 ~~~
+
+头部的 `architecture_hypothesis` 填 05-architecture-design.md 架构验证计划表里的 H-ID，
+或 `none`；不在本阶段现编一个假设。
 
 路径中的每一步都要指向真实代码和真实注册点。测试替身可以隔离不可控第三方，但不能把核心业务路径换成测试专属实现。
 
@@ -117,6 +123,7 @@
 - 预期单元、集成、合同或 E2E 证据；
 - 配置、迁移、观测、部署和回滚边界；
 - 已读取所涉模块的适用指令，必要的局部指引已补齐且与权威决策一致；
+- 切片文件已建立：owner、claimed、write_scope 和 `## Slice map` 已填，状态脚本退出码为零；
 - 当前明确不做的相邻功能。
 
 ## 何时更换切片

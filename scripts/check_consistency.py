@@ -47,10 +47,20 @@ SIZE_BUDGETS = {
     "00-progress-router.md": 9_500,
 }
 REFERENCE_BUDGET = 13_000
+# A budget that is nearly spent is the last warning before the next edit has
+# to shave bytes off unrelated prose to fit.
+BUDGET_WARN = 0.90
+# A heading whose body was emptied still satisfies a substring anchor, so the
+# anchors are checked inside their own section and the section must say
+# something. Gates carry more than a sentence.
+MIN_BODY_CHARS = 30
+MIN_GATE_CHARS = 60
 CRLF = "\r\n"
 LF = "\n"
 
 REFERENCE_NAME = re.compile(r"\b\d{2}[a-z]?-[a-z0-9][a-z0-9-]*\.md\b")
+HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+SCRIPT_PATH = re.compile(r"scripts/[A-Za-z0-9_./-]+\.py")
 FRONTMATTER_FIELD = re.compile(r"(?m)^([a-z][a-z0-9_-]*):\s*(.+?)\s*$")
 
 POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
@@ -71,26 +81,29 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 阶段选择表",
         "## 全局门禁",
         "## 结束与回流",
-        "## 路径深度",
+        "## 路径深度与暂停",
         "只加载当前 reference",
         "docs/workflow/",
+        "delivery_target",
     ),
     "00-project-profile.md": (
         "## 画像维度",
         "## 规模判断：看负载和边界，不看文件数",
         "## 形态信号",
         "## 流程档位",
-        "LEAN",
-        "STANDARD",
-        "HIGH-RISK",
+        "### LEAN",
+        "### STANDARD",
+        "### HIGH-RISK",
+        "maintenance_horizon",
         "## 画像门禁",
     ),
     "00-lean-path.md": (
         "## 入口条件",
         "## 一页项目合同",
+        "delivery_endpoint",
         "## 快路径的最低要求",
-        "## 验证方式",
-        "## 变更记录",
+        "- commands:",
+        "| C-ID | date |",
         "## 合并后的主线",
         "## 与下游阶段的对接",
         "## 升级触发",
@@ -102,15 +115,16 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 最小目标合同",
         "success_metrics",
         "initial_requirements",
+        "delivery_endpoint",
         "## 退出门禁",
     ),
     "02-scenarios-and-acceptance.md": (
         "## 场景写法",
         "## 可执行形状",
         "接缝",
-        "Given",
-        "When",
-        "Then",
+        "Given <",
+        "When <",
+        "Then <",
         "验收 ID",
         "## 验收矩阵",
         "## 退出门禁",
@@ -118,12 +132,14 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "03-scope-and-nongoals.md": (
         "## 范围分层",
         "MVP 用删除法判定",
-        "Must",
-        "Should",
-        "Could",
-        "Non-goal",
+        "| Must |",
+        "| Should |",
+        "| Could |",
+        "| Non-goal |",
         "## 范围防火墙",
         "## 变更协议",
+        "变更记录是一份文件",
+        "| C-ID | date |",
         "## 范围门禁",
     ),
     "04-constraints-quality-risks.md": (
@@ -132,6 +148,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 约束清单",
         "## 风险登记与最小实验",
         "假设→实验→通过条件→结果→处置",
+        "K-ID",
         "## 风险门禁",
     ),
     "05-architecture-design.md": (
@@ -148,6 +165,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 技术栈选择",
         "## 数据与基础设施匹配",
         "## 部署拓扑与恢复",
+        "H-ID 在这里产生",
         "## ADR 与验证计划",
         "## Architecture Ready 门禁",
     ),
@@ -170,6 +188,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "配置工程质量",
         "基础 CI",
         "干净 clone 验证",
+        "还没有远端仓库或 CI 提供方时",
         "## Bootstrap Ready 门禁",
     ),
     "07-vertical-slice.md": (
@@ -177,6 +196,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "首条与后续切片的权重差别",
         "## 交付完成的判定",
         "## 切片地图",
+        "- user_outcome:",
         "真实入口",
         "architecture_hypothesis",
         "## Slice Ready 门禁",
@@ -192,11 +212,13 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "09-testing-review-integration.md": (
         "## 测试层次",
-        "单元",
-        "集成",
-        "合同",
-        "E2E",
+        "| 单元 |",
+        "| 集成 |",
+        "| 合同 |",
+        "| E2E |",
         "## 证据映射",
+        "### 单条 A-ID：可以标 delivered",
+        "### 当前批次：可以进入 10-release-operations.md",
         "## 架构约束检查",
         "## 评审与集成顺序",
         "Definition of Done",
@@ -209,6 +231,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## CI/CD 流程",
         "## 监控、告警与观察窗口",
         "## 回滚、前滚与恢复",
+        "（STANDARD 起",
         "## Release Ready 门禁",
     ),
     "11-retrospective-evolution.md": (
@@ -221,11 +244,14 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "99-state-and-handoff.md": (
         "## 状态文件是游标和索引，不是第二份真相",
         "## 范围台账规则",
-        "delivered",
-        "remaining",
+        "delivered 单调不可退",
+        "（即 remaining）",
         "## 为什么分片",
         "## 布局",
         "## 认领规则",
+        "归还与改判",
+        "`## Slice map`",
+        "delivery_target",
         "## 会话开始：读取并校验",
         "## 会话结束：更新",
         "## 反模式",
@@ -362,15 +388,90 @@ def check_archive(skill_text: str, texts: dict[str, str], errors: list[str]) -> 
         errors.append("SKILL.md must not route through archive/")
 
 
+def sections(text: str) -> dict[str, str]:
+    """Map each heading title to its body, up to the next same-or-higher heading."""
+
+    lines = text.split(LF)
+    fenced: set[int] = set()
+    fence = ""
+    for i, line in enumerate(lines):
+        marker = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            fenced.add(i)
+            if marker and marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                fence = ""
+        elif marker:
+            fence = marker[1]
+            fenced.add(i)
+    marks = [
+        (i, len(match[1]), match[2])
+        for i, line in enumerate(lines)
+        if i not in fenced and (match := HEADING.match(line))
+    ]
+    found: dict[str, str] = {}
+    for index, (start, depth, title) in enumerate(marks):
+        end = len(lines)
+        for other, level, _ in marks[index + 1:]:
+            if level <= depth:
+                end = other
+                break
+        found[title] = LF.join(lines[start + 1:end])
+    return found
+
+
 def check_policy_anchors(texts: dict[str, str], errors: list[str]) -> None:
+    """Anchors that name a heading must find a section that still has content.
+
+    A substring check passes on a file that keeps every heading and deletes the
+    procedure underneath, which is exactly the edit this guard exists to catch.
+    """
+
     for source, anchors in POLICY_ANCHORS.items():
         text = texts.get(source, "")
+        found = sections(text)
         for anchor in anchors:
-            if anchor not in text:
+            if not anchor.startswith("#"):
+                if anchor not in text:
+                    errors.append(f"{source} is missing policy anchor: {anchor}")
+                continue
+            title = anchor.lstrip("#").strip()
+            if title not in found:
                 errors.append(f"{source} is missing policy anchor: {anchor}")
+                continue
+            body = "".join(
+                "".join(line.split())  # visible characters only
+                for line in found[title].split(LF)
+                if line.strip() and not HEADING.match(line)
+            )
+            gate = "门禁" in title or "Definition of Done" in title
+            minimum = MIN_GATE_CHARS if gate else MIN_BODY_CHARS
+            if len(body) < minimum:
+                errors.append(
+                    f"{source} section '{title}' has {len(body)} characters of body, "
+                    f"under the {minimum} this policy needs; the heading is not the policy"
+                )
 
 
-def check_size_budgets(texts: dict[str, str], errors: list[str]) -> None:
+def check_scripts(texts: dict[str, str], errors: list[str]) -> None:
+    """The router calls the status script every session with existing state.
+
+    The archive's scripts were asserted while the live one was not, so deleting
+    it left the checker green and every stateful session broken.
+    """
+
+    if not (ROOT / "scripts" / "workflow_status.py").is_file():
+        errors.append("missing scripts/workflow_status.py; the router invokes it every session")
+    if not (ROOT / "tests").is_dir():
+        errors.append("missing tests/; scripts/ changes are only gated by them")
+    mentioned: set[str] = set()
+    for text in texts.values():
+        mentioned |= set(SCRIPT_PATH.findall(text))
+    for name in sorted(mentioned):
+        if not (ROOT / name).is_file():
+            errors.append(f"SKILL/references reference a script that does not exist: {name}")
+
+
+def check_size_budgets(texts: dict[str, str], errors: list[str], warnings: list[str]) -> None:
     """Keep the entry path small and stage documents load-on-demand.
 
     A stage rule restated in SKILL.md is a second authority that drifts, and a
@@ -390,10 +491,16 @@ def check_size_budgets(texts: dict[str, str], errors: list[str]) -> None:
                 f"{name} is {size} bytes, over its {budget}-byte budget; "
                 "move stage detail into the reference that owns it"
             )
+        elif size > budget * BUDGET_WARN:
+            warnings.append(
+                f"{name} is at {100 * size / budget:.0f}% of its {budget}-byte budget "
+                f"({budget - size} bytes left); the next addition will need a trim"
+            )
 
 
 def main() -> int:
     errors: list[str] = []
+    warnings: list[str] = []
     actual = {path.name for path in REFS.glob("*.md")} if REFS.exists() else set()
     unexpected = actual - EXPECTED_REFERENCES
     missing = EXPECTED_REFERENCES - actual
@@ -416,17 +523,21 @@ def main() -> int:
     check_stage_order(skill_text, texts.get("00-progress-router.md", ""), errors)
     check_archive(skill_text, texts, errors)
     check_policy_anchors(texts, errors)
-    check_size_budgets(texts, errors)
+    check_scripts(texts, errors)
+    check_size_budgets(texts, errors, warnings)
 
     # Empty active references are almost always an accidental placeholder.
     for name, text in texts.items():
         if name != "SKILL.md" and not text.strip():
             errors.append(f"active reference is empty: {name}")
 
+    for warning in warnings:
+        print(f"WARN  {warning}")
     for error in errors:
         print(f"ERROR {error}")
     print(
-        f"{len(actual)} active reference files, {len(errors)} error(s)"
+        f"{len(actual)} active reference files, {len(errors)} error(s), "
+        f"{len(warnings)} warning(s)"
     )
     return 1 if errors else 0
 

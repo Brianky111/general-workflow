@@ -10,6 +10,7 @@ This repository is for developing a reusable Codex skill for general development
 ├── agents/openai.yaml    # optional UI metadata
 ├── references/           # longer workflow details loaded only when needed
 ├── scripts/              # deterministic helpers or validators
+├── tests/                # regression tests for scripts/
 └── assets/               # output templates or static resources, if needed
 ```
 
@@ -47,6 +48,15 @@ Run any scripts under `scripts/` directly before committing changes to them.
 Write Markdown in UTF-8. Skill folder names must be lowercase hyphen-case, for example `general-workflow`. In `SKILL.md`, include only YAML frontmatter fields `name` and `description`; make the description broad enough to trigger the skill in the right situations. Prefer imperative, concise instructions. Use fenced code blocks with language labels such as `powershell`, `json`, or `markdown`.
 
 ## Testing Guidelines
+
+Any change under `scripts/` or `tests/` must pass the shipped script's own suite:
+
+```powershell
+python -B -X utf8 -m unittest discover -s tests -p "test_*.py"
+```
+
+`check_consistency.py` does not exercise `workflow_status.py`, so a broken check
+in the status gate is green there and only red here.
 
 Validate three things before review: frontmatter loads, instructions are concise enough for agent use, and reference files are discoverable from `SKILL.md`. For substantial edits, forward-test with realistic prompts such as “Use this skill to plan a new feature workflow” and revise based on where the agent hesitates or loads too much context.
 
