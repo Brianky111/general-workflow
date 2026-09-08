@@ -34,7 +34,7 @@ docs/workflow/
 
 一条切片一个文件：切片是自然的所有权单位，没人会认领半条；按 A-ID 拆只会多出几十个碎文件。
 
-单人项目也用同一套布局：多两个文件的代价很小，而“随时能插入第二个人”一旦有条件，就等于不支持。
+单人项目也用同一套布局：多两个文件代价很小，而“随时能插入第二个人”一旦有条件就等于不支持。
 
 ## project.md
 
@@ -74,9 +74,9 @@ updated: <YYYY-MM-DD> / <commit>
 
 ### 可校验的验收来源
 
-`acceptance_source` 直接指向当前版本的权威验收表，例如 `docs/contract.md#验收场景`；`#` 后是唯一标题的原文（非 URL slug），省略时读取整个文件。脚本读取所选范围内以 `A-ID` 为首列的 Markdown 表，忽略代码围栏中的示例。A-ID 使用 `A-` 加字母、数字、点、下划线或连字符。
+`acceptance_source` 直接指向当前版本的权威验收表，例如 `docs/contract.md#验收场景`；`#` 后是唯一标题的原文（非 URL slug），省略时读取整个文件。脚本读取所选范围内以 `A-ID` 为首列的 Markdown 表，忽略代码围栏中的示例。A-ID 形如 `A-` 加字母数字点下划线连字符。
 
-- 来源必须是项目内、`docs/workflow/` 外的 UTF-8 Markdown 文件；不要从 backlog 反向生成“权威清单”。若权威在 issue 系统，先导出当前版本验收表并核对来源与版本，状态只指向该导出。
+- 来源必须是项目内、`docs/workflow/` 外的 UTF-8 Markdown 文件；不要从 backlog 反向生成“权威清单”。若权威在 issue 系统，先导出当前版本验收表，状态只指向该导出。
 - 选中范围保留本版本所有已纳入的 A-ID，包括后来 deferred/dropped 的行；未纳入的候选放在别的章节。来源集合与 backlog 必须相等，缺行、额外行、重复 ID、缺失或空表都阻止完成判定。
 - IDEA/DEFINED 且还没有台账行和切片时可填 `-`；这是未定义范围，`scope_verified=false`、`scope_complete=false`，不阻止继续澄清。验收形成后填写来源再建立台账。
 - 来源与台账同时被错误删改时脚本无法证明原承诺；它只检查当前文件的一致性，范围变更仍须保留决策和 diff。
@@ -97,9 +97,9 @@ updated: <YYYY-MM-DD> / <commit>
 
 **backlog 只记归属，不记状态。** 这是分片能生效的关键：最频繁的操作——改状态——只动单一 owner 的 `S-01.md`。
 
-`slice` 列的取值：切片 ID、`-`（未认领）、`deferred`、`dropped`。后两者必须在 note 里指向变更记录。
+`slice` 列取切片 ID、`-`（未认领）、`deferred`、`dropped`；后两者必须在 note 里指向变更记录。
 
-行来自阶段 2 的验收矩阵（快路径来自一页合同）。新增 A-ID 只能由需求或范围变更产生。
+行来自阶段 2 的验收矩阵（快路径来自一页合同）；新增只能由需求或范围变更产生。
 
 ## slices/S-0N.md
 
@@ -114,7 +114,7 @@ updated: <YYYY-MM-DD> / <commit>
 ## Acceptance
 | A-ID | status | evidence |
 | --- | --- | --- |
-| A-01 | delivered | <命令 / CI 链接 / 提交> |
+| A-01 | delivered | <调用> → <观察到的结果> @ <commit> |
 | A-02 | in-slice | - |
 
 ## Blockers
@@ -123,14 +123,14 @@ updated: <YYYY-MM-DD> / <commit>
 
 这是切片文件的唯一格式。07-vertical-slice.md 的切片地图字段写进本文件的 `## Slice map` 一节，不另建文件。
 
-**字段只在第一个 `##` 标题之前生效。** Blockers 里写 `- owner: 等 X 确认权限` 是叙述，不是认领；同一字段不要出现两次，脚本对重复报错而非取最后一个。
+**字段只在第一个 `##` 之前生效。** Blockers 里的 `- owner: 等 X 确认` 是叙述不是认领；同一字段不要出现两次，脚本对重复报错。
 
 ## 范围台账规则
 
-台账现在分布在 backlog 与切片文件中，规则不变：
+台账分布在 backlog 与切片文件中：
 
 1. **两列，五种取值**：切片文件的 `status` 只取 `in-slice` 和 `delivered`；backlog 的 `slice` 列取切片 ID、`-`（即 remaining）、`deferred`、`dropped`。不要发明中间态，也不要把 `deferred`/`dropped` 写进切片文件。
-2. **进入 delivered 的唯一条件是通过 09-testing-review-integration.md 的“单条 A-ID：可以标 delivered”**，并在同一行填上 evidence 指针。没有证据的 delivered 无效；`无`、`待补`、`TODO`、`-` 这类占位不是证据，脚本会拒绝。
+2. **进入 delivered 的唯一条件是通过 09-testing-review-integration.md 的“单条 A-ID：可以标 delivered”**，并在同一行填上 evidence。evidence 记的是一次真实调用及其结果，写成 `<调用> → <观察到的结果> @ <commit>`，格式和各形态的调用方式见 09。只写命令、只写占位（`无`、`待补`、`TODO`、`-`）或"代码已完成"，脚本都会拒绝。
 3. **delivered 单调不可退**。行为出问题是一个新缺陷，走 03-scope-and-nongoals.md 的变更协议决定是否重开范围，而不是把台账改回去。
 4. **deferred 和 dropped 必须指向变更记录。** 范围缩小是一个决策，不是一次静默删行。
 5. **进度只写在切片文件里，归属与终止只写在 backlog。** 同一个事实不要两处都写。
@@ -151,7 +151,7 @@ updated: <YYYY-MM-DD> / <commit>
 第二个人加入的第一分钟：跑一次状态脚本，看见哪些 A-ID 未认领，认领一条，开工。
 
 1. **认领即在自己的切片文件里写上 owner 和 claimed**，同时把 backlog 中对应 A-ID 的 slice 列指向该切片。认领会修改共享 backlog；开始工作前同步认领记录并重跑校验，不能把文件分片当作跨分支的原子锁。
-2. **不要抢一个 owner 有新鲜证据的切片**——近期提交、CI 运行、刚更新的 evidence。要接手先与该 owner 或用户确认。
+2. **不要抢一个 owner 有新鲜证据的切片**（近期提交、CI 运行、刚更新的 evidence）。接手先与该 owner 或用户确认。
 3. **在途切片必须有 owner、有效 claimed 日期和 write_scope。** 路径是项目内的真实文件/目录，不支持 glob；`.` 表示整个项目，只在没有其他在途切片时可用。脚本解析 `.`、`..`、已有链接及 Windows 大小写后检查重叠；重叠先调整边界或排序，不同时开工。
 4. **一次一条。** 同一 owner（忽略大小写）只能持有一条**在途**切片。在途 = 有 in-slice 行，或已写上 owner 但还没有任何 delivered 行——认领发生在验收行写下之前，空切片一样占住 write_scope。全部行 delivered 后该切片释放路径，可以认领下一条。
 5. 接手一条 stale 切片（owner 已久无证据）时，在该切片文件里记录交接原因和日期。
@@ -160,7 +160,7 @@ updated: <YYYY-MM-DD> / <commit>
 
 ## 会话开始：读取并校验
 
-定位本次加载的 `SKILL.md` 所在目录，从那里调用脚本，显式传入目标项目。替换下面两个绝对路径；不要假设目标项目自带此脚本，也不要把工作目录切到 skill 后漏掉 `--root`：
+定位本次加载的 `SKILL.md` 所在目录，从那里调用脚本并显式传入目标项目。替换下面的绝对路径；目标项目不自带此脚本，也不要切到 skill 目录后漏掉 `--root`：
 
 ```powershell
 python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
@@ -171,7 +171,7 @@ python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝
 脚本给不出的部分靠三次廉价校验：
 
 1. **游标对不对**：切片文件里的 `stage` 和 A-ID 指向的代码/测试是否真的存在？
-2. **绿色还在不在**：最近一次 evidence 里的命令现在是否仍然通过？
+2. **绿色还在不在**：最近一次 evidence 的调用现在是否仍返回同样结果？
 3. **有没有别人动过**：`updated` 的 commit 是否落后于当前 HEAD？落后就先看这段 diff。
 
 任意一项对不上，以仓库为准修正状态，并在本轮汇报里说明差异。不要在一个已经失真的游标上继续推进。
@@ -185,7 +185,7 @@ python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝
 - 切片文件的 `stage` 推进；通过 09 单条门禁的 A-ID 改 `delivered` 并补 evidence；
 - 本轮确认的项目级决策追加到 project.md，指向 ADR 或提交；
 - 已解决的 Open decisions 移走，新出现的加入；
-- evidence 写本轮真实跑过的命令和结果，不写“应该能过”；
+- evidence 写本轮真实发起的调用和观察到的结果，不写“应该能过”；
 - 更新 `updated` 的日期和 commit；
 - 再跑一次状态脚本，退出码为零才算收尾。
 

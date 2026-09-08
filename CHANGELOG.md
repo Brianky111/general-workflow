@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.7.0 - 2026-09-09
+
+Made preliminary completion mean a real call was made, not that an agent read
+the code and concluded it looked right.
+
+- A row reaches `delivered` only when someone actually invoked the real
+  entrypoint and recorded what came back. Reading the diff does not qualify,
+  and neither does a green test run on its own: a passing test proves an
+  assertion held, not that the entrypoint can be called and returns what the
+  acceptance row promises. Stage 9's per-A-ID gate now leads with that
+  requirement and names the callable surface for each shape -- HTTP/RPC routes,
+  CLI and scheduled entrypoints, a real page route or mount for a frontend, and
+  both sides plus one crossing call when they are split.
+- `evidence` is written as `<invocation> -> <observed result> @ <commit>`, and
+  the status script rejects a value with nothing on one side of the arrow. A
+  bare command, a bare CI link, and "the code is finished" all fail now.
+  Existing projects must rewrite their delivered rows in this shape.
+- Stage 8 records the call at Green rather than reconstructing it later, and
+  stage 6 asks the scaffold to leave one repeatable way to invoke the real
+  entrypoint and see the result -- without it every acceptance row reinvents
+  the call and the habit degrades into "just run the tests".
+
 ## 1.6.0 - 2026-09-08
 
 Closed the review findings that let a project report completion it had not

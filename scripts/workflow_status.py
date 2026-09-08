@@ -42,6 +42,10 @@ TERMINAL = {"deferred", "dropped"}
 IN_FLIGHT = "in-slice"
 DELIVERED = "delivered"
 A_ID = re.compile(r"A-[A-Za-z0-9][A-Za-z0-9._-]*")
+# Evidence has to say what came back, not only what was run. A command that was
+# executed proves an assertion held; it does not prove the entrypoint could be
+# called and returned the promised result, which is what delivered claims.
+RESULT = re.compile(r"->|=>|→|⇒")
 # A change record must be locatable: an id such as C-03, a path, or a link.
 POINTER = re.compile(
     r"https?://\S+|\S+\.md(?:#\S+)?|\S*/\S+|(?<![A-Za-z0-9])[A-Za-z]{1,6}-[A-Za-z0-9][A-Za-z0-9._-]*"
@@ -312,8 +316,16 @@ def check(root: Path) -> tuple[dict, list[str]]:
                 errors.append(
                     f"{aid}: backlog assigns it to '{backlog[aid][0]}' but it lives in {item.id}"
                 )
-            if status == DELIVERED and not is_set(evidence):
-                errors.append(f"{item.id}: {aid} is delivered with no evidence pointer")
+            if status == DELIVERED:
+                sides = [side.strip() for side in RESULT.split(evidence, maxsplit=1)]
+                if not is_set(evidence):
+                    errors.append(f"{item.id}: {aid} is delivered with no evidence pointer")
+                elif len(sides) < 2 or not all(sides):
+                    errors.append(
+                        f"{item.id}: {aid} evidence records no observed result; write it as "
+                        "'<invocation> -> <what came back>' from a real call against the "
+                        "entrypoint, not a command on its own"
+                    )
             if status not in {DELIVERED, IN_FLIGHT}:
                 errors.append(f"{item.id}: {aid} has status '{status}'; expected in-slice or delivered")
 

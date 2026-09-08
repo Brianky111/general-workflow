@@ -10,6 +10,8 @@ import unittest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "workflow_status.py"
+# A delivered row records an invocation and its observed result, not a command.
+CALL = "POST /items {\"name\": \"x\"} -> 201 id=it_7; GET /items has name=x @ abc123"
 
 
 class WorkflowStatusTests(unittest.TestCase):
@@ -87,7 +89,7 @@ class WorkflowStatusTests(unittest.TestCase):
         self.assertEqual(report["in_flight"], ["A-01"])
 
     def test_stage_nine_completes_scope_without_claiming_release(self):
-        self.slice(status="delivered", evidence="pytest: PASS at abc123", stage="9 integration")
+        self.slice(status="delivered", evidence=CALL, stage="9 integration")
         code, report = self.run_status()
         self.assertEqual(code, 0)
         self.assertTrue(report["scope_complete"])
@@ -96,7 +98,7 @@ class WorkflowStatusTests(unittest.TestCase):
 
     def test_removing_required_backlog_row_fails(self):
         self.source(("A-01", "A-02"))
-        self.slice(status="delivered", evidence="pytest: PASS at abc123")
+        self.slice(status="delivered", evidence=CALL)
         self.assert_invalid("A-02")
 
     def test_cleared_backlog_and_slices_cannot_complete(self):
@@ -169,6 +171,28 @@ class WorkflowStatusTests(unittest.TestCase):
         self.slice(status="delivered")
         self.assert_invalid("evidence")
 
+    def test_delivered_evidence_must_record_an_observed_result(self):
+        # A command proves an assertion held; it does not prove the entrypoint
+        # could be called and returned what the acceptance row promises.
+        for evidence in ("pytest tests/items -q: 12 passed",
+                         "https://ci.example/run/123",
+                         "\u5b9e\u73b0\u5df2\u5b8c\u6210\uff0c\u4ee3\u7801\u5df2\u8bc4\u5ba1",
+                         "pytest tests/items -q ->",
+                         "-> 201 created"):
+            with self.subTest(evidence=evidence):
+                self.slice(status="delivered", evidence=evidence)
+                self.assert_invalid("observed result")
+
+    def test_a_real_call_with_its_result_is_evidence(self):
+        for evidence in (CALL,
+                         "app export --from 2026-09-01 => report.csv 3 rows, exit 0 @ abc123",
+                         "\u6253\u5f00 /orders \u2192 \u9996\u5c4f 3 \u884c @ abc123"):
+            with self.subTest(evidence=evidence):
+                self.slice(status="delivered", evidence=evidence)
+                code, report = self.run_status()
+                self.assertEqual(code, 0, report)
+                self.assertTrue(report["scope_complete"], report)
+
     def test_deferred_remains_in_authoritative_scope(self):
         self.backlog(("A-01", "deferred", "docs/changes.md#C-01"))
         (self.state / "slices/S-01.md").unlink()
@@ -210,7 +234,7 @@ class WorkflowStatusTests(unittest.TestCase):
 
     def test_owner_can_reuse_scope_after_delivery(self):
         self.two_live_slices("src", "src", second_owner="alice")
-        self.slice(status="delivered", evidence="pytest: PASS at abc123", scope="src")
+        self.slice(status="delivered", evidence=CALL, scope="src")
         self.assertEqual(self.run_status()[0], 0)
 
     def test_claimed_slice_holds_its_scope_before_rows_exist(self):

@@ -112,7 +112,7 @@ docs/workflow/
 
 状态是游标和索引，不是第二份真相；与仓库事实冲突时以仓库为准。详见 `references/99-state-and-handoff.md`。
 
-其中的**范围台账分两列**，这是分片能生效的前提：切片文件的 `status` 只取 `in-slice` 和 `delivered`；backlog 的 `slice` 列取切片 ID、`-`（即 remaining）、`deferred`、`dropped`，后两者的 note 必须指向变更记录。进入 `delivered` 必须通过阶段 9 的**单条 A-ID 完成条件**并填上证据指针——`无`、`待补`、`TODO` 这类占位不算证据。脚本通过 `project.md` 中的 `acceptance_source` 直接读取权威验收表，防止台账漏项；来源未定义或状态有错时不会输出范围完成。
+其中的**范围台账分两列**，这是分片能生效的前提：切片文件的 `status` 只取 `in-slice` 和 `delivered`；backlog 的 `slice` 列取切片 ID、`-`（即 remaining）、`deferred`、`dropped`，后两者的 note 必须指向变更记录。进入 `delivered` 必须通过阶段 9 的**单条 A-ID 完成条件**：对真实入口发起过一次实际调用，并把调用和观察到的结果写进 evidence，形如 `<调用> → <观察到的结果> @ <commit>`。读代码、看 diff、只跑一遍测试、只贴一个 CI 链接都不算——测试通过证明断言成立，不证明那个入口能被调起来并返回预期结果。占位符（`无`、`待补`、`TODO`）同样被拒绝。脚本通过 `project.md` 中的 `acceptance_source` 直接读取权威验收表，防止台账漏项；来源未定义或状态有错时不会输出范围完成。
 
 不做某条切片了不是把行删掉：按 `99-state-and-handoff.md` 的**归还与改判**规则，未完成的 A-ID 行退出切片文件，backlog 改回 `-` 或改判 deferred/dropped 并指向变更记录。
 
@@ -145,7 +145,7 @@ python -B -X utf8 -m unittest discover -s tests -p "test_*.py"
 python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
 ```
 
-它核对权威验收集合、backlog 和切片，输出 owner、stage、剩余 A-ID、`scope_verified` 和 `scope_complete`。发现验收遗漏、`delivery_target` 未填、delivered 无证据（中英文占位符都算无证据）、deferred/dropped 的 note 不指向变更记录、切片归属不一致、实际写入路径重叠、认领信息缺失或同一 owner 持有多条在途切片等问题时退出码非零。字段只从第一个 `##` 之前的头部读取，围栏示例和 Blockers 里的叙述不会被当成认领；`write_scope` 在拆分前先校验，未编辑的占位符不会变成一串假路径。已认领但还没写验收行的切片同样占住写入范围。完全未初始化时仍可开始工作；状态只剩部分文件时报错，`--json` 始终返回 JSON。
+它核对权威验收集合、backlog 和切片，输出 owner、stage、剩余 A-ID、`scope_verified` 和 `scope_complete`。发现验收遗漏、`delivery_target` 未填、delivered 无证据或证据里没有观察结果（中英文占位符、只有命令、只有 CI 链接都算）、deferred/dropped 的 note 不指向变更记录、切片归属不一致、实际写入路径重叠、认领信息缺失或同一 owner 持有多条在途切片等问题时退出码非零。字段只从第一个 `##` 之前的头部读取，围栏示例和 Blockers 里的叙述不会被当成认领；`write_scope` 在拆分前先校验，未编辑的占位符不会变成一串假路径。已认领但还没写验收行的切片同样占住写入范围。完全未初始化时仍可开始工作；状态只剩部分文件时报错，`--json` 始终返回 JSON。
 
 脚本检查当前文件的一致性和证据指针是否填写；用户授权、来源是否被错误删改、证据是否真实通过以及发布结果，仍需按阶段规则核验。
 
