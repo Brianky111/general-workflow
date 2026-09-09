@@ -1,5 +1,381 @@
 # Changelog
 
+## 1.8.0 - 2026-09-09
+
+Closed the gates that read as checks but accepted anything, gave the state file
+a format version so a missing field can be told apart from an old layout, and
+collapsed the rules that had grown a second copy. Pre-1.6 single-file state is
+recognized instead of read as a new project, and the size budgets are pinned by
+a test, so raising one is a two-file decision rather than a one-character edit.
+The README was rewritten around the lifecycle map and what a first user has to
+do.
+
+- Four checks in the status script were passing values they were supposed to
+  reject. `delivery_target` was only tested for being nonempty, so a target
+  ending in "差不多做完就行" named a completion boundary and closeout stopped
+  wherever the reader decided; it is now read as `<pointer> / <endpoint>`, the
+  endpoint being the segment after the last ` / ` and one of
+  `implementation-and-tests`, `release-ready` or `deployed:<environment>`. The
+  pointer half is required too, and required to reach something: a bare
+  `release-ready` left closeout with nothing to check off item by item, and
+  `差不多那些 / release-ready` then cleared the not-a-placeholder test while
+  still opening nothing, so that half has to be a document path, a
+  `C-<number>` or a URL -- the same shape the change-record pointer takes. The
+  two halves fail with separate sentences because they need separate repairs.
+  `lifecycle`, `tier` and `path` were not validated at all, so `BUILDNG` passed
+  and then silently decided nothing; they are checked against their enums, and a
+  value that still contains ` | ` is reported as an unedited placeholder rather
+  than as an unknown value. `evidence` required an arrow but nothing that could
+  be found again, so `pytest -> passed` was a delivered row nobody could
+  re-run; it now needs `@ <commit or ref>` or a link, and the anchor itself has
+  to name a place -- `@ later` and `@ 稍后` promise one instead of giving one,
+  and a promise cannot be checked out and re-run. The change-record pointer
+  matched any hyphenated word, which let `follow-up` justify dropping an
+  acceptance id; only `C-<number>`, a document path carrying its extension, or a
+  URL count now, because taking any string with a slash in it made `ask/bob` and
+  `推迟到 v2/以后` change records.
+- The evidence anchor stopped exempting an entire class of projects. It looked
+  for a link anywhere in the string, and an HTTP entrypoint carries a URL in
+  every invocation, so `curl https://api.example.com/orders -> 200 OK`
+  anchored itself on the address it called: for HTTP and web projects the
+  requirement cost nothing, and the same row passed with `@ later` still
+  attached. The anchor is now read where a reader looks for it, at the end of
+  the observed-result half, so the URL a request was sent to is no longer the
+  proof that this run happened -- it says the entrypoint exists, not that
+  anyone called it. `@ HEAD` was the other way through: it is ref-shaped and
+  walks past any table of placeholder words, but it resolves to whoever
+  committed last, so the row keeps reading as anchored while pointing at
+  different code six months later; `HEAD~1`, `main`, `master`, `origin/main`
+  and `latest` move the same way and are rejected with it. The ceiling is the
+  same as any word list -- `@ dev` and `@ feature/x` move too and still pass.
+  A test had frozen the old behaviour as the expected one, asserting that the
+  URL row was valid evidence, so the hole had a green test defending it; that
+  case is now the negative one.
+- Reading the anchor off the tail also has to leave something behind. Once the
+  arrow and the trailing ref were each checked on their own, `cmd -> @ abc123`
+  satisfied both -- two halves, and an anchor a reader can check out -- while
+  recording no observed result at all, which is the half the arrow was added to
+  require. Copying the URL the call was sent to onto the right of the
+  arrow does the same, and it is the natural move for anyone who has just been
+  told the URL no longer counts as the anchor. The result half is now read after
+  the trailing anchor is removed, and an empty remainder is rejected with its own
+  sentence, because the repair is different from a missing anchor: write down
+  what came back. The anchor says where to find the run; it is not the run's
+  result.
+- `state_version: 2` is required in `project.md`. Releases 1.6 and 1.7 both
+  changed what the state means, and with no version marker the script could not
+  distinguish "this field was never written" from "this file predates the
+  field", so every migration error arrived as a field-level complaint. The
+  missing-line error prints the exact line to add, a wrong version points at the
+  migration procedure, and that procedure now exists as its own section in
+  `99-state-and-handoff.md`: what version 2 asserts, and what a human has to
+  rewrite in an older file. It ends with the two things an older file was never
+  checked on and therefore never got right by accident -- the three enum fields,
+  and the change-record note behind every deferred or dropped row. It also
+  starts one step earlier than the rewrites, because they assume a
+  `docs/workflow/` directory and the versions before 1.6 kept everything in one
+  `docs/workflow-state.md` (or `WORKFLOW-STATE.md`), where there is no shard to
+  fix. The procedure now says where each part goes first -- the cursor fields
+  to `project.md`, `stage` to the slice file the cursor names, the scope ledger
+  split between `backlog.md` and that slice file.
+- Skipping that split used to be silent. The script only looked at
+  `docs/workflow/`, so a project whose whole ledger sat in the single file
+  printed `no workflow state` and told the reader to create one this round, at
+  exit 0; whoever took it over read that as a fresh start, built an empty state
+  next to the old file, and the A-IDs and evidence already written were never
+  opened again. A check that misses something leaves the work where it was; this
+  line moved someone to bury it, which is the worse of the two. When
+  `docs/workflow/` is absent the script now looks for `docs/workflow-state.md`
+  and `WORKFLOW-STATE.md`, and reports `state_status: legacy` with the file it
+  found, what has to be carried over, and the instruction not to start a fresh
+  state beside it. The exit code stays 0, because nothing here is broken: the
+  state is in the older shape, and the migration is a human's. `legacy` is a
+  fourth status rather than a variant of `uninitialized` for the same reason:
+  "uninitialized" is precisely the reading that causes the loss, so it cannot
+  also be the reading the script hands back. It knows the two filenames the older
+  layout used, and no others; state parked elsewhere still reads as a new
+  project.
+- `next_action` gives stages 1-6 a cursor. Before the first slice exists there
+  is no `stage` field anywhere, only the project-level `lifecycle`, so a session
+  picking up a project stalled halfway through stage 5 had to reconstruct which
+  decisions were already made from the ADRs -- and reconstructing it wrong meant
+  redoing or skipping work. The field holds the next executable action and the
+  command that verifies it; the script requires it once the ledger has rows,
+  while no slice is in flight and scope is still owed, and lets it stay empty
+  once a slice's `stage` carries the cursor. Words that only say the work
+  continues -- "下一步继续", `proceed`, `ongoing` -- are rejected, and both the
+  script and the state reference say
+  where that check stops: rewrite it as "继续推进登录模块" and it passes. It
+  catches an empty cursor, not a wrong one; whether the named action is really
+  executable, and whether the command beside it really verifies it, stays with
+  the stage gate and the person writing the line.
+- Returning a slice used to lock its owner out. The rule said to delete the
+  unfinished acceptance rows and fix the backlog, but not to clear `owner` and
+  `claimed` -- and a slice with an owner and no delivered row counts as in
+  flight, so the abandoned file stayed live forever and the owner's next claim
+  failed with `owner holds two live slices`. Returning is now three steps, and
+  that error message spells out the third one instead of only naming the
+  collision.
+- The report no longer dies on a console that cannot encode it. `stdout` and
+  `stderr` are reconfigured to UTF-8 with `backslashreplace`, so an English
+  Windows console at cp1252 prints the state instead of raising
+  `UnicodeEncodeError` and exiting 1, which read as "your state is invalid".
+- `acceptance_source` failures say which one happened. An unreadable file, a
+  heading that is not there, a heading that is there twice and a selection with
+  no A-ID table each need a different repair, and they were arriving as one
+  sentence about an expected nonempty table.
+- The profile template said it could be merged into `project.md` wholesale, and
+  doing that broke the file: `lifecycle` and `tier` appear in both templates, and
+  a field set twice is an error, so the documented shortcut produced a
+  `set twice` rejection. The templates now say to write those two lines once,
+  name the seven fields the script actually parses, and use `snake_case`
+  throughout -- `runtime units` and `users/entrypoints` could never match the
+  field pattern and were being dropped without a word.
+- The LEAN reduction list exists in one place. It had been copied into the
+  router, `SKILL.md` and the README, and the copies had already drifted: one of
+  them implied stage 6's clean-clone check could be skipped. `00-lean-path.md`
+  is now the single authority, it states per stage what is reduced and what is
+  not, and it names the two things LEAN never gives up -- the clean-clone check
+  with one pipeline, and one real-entrypoint call per acceptance id. `SKILL.md`
+  and the router point at it and list nothing themselves. `README.md` does not:
+  its tier table still restates those two rules in two lines, because that table
+  is where a reader decides whether LEAN fits their project, and the decision
+  turns on what the tier refuses to discount. The page says of those two lines
+  that they are a copy and that nothing but a person keeps them in step. The
+  consistency checker anchors those two sentences in `00-lean-path.md`, but a
+  sentence being where it belongs says nothing about
+  where else it is, and the second copy is the one that drifts -- so the checker
+  now holds a table of the list's wording and asserts, for each entry, that it
+  is still in `00-lean-path.md` and appears in no other `SKILL.md` or
+  `references/` file. Pasting a compressed copy back into the always-loaded
+  router fails the gate; a test does exactly that. That table compares literal
+  substrings, so it sees copy-paste and only copy-paste -- and retyping the
+  rule in one's own words is exactly what a reader who wants it to hand does.
+  A second guard covers part of that gap for the two tier policies by shape
+  instead of wording: three or more bare stage numbers inside one block, each
+  followed within a couple of dozen characters by an exemption or deepening
+  verb, is reported as a transcribed per-stage policy however it is phrased,
+  and the two files that own those policies are exempt. Stated as what a green
+  run does and does not mean: a pasted copy in `SKILL.md` or `references/` is
+  caught, a reworded per-stage LEAN or HIGH-RISK list in those same files is
+  caught, and nothing else is. A reworded copy of the claim rules has no stage
+  numbers to count and gets past both. A sentence naming two stages is under
+  the threshold on purpose, because a guard that fires on ordinary prose gets
+  switched off before it ever catches a list. And a copy in `README.md` or
+  `AGENTS.md` is invisible to both, which never read either file -- the README's
+  two lines are one such copy, kept on purpose and labelled as one. The phrase
+  table also guards the HIGH-RISK deepening list and the claim rules below.
+- The claim rules moved to `07-vertical-slice.md`. Claiming happens in stage 7,
+  but the rules lived in the always-resident state file, so every session paid
+  for seven rules it mostly could not use. Stage 7 carries them, the state file
+  keeps one pointer, and the exit gate now names the section a slice file has to
+  satisfy.
+- HIGH-RISK has a per-stage deepening list in `00-project-profile.md`. The tier
+  previously offered five summary bullets while individual stage documents
+  invented their own "high-risk projects must also..." requirements, so nobody
+  could say what the tier actually adds. The table is the only authority, and
+  stage documents are read against it.
+- `SKILL.md` now names the tier load for both tiers, not only for LEAN. It told a
+  LEAN project to read `00-lean-path.md` and said nothing about HIGH-RISK, which
+  was survivable while every stage document carried its own high-risk
+  requirements; this release deleted those and left the deepening table as the
+  only place they exist. The two tiers are not symmetric, and that asymmetry is
+  the whole reason the second line is needed: the reduction list is a file of its
+  own, so it survives any decision not to read the profile, while the deepening
+  list lives inside the profile -- and the router, in this same release, stopped
+  loading the profile by default. A HIGH-RISK session could take that skip and
+  have nowhere left to read what its tier adds. The router carries the same
+  instruction at the point where it would otherwise skip the profile. Saying it
+  in both places duplicates a pointer, not a list -- what drifts when it is
+  copied is the table, and neither file holds the table.
+- Compressed `05-architecture-design.md`. It sat 159 bytes under its budget,
+  which is not a margin: the next correction to stage 5 would have had to pay
+  for itself by shaving unrelated prose, and the cheapest prose to shave is
+  never the least useful. Nothing here changes what the stage asks for. The
+  `目的与入口` section is gone because the sections after it said the same
+  things again; the five-topic mechanism checklist is one line, since
+  `05a-mechanisms-and-contracts.md` carries those same five sections; and the
+  sentence that spelled out how deep a low-risk and a high-risk project each
+  have to go now points at the profile instead of being a second place that
+  states it. One bullet was actually removed -- whether a migration lets old
+  and new code coexist -- and the deployment section of the same file already
+  decides it. About 1,200 bytes free.
+- The router says what happens after a non-Greenfield boundary is confirmed. It
+  used to flag old APIs, old data or an existing deployment as a risk and stop
+  there, which left the agent to guess between proceeding as if greenfield and
+  switching to the archived legacy workflow. Confirmation now sets
+  `compat_surface`, carries the old interfaces into stages 4 and 5, adds
+  compatibility and migration evidence at 09, and makes 10's rollback cover both
+  versions running side by side; declining it narrows the work instead.
+- The router no longer rebuilds the project profile every session. Reading
+  `00-project-profile.md` was an unconditional step of first contact, so a
+  session resuming a project at stage 8 re-derived a tier the user had already
+  confirmed -- and deriving it differently silently changed the depth of
+  everything after it, while holding a fourth document resident all session. A
+  status script that exits 0 has already checked `tier` and `path` against their
+  enums, so the answer is in the state; the profile is loaded for a project with
+  no state directory, when those two fields are missing, print as `?` or
+  contradict what the repository shows, or when a P0 return is triggered. A
+  `tier: HIGH-RISK` project needs one condition more than those three. None of
+  the three holds for a HIGH-RISK project resumed at stage 8, and the same release
+  had just made the profile's deepening table the only authority -- stage
+  documents no longer carry high-risk requirements of their own -- so the skip
+  took the stage-8 deepening row with it and left nowhere to read it from. The
+  router now sends a HIGH-RISK session back for that one row before entering
+  any stage, taking the table without re-deciding the tier. The saving itself
+  is anchored now too: the conditional-load heading is checked as a policy
+  anchor whose section must still have a body, and the skip and the HIGH-RISK
+  exception are checked as substrings inside it, because deleting them left
+  every other check green -- the router still routed, every
+  other anchor still matched, and the profile was quietly a fourth resident
+  file again.
+- A placeholder was accepted as the observed result. The result half only had
+  to be nonempty once its trailing anchor was removed, so `cmd --run -> 见上
+  @ abc123` recorded a real commit next to a word meaning "see above". The
+  script already keeps a table of words that promise a place instead of naming
+  one; it was applied to the anchor and not to the half the anchor exists to
+  locate. That half is now held to the same table. The ceiling is unchanged and
+  stated where the other word tables are: a result phrased outside the table
+  still passes, and nothing here can tell the URL a call was sent to from the
+  link to its run.
+- A half-migrated project stopped hiding the ledger beside it. An empty
+  `docs/workflow/` next to a full single-file state reported only "missing
+  project.md", which is the reading that makes the next agent fill in the empty
+  shards and leave every old A-ID unread; the rendered report now names the old
+  file and points at the split. `legacy_state` is `[]` in the "uninitialized"
+  and "ready" reports and carries that file in an "invalid" one, which the
+  module docstring previously denied.
+- Corrected three descriptions that had drifted past what the code does. The
+  handoff reference still said the script reports `no workflow state` for a
+  single-file project and exits 0 -- the behavior this release replaced -- so
+  it was teaching that the guard does not exist while the README described the
+  new one. The README and AGENTS.md both said the shape guard counts stage
+  numbers "inside one section"; it counts them inside one block, the lines
+  written directly under a heading, so splitting a restated list across two
+  subheadings separates the counts. Both also said a reworded copy cannot dodge
+  it, which holds only while the reduction verbs stay: change those too and the
+  guard sees nothing.
+
+- Reordered the routing algorithm. "Is this a question or a job?" was step 1 of
+  the algorithm but had to be answered before the algorithm ran, and the
+  blocking criteria were listed twice with different wording. The first-contact
+  section answers the question, the algorithm has one blocking list, and the
+  read-only status command is inlined in the router so a session that only wants
+  to check state does not load the state reference to find it.
+- The default response shape has two tiers. One six-item report per turn meant a
+  stage 8 session re-reported the project profile every round, burying the one
+  thing that had changed. The full six are for handoff or a change of tier or
+  stage; continuing inside a stage reports what changed, the gate status and the
+  next action with its verification command.
+- `check_consistency.py` takes `--root` and has its own tests. It hardcoded the
+  tree it lives in, so nothing could point it at a fixture and its own checks
+  were never exercised -- a broken assertion looked exactly like a clean run.
+  The suite now builds a copy of the tree, breaks one thing at a time and
+  asserts the checker notices.
+- The size budget counts the same bytes on Windows and on Linux, which it had
+  only appeared to do. The newline normalization ran on the result of
+  `Path.read_text`, which applies universal newlines, so there was never a
+  `\r\n` left for it to replace -- dead code, and two tests were crediting it
+  with a behaviour they would have passed without it. Files are read as bytes
+  and decoded before the newlines are collapsed, so the count no longer moves
+  by one byte per line between checkouts: a document that fits under 13,000 in
+  a `core.autocrlf` checkout no longer fails there while passing everywhere
+  else, for an edit nobody made. The frontmatter check now depends on the same
+  normalization -- `startswith("---\n")` is the first thing a raw CRLF decode
+  breaks -- so a whole tree rewritten with CRLF is checked end to end, not only
+  weighed. The two budget tests assert what they always claimed to: delete the
+  normalization and they turn red.
+- The three budget numbers and the 90% warning line are pinned in
+  `test_check_consistency.py`. Every other convention in this tree is held up by
+  something a change has to get past -- a gutted section fails the anchor check,
+  a pasted rule fails the phrase table -- and "over budget means delete the
+  duplication, never raise the number" was the one held up by nothing.
+  `SIZE_BUDGETS` was read by one function and by no test, so `9_500` ->
+  `10_500` was a one-character edit that left both gates green, and it is the
+  first edit anyone wanting one more paragraph in the router will reach for,
+  because it is the only one that costs them nothing. The pinned copies are
+  written out in the test rather than imported, so a change has to be made twice
+  in two files, with the reasoning printed as the assertion message at the moment
+  it fails. The whole table is compared, not only its values: dropping
+  `SKILL.md`'s entry lets it fall through to the 13,000-byte reference budget and
+  buys 5,000 bytes with a deletion. Each budget is also walked from the outside,
+  one byte under and one byte over, so rewiring which file gets which number
+  fails even with every constant untouched. The warn line is pinned one step
+  earlier for the same reason: with five WARN lines already printing, the
+  cheapest way to make the output look clean is not to touch 9,500, which reads
+  to a reviewer as a budget change, but to nudge 0.90 to 0.97, which reads as
+  tuning and silences all five at once. None of this can stop a number from
+  changing, and nothing could. It makes the change a decision instead of a
+  reflex.
+- The gate descriptions in `README.md` and `AGENTS.md` had not caught up with the
+  two single-authority guards this release added. Both pages listed a smaller set
+  of checks than the checker runs, so the guard most likely to be tripped by an
+  ordinary edit -- moving a rule's wording into the file where it gets read -- was
+  the one nobody had been told about, and it would have arrived as an
+  unexplained failure. Both now name `check_single_authority` and
+  `check_restated_tier_policy`, what each one catches, and where each stops:
+  literal substrings for the first, so it sees paste and only paste; stage-number
+  shape for the second, so a reworded per-stage list is caught and the claim
+  rules, which have no stage numbers, are not; and neither reads `README.md` or
+  `AGENTS.md`, so a copy in either page is invisible to both.
+- Added `examples/`: one filled-in LEAN project -- contract, change record and a
+  `docs/workflow/` state directory the status script exits 0 on. The templates
+  had only ever been shown as fragments inside prose, so a first user assembled
+  a state directory out of separate excerpts and learned which parts were wrong
+  from the gate. `tests/test_examples.py` runs the CLI against it, so the
+  example cannot quietly fall behind the templates it demonstrates. The README
+  sends readers there to see all four values the backlog's assignment column
+  takes, and the example showed three: `dropped` was missing, and it is the
+  value most easily handled by deleting the row instead -- which the script
+  accepts, and which shortens the ledger by exactly the promise someone decided
+  not to keep. The row is there now, and each README snippet is checked line by
+  line against the file it says it was cut from, so the page and the example
+  cannot drift apart again unnoticed.
+- Rewrote `AGENTS.md`. It described a repository that was still going to produce
+  a skill: a `<skill-name>/` tree that does not exist here, a source manual
+  (`通用开发工作流-v3.8-环节拆分版.md`) deleted several versions ago, and a Skill
+  Creator validator to run "after a skill folder exists". Anyone following it
+  went looking for files that are not in the checkout. It now describes the tree
+  that is here, separates the two scripts by what each validates and what
+  `--root` means for each -- the checker defaults to its own directory, the
+  status script has to be pointed at a consuming project -- names the three test
+  files and what each one covers, and lists what has to be true before a commit.
+- Rewrote the README around the lifecycle map and how the workflow is actually
+  used. It explained the workflow to a reader already persuaded by it and never
+  said how to install the skill, what to type to start, what appears inside your
+  own project, or what a filled-in state file looks like -- so the four things a
+  first user needs were the four the page left them to guess. The main line was
+  a text block, and a text block cannot show the LEAN branch and where it
+  rejoins, the conditional load of `05a-mechanisms-and-contracts.md`, the
+  `delivery_target` decision that sends a finished slice to release or back to
+  claim the next one, or the loop from retrospective into the next slice; it is
+  a rendered diagram now. The page also gained the three layers of "done" with
+  the accepted and rejected evidence forms side by side and the callable
+  surface per project shape, so a frontend-only or split project can see itself
+  in it, and turned the routing, tier and return rules into tables that link to
+  the reference owning each one instead of restating it.
+- Then reworked that README's install, verification and reference sections.
+  `Copy-Item -Recurse general-workflow <dest>` and `cp -r general-workflow <dest>`
+  copy the source *into* an existing target, so anyone reinstalling over a
+  previous version ended up with a nested `general-workflow/general-workflow` and
+  a skill directory that no longer loaded; both blocks now remove the target
+  first. The bash block also needed `mkdir -p ~/.claude/skills`, because the two
+  commands are not equivalent: `Copy-Item -Recurse` creates the missing parent
+  and `cp -r` does not, so on a machine where `~/.claude/skills` did not exist
+  yet the documented install exited 1 with nothing copied. The rest of the page
+  had drifted the same way -- it printed its own copy of the LEAN reduction
+  list, showed a `project.md` with no `state_version` and no `next_action`,
+  described the status gate's rejections as they stood two releases ago, and
+  drew a repository tree with no `AGENTS.md`, no `examples/` and a single test
+  file. A reader trusting it built state that the gate then refused. The tier
+  table now points at the single authority instead of copying it, the install
+  check prints the two exact lines a working install produces, and the
+  validation section splits the two scripts by what they check, what `--root`
+  means for each, and where the checks stop.
+- Ignored `.claude/settings.local.json`. It is per-machine editor state; it was
+  neither tracked nor ignored by the repository, so it showed up as untracked
+  noise for anyone whose global ignore file does not already cover it.
+
 ## 1.7.0 - 2026-09-09
 
 Made preliminary completion mean a real call was made, not that an agent read

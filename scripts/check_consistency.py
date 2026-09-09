@@ -9,15 +9,36 @@ archive is not accidentally used as an active dependency.
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 
-ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "SKILL.md"
-REFS = ROOT / "references"
-ARCHIVE = ROOT / "archive" / "general-workflow-v0.12.0"
+# Default to the skill this script ships in, so `python scripts/check_consistency.py`
+# keeps checking its own tree; --root points the same checks at a copy.
+DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+ARCHIVE_VERSION = "general-workflow-v0.12.0"
+
+
+class Tree(NamedTuple):
+    """One workflow tree: a root plus the four paths every check reads."""
+
+    root: Path
+    skill: Path
+    refs: Path
+    archive: Path
+
+    @classmethod
+    def at(cls, root: Path) -> "Tree":
+        root = root.resolve()
+        return cls(
+            root,
+            root / "SKILL.md",
+            root / "references",
+            root / "archive" / ARCHIVE_VERSION,
+        )
 
 EXPECTED_REFERENCES = {
     "00-progress-router.md",
@@ -42,6 +63,11 @@ EXPECTED_REFERENCES = {
 # paid for only when its stage is entered. These budgets exist so that content
 # belonging to a stage document cannot quietly drift back into the entry path,
 # and so no single stage document grows back into a load spike.
+#
+# The four numbers below are pinned by BudgetContractTests in
+# tests/test_check_consistency.py, because raising one is the only way past this
+# gate that leaves both gates green. Editing a number here fails there, with the
+# reasons written out; that test is the place to read them and the place to argue.
 SIZE_BUDGETS = {
     "SKILL.md": 8_000,
     "00-progress-router.md": 9_500,
@@ -56,6 +82,7 @@ BUDGET_WARN = 0.90
 MIN_BODY_CHARS = 30
 MIN_GATE_CHARS = 60
 CRLF = "\r\n"
+CR = "\r"
 LF = "\n"
 
 REFERENCE_NAME = re.compile(r"\b\d{2}[a-z]?-[a-z0-9][a-z0-9-]*\.md\b")
@@ -70,6 +97,11 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "第一条垂直切片",
         "统一阶段规则",
         "交付完成条件",
+        # Reporting is two-tier: full only on handoff or a tier/stage change. The
+        # heading alone does not carry that; the compact tier is the half that
+        # gets dropped, and losing it means every turn re-reports the profile.
+        "## 默认响应形状",
+        "同一阶段内连续推进时",
         "一个事实一个权威来源",
         "证据胜过口头状态",
         "不得用测试专属实现",
@@ -82,9 +114,27 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 全局门禁",
         "## 结束与回流",
         "## 路径深度与暂停",
+        # Loading the profile conditionally is what keeps the resident set at
+        # three files and stops a confirmed tier from being silently recomputed.
+        # Deleting this section, or making the load unconditional again, left
+        # every other check green: the router still routed, every anchor still
+        # matched, and the saving was gone.
+        "### 画像按需加载",
+        "跳过画像直接进阶段选择",
+        # The condition list and the HIGH-RISK exception are the two halves that
+        # make the skip safe. Without the first, "load it when needed" has no
+        # test; without the second, a HIGH-RISK project at stage 8 skips the
+        # deepening row too, and no stage document carries a replacement.
+        "以下情况才加载 00-project-profile.md",
+        "只取表不重定档位",
         "只加载当前 reference",
         "docs/workflow/",
         "delivery_target",
+        # The router must say what happens after the user confirms a non-Greenfield
+        # boundary, not just flag it as a risk; compat_surface is where that lands.
+        "compat_surface",
+        # Same literal as 99-state-and-handoff.md: see the note there.
+        '--root "<目标项目绝对路径>" --json',
     ),
     "00-project-profile.md": (
         "## 画像维度",
@@ -94,6 +144,9 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "### LEAN",
         "### STANDARD",
         "### HIGH-RISK",
+        # The one place HIGH-RISK deepening is defined. Emptied or deleted, every
+        # stage document goes back to inventing its own high-risk requirements.
+        "## HIGH-RISK 加深清单",
         "maintenance_horizon",
         "## 画像门禁",
     ),
@@ -105,6 +158,13 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "- commands:",
         "| C-ID | date |",
         "## 合并后的主线",
+        # The exemption list is single-authority here; the router, SKILL.md and
+        # README only point at it. Both sentences are load-bearing: one says LEAN
+        # never gives up clean-clone CI and real-entrypoint evidence, the other
+        # names this file as the only place the list may live. A second copy
+        # growing back elsewhere is caught by EXCLUSIVE_PHRASES below, not here.
+        "LEAN 有两条不打折",
+        "LEAN 减免的唯一权威位置",
         "## 与下游阶段的对接",
         "## 升级触发",
         "## 快路径门禁",
@@ -200,6 +260,18 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "- user_outcome:",
         "真实入口",
         "architecture_hypothesis",
+        # Claiming happens in stage 7, so the rules live with the stage instead of
+        # in the always-resident state file. 99 keeps a pointer, not a copy.
+        "## 认领规则",
+        # The heading plus one rule is not the procedure. These name the two rules
+        # that are cheapest to drop and most expensive to lose: without rule 1 the
+        # backlog never learns who owns the A-ID, and without the one-live-slice
+        # limit two claims overlap on write_scope with nothing to reject them.
+        "认领即在自己的切片文件里写上 owner 和 claimed",
+        "一次一条",
+        # Returning a slice must also clear owner/claimed; dropping this rule
+        # leaves an empty slice permanently in flight and locks the owner out.
+        "归还与改判",
         "## Slice Ready 门禁",
     ),
     "08-implementation-tdd.md": (
@@ -253,16 +325,108 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "（即 remaining）",
         "## 为什么分片",
         "## 布局",
-        "## 认领规则",
-        "归还与改判",
         "`## Slice map`",
         "delivery_target",
+        # Two contract fields the status script reads and the template must keep:
+        # state_version is mandatory, next_action is the pre-slice cursor. Losing
+        # the template line is how a field quietly stops being written at all.
+        "- state_version: 2",
+        "- next_action:",
+        # Without the migration procedure, a pre-2 state file has no documented
+        # way forward and the version check reads as an unexplained rejection.
+        "## 状态格式版本",
         "## 会话开始：读取并校验",
+        # Deliberate second copy: the router inlines this same line so a
+        # read-only status check does not load this file. Asserting the identical
+        # string in both places turns a one-sided edit into an error here.
+        '--root "<目标项目绝对路径>" --json',
         "## 会话结束：更新",
         "## 反模式",
         "仓库事实赢",
     ),
 }
+
+
+# One fact, one authority. Consolidating a rule into one file does not keep it
+# there: restating it where it is needed is always shorter than sending the
+# reader somewhere else, so the copy grows back unless a gate rejects it. Each
+# entry names the file that owns a rule and the wording that travels with the
+# rule when someone pastes it.
+#
+# Scope, stated plainly so nobody trusts this table for more than it does: it
+# matches literal phrases, so it catches copy-paste and only copy-paste. Anyone
+# who retypes the rule in their own words walks past it untouched — and typing
+# it out again is exactly what a reader who wants the rule to hand does. A
+# pointer is meant to stay legal, which is why no phrase here is a filename:
+# "减免清单只在 00-lean-path.md" passes, and so does a paraphrase. For the two
+# tier policies, check_restated_tier_policy below covers part of that gap by
+# shape instead of wording; every other rule in this table is guarded against
+# pasting alone, and a reworded copy still needs a human to notice.
+EXCLUSIVE_PHRASES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "00-lean-path.md": (
+        "LEAN 减免清单",
+        (
+            "逐阶段的减免如下",
+            "整个阶段跳过",
+            "不要求部署到 staging",
+            "不要求一个行为一个提交",
+            "不要求合同测试",
+            "不要求独立 staging 环境",
+            "简化为一次 closeout",
+        ),
+    ),
+    "00-project-profile.md": (
+        "HIGH-RISK 加深清单",
+        (
+            "在完整路径之上额外要求的证据",
+            "唯一加深清单",
+            "实验在实现开始前跑完",
+            "由非作者做一次独立架构评审",
+            "评审人与实现者分离",
+            "清单只加证据",
+        ),
+    ),
+    "07-vertical-slice.md": (
+        "切片认领与归还规则",
+        (
+            "不要抢一个 owner 有新鲜证据的切片",
+            "在途切片必须有 owner",
+            "只能持有一条",
+            "接手一条 stale 切片",
+            "漏掉第三件事会被自己的归还锁住",
+        ),
+    ),
+}
+
+
+# The table above matches wording, and the two tier policies are the copies that
+# hurt most: they are per-stage lists, they are long, and a reader who is inside
+# stage 09 wants only the 09 line, so the tempting edit is to retype that row
+# where it is needed. Retyping evades a phrase table by construction, so this
+# guard ignores wording and reads shape. A tier policy is recognizable without
+# knowing any of its sentences: bare stage numbers, each one immediately
+# followed by an exemption or a deepening, three or more of them inside a single
+# block. Ordinary prose names one stage and says one thing about it; only a
+# transcribed policy enumerates.
+TIER_POLICY_OWNERS = ("00-lean-path.md", "00-project-profile.md")
+# Bare stage numbers only. `07-vertical-slice.md` is a pointer, which is the
+# behaviour being asked for, so a filename must not read as a stage number —
+# including by backtracking, which is what `[a-z]?` invites: without the first
+# lookahead, `05a-mechanisms-…` gives up its `a` and matches a bare `05`.
+STAGE_NUMBER = re.compile(r"(?<![0-9A-Za-z])(0[1-9]|1[01])[a-z]?(?![0-9a-z])(?!-[a-z])")
+TIER_POLICY_VERBS = (
+    "不要求", "不必", "无需", "只需", "可以省", "可省", "省略", "免除",
+    "跳过", "简化为", "合并为", "减免", "不做",
+    "另加", "额外", "加深", "再补", "还要", "才允许", "必须先",
+)
+# How far past the number the verb may sit and still belong to it: enough for a
+# table cell's `| ` and a few words, short enough that the next list item's verb
+# does not get borrowed by the previous number.
+TIER_POLICY_REACH = 24
+# Two stages with exemption wording in one block is a paragraph that mentions
+# two stages; the whole tree's high-water mark outside the owning files is one.
+# Three is a list, and the margin says so.
+TIER_POLICY_STAGES = 3
 
 
 def reference_mentions(text: str) -> set[str]:
@@ -271,15 +435,22 @@ def reference_mentions(text: str) -> set[str]:
     return set(REFERENCE_NAME.findall(text))
 
 
-def read_text(path: Path, errors: list[str]) -> str:
+def read_text(tree: Tree, path: Path, errors: list[str]) -> str:
     if not path.exists():
-        errors.append(f"missing file: {path.relative_to(ROOT)}")
+        errors.append(f"missing file: {path.relative_to(tree.root)}")
         return ""
     try:
-        return path.read_text(encoding="utf-8")
+        text = path.read_bytes().decode("utf-8")
     except UnicodeDecodeError as exc:
-        errors.append(f"not UTF-8: {path.relative_to(ROOT)} ({exc})")
+        errors.append(f"not UTF-8: {path.relative_to(tree.root)} ({exc})")
         return ""
+    # Decode the bytes here rather than call Path.read_text, which applies
+    # universal newlines and hands back a string CRLF can never appear in. The
+    # size budget counts the bytes of what this returns, and with core.autocrlf
+    # a checkout differs by one byte per line across platforms; normalizing at
+    # the single place that touches the disk is what makes the budget mean the
+    # same thing on Windows and on Linux.
+    return text.replace(CRLF, LF).replace(CR, LF)
 
 
 def check_frontmatter(text: str, errors: list[str]) -> None:
@@ -372,29 +543,35 @@ def check_mentions(
             errors.append(f"{source} mentions missing reference: {name}")
 
 
-def check_archive(skill_text: str, texts: dict[str, str], errors: list[str]) -> None:
+def check_archive(
+    tree: Tree, skill_text: str, texts: dict[str, str], errors: list[str]
+) -> None:
     required = (
-        ARCHIVE / "SKILL.md",
-        ARCHIVE / "README.md",
-        ARCHIVE / "references",
-        ARCHIVE / "scripts",
-        ROOT / "archive" / "ARCHIVE-NOTE.md",
+        tree.archive / "SKILL.md",
+        tree.archive / "README.md",
+        tree.archive / "references",
+        tree.archive / "scripts",
+        tree.root / "archive" / "ARCHIVE-NOTE.md",
     )
     for path in required:
         if not path.exists():
-            errors.append(f"archive is incomplete: {path.relative_to(ROOT)}")
+            errors.append(f"archive is incomplete: {path.relative_to(tree.root)}")
 
     active_text = skill_text + "\n" + "\n".join(
         text for name, text in texts.items() if name != "SKILL.md"
     )
-    if "archive/general-workflow-v0.12.0" in active_text:
+    if f"archive/{ARCHIVE_VERSION}" in active_text:
         errors.append("active SKILL/references must not depend on archived workflow path")
     if "archive/" in skill_text:
         errors.append("SKILL.md must not route through archive/")
 
 
-def sections(text: str) -> dict[str, str]:
-    """Map each heading title to its body, up to the next same-or-higher heading."""
+def outline(text: str) -> tuple[list[str], list[tuple[int, int, str]]]:
+    """Split into lines plus every heading outside a code fence.
+
+    A template block that shows `## 复盘门禁` is documentation of a heading, not
+    a heading, so fenced lines are dropped before the headings are collected.
+    """
 
     lines = text.split(LF)
     fenced: set[int] = set()
@@ -413,6 +590,13 @@ def sections(text: str) -> dict[str, str]:
         for i, line in enumerate(lines)
         if i not in fenced and (match := HEADING.match(line))
     ]
+    return lines, marks
+
+
+def sections(text: str) -> dict[str, str]:
+    """Map each heading title to its body, up to the next same-or-higher heading."""
+
+    lines, marks = outline(text)
     found: dict[str, str] = {}
     for index, (start, depth, title) in enumerate(marks):
         end = len(lines)
@@ -422,6 +606,23 @@ def sections(text: str) -> dict[str, str]:
                 break
         found[title] = LF.join(lines[start + 1:end])
     return found
+
+
+def own_bodies(text: str) -> list[tuple[str, str]]:
+    """Each heading with only the lines written directly under it.
+
+    sections() nests, so an H2 body contains its H3s and the file's H1 body is
+    the whole file. Counting stage numbers over a nested body would count the
+    lifecycle itself: every stage list in the tree sits somewhere under one H1.
+    The block an author actually typed is the unit that can be a pasted policy.
+    """
+
+    lines, marks = outline(text)
+    blocks = [("(before the first heading)", LF.join(lines[:marks[0][0]] if marks else lines))]
+    for index, (start, _depth, title) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(lines)
+        blocks.append((title, LF.join(lines[start + 1:end])))
+    return blocks
 
 
 def check_policy_anchors(texts: dict[str, str], errors: list[str]) -> None:
@@ -457,22 +658,97 @@ def check_policy_anchors(texts: dict[str, str], errors: list[str]) -> None:
                 )
 
 
-def check_scripts(texts: dict[str, str], errors: list[str]) -> None:
+def check_single_authority(texts: dict[str, str], errors: list[str]) -> None:
+    """A rule lives in one file; a verbatim copy of it elsewhere is an error.
+
+    Each phrase is checked from both sides. It must still be in the file that
+    owns the rule, or the table guards wording that no longer exists and stops
+    guarding anything. And it must be nowhere else, because the second copy is
+    the one that drifts: a router copy of the LEAN list that says clean-clone
+    verification can be skipped reads as authoritative to whoever loads the
+    router, and the two documents then disagree with nothing to break.
+
+    What this does not do: recognize the same rule in different words. The
+    comparison is substring equality, so "09 不要求合同测试" is caught and
+    "09 可以省掉合同测试" is not. Read a green run as "nobody pasted it", not
+    as "the rule is still in one place".
+    """
+
+    for owner, (rule, phrases) in EXCLUSIVE_PHRASES.items():
+        for phrase in phrases:
+            if phrase not in texts.get(owner, ""):
+                errors.append(
+                    f"{owner} no longer contains the {rule} wording this checker "
+                    f"holds as single-authority: {phrase}; move the rule back, or "
+                    "update the exclusive-phrase table to the new wording"
+                )
+            for source, text in texts.items():
+                if source != owner and phrase in text:
+                    errors.append(
+                        f"{source} restates {rule}: {phrase}; the single authority "
+                        f"for this rule is references/{owner}, so point at "
+                        f"{owner} here instead of copying the rule"
+                    )
+
+
+def check_restated_tier_policy(texts: dict[str, str], errors: list[str]) -> None:
+    """Catch a tier policy retyped in the author's own words.
+
+    check_single_authority sees copy-paste only. Every rewrite that walked past
+    it in review looked the same in shape: a run of bare stage numbers, each
+    carrying a "you may drop this" or "you must add this". That shape is what a
+    rewrite cannot drop, so it is what gets counted here instead of a sentence.
+
+    The failure being prevented: a reader who loads 04 or the router finds a
+    per-stage list there, treats it as the rule, and never opens the file that
+    owns it. When the owning file is later corrected the pasted list is not, and
+    the pair disagrees with nothing left to notice.
+
+    Two limits worth knowing before trusting a green run. This reads only
+    SKILL.md and references/, so a copy in README.md or AGENTS.md is invisible
+    to it. And it recognizes a per-stage list, not a single rule: the claim
+    rules in 07-vertical-slice.md have no stage numbers to count, so a reworded
+    copy of those still gets past both guards.
+    """
+
+    for source, text in texts.items():
+        if source in TIER_POLICY_OWNERS:
+            continue
+        for title, body in own_bodies(text):
+            hits: dict[str, str] = {}
+            for match in STAGE_NUMBER.finditer(body):
+                window = body[match.end():match.end() + TIER_POLICY_REACH].split(LF)[0]
+                for verb in TIER_POLICY_VERBS:
+                    if verb in window:
+                        hits.setdefault(match[0], verb)
+                        break
+            if len(hits) < TIER_POLICY_STAGES:
+                continue
+            listed = "、".join(f"{stage} {verb}" for stage, verb in sorted(hits.items()))
+            errors.append(
+                f"{source} section '{title}' reads as a per-stage tier policy "
+                f"({listed}); LEAN exemptions are owned by references/00-lean-path.md "
+                "and HIGH-RISK deepening by references/00-project-profile.md, so name "
+                "the owning file here instead of listing the stages again"
+            )
+
+
+def check_scripts(tree: Tree, texts: dict[str, str], errors: list[str]) -> None:
     """The router calls the status script every session with existing state.
 
     The archive's scripts were asserted while the live one was not, so deleting
     it left the checker green and every stateful session broken.
     """
 
-    if not (ROOT / "scripts" / "workflow_status.py").is_file():
+    if not (tree.root / "scripts" / "workflow_status.py").is_file():
         errors.append("missing scripts/workflow_status.py; the router invokes it every session")
-    if not (ROOT / "tests").is_dir():
+    if not (tree.root / "tests").is_dir():
         errors.append("missing tests/; scripts/ changes are only gated by them")
     mentioned: set[str] = set()
     for text in texts.values():
         mentioned |= set(SCRIPT_PATH.findall(text))
     for name in sorted(mentioned):
-        if not (ROOT / name).is_file():
+        if not (tree.root / name).is_file():
             errors.append(f"SKILL/references reference a script that does not exist: {name}")
 
 
@@ -487,9 +763,9 @@ def check_size_budgets(texts: dict[str, str], errors: list[str], warnings: list[
     """
 
     for name, text in texts.items():
-        # Normalize newlines: with core.autocrlf the working tree differs by one
-        # byte per line across platforms, and a budget must not depend on that.
-        size = len(text.replace(CRLF, LF).encode("utf-8"))
+        # read_text already normalized the newlines, so this is the same count
+        # for an LF and a CRLF checkout of the same document.
+        size = len(text.encode("utf-8"))
         budget = SIZE_BUDGETS.get(name, REFERENCE_BUDGET)
         if size > budget:
             errors.append(
@@ -503,10 +779,17 @@ def check_size_budgets(texts: dict[str, str], errors: list[str], warnings: list[
             )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--root", default=str(DEFAULT_ROOT),
+        help="workflow tree to check (default: the skill directory holding this script)",
+    )
+    tree = Tree.at(Path(parser.parse_args(argv).root))
+
     errors: list[str] = []
     warnings: list[str] = []
-    actual = {path.name for path in REFS.glob("*.md")} if REFS.exists() else set()
+    actual = {path.name for path in tree.refs.glob("*.md")} if tree.refs.exists() else set()
     unexpected = actual - EXPECTED_REFERENCES
     missing = EXPECTED_REFERENCES - actual
     for name in sorted(missing):
@@ -514,10 +797,10 @@ def main() -> int:
     for name in sorted(unexpected):
         errors.append(f"unexpected active reference (add it to checker/map): references/{name}")
 
-    skill_text = read_text(SKILL, errors)
+    skill_text = read_text(tree, tree.skill, errors)
     texts = {"SKILL.md": skill_text}
     for name in sorted(actual):
-        texts[name] = read_text(REFS / name, errors)
+        texts[name] = read_text(tree, tree.refs / name, errors)
 
     check_frontmatter(skill_text, errors)
     mapped, map_start = check_reference_map(skill_text, actual, errors)
@@ -526,9 +809,11 @@ def main() -> int:
     if skill_text:
         check_reachability(skill_text, texts, actual, map_start, errors)
     check_stage_order(skill_text, texts.get("00-progress-router.md", ""), errors)
-    check_archive(skill_text, texts, errors)
+    check_archive(tree, skill_text, texts, errors)
     check_policy_anchors(texts, errors)
-    check_scripts(texts, errors)
+    check_single_authority(texts, errors)
+    check_restated_tier_policy(texts, errors)
+    check_scripts(tree, texts, errors)
     check_size_budgets(texts, errors, warnings)
 
     # Empty active references are almost always an accidental placeholder.
