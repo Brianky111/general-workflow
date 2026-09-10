@@ -44,6 +44,7 @@ EXPECTED_REFERENCES = {
     "00-progress-router.md",
     "00-project-profile.md",
     "00-lean-path.md",
+    "00-refactor-path.md",
     "01-requirements-and-goals.md",
     "02-scenarios-and-acceptance.md",
     "03-scope-and-nongoals.md",
@@ -168,6 +169,24 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 与下游阶段的对接",
         "## 升级触发",
         "## 快路径门禁",
+    ),
+    "00-refactor-path.md": (
+        "## 入口",
+        "## 分类",
+        "## 保护基线",
+        "## 目标结构",
+        "## 认领与切片文件",
+        "## 执行",
+        "## 退出门禁",
+        "## 停止条件",
+        # A refactor is authorized, never self-started, and never a feature.
+        "authorized_by",
+        "不产生 R-ID 或 A-ID",
+        # The two halves of its evidence: kept behavior called again at the
+        # closing commit, and a structure check that fails before and passes
+        # after. Dropping either turns the path back into "tests still pass".
+        "baseline",
+        "不改断言，不改公开签名",
     ),
     "01-requirements-and-goals.md": (
         "## 需求提炼顺序",

@@ -26,6 +26,7 @@ flowchart TD
     ENDP{"交付终点 delivery_target"}
     S10["10 · 发布 监控 回滚<br/>Release Ready"]
     S11["11 · 复盘与架构演化"]
+    R["R · 重构路径<br/>授权 · 保护表 · 结构检查"]
     OUT(["closeout · 停止本轮"])
 
     P0 --> TIER
@@ -41,6 +42,9 @@ flowchart TD
     S11 -->|"下一条切片"| S7
     S11 --> OUT
     S9 -.->|"缺实现"| S8
+    S11 -.->|"演化决策"| R
+    S7 -.->|"边界问题超出 write_scope"| R
+    R -.->|"收口：回到触发它的阶段"| S7
 ```
 
 三件事值得先说清楚：
@@ -185,6 +189,17 @@ commit 是否落后于 HEAD。任意一项对不上，以仓库为准修正状�
 [`07-vertical-slice.md`](references/07-vertical-slice.md) 的「认领规则」——认领发生在阶段 7，
 规则就跟着那一阶段：一次只持有一条在途切片，不抢有新鲜证据的切片，写入范围重叠先调边界再开工，
 不做了要走归还流程而不是删行，归还时连 `owner` 和 `claimed` 一起清空。
+
+### 要重构的时候
+
+重构不是第十二个阶段，是一种特殊的切片：普通切片认领几条 A-ID 把它们做出来，重构切片保住几条
+已经交付的 A-ID，把结构改掉。文件名以 `R-` 开头，头部多一行 `authorized_by`，指向谁决定了这次
+重构：用户原话、复盘决策表的那一行，或一条变更记录。agent 自己发现的坏味道不是授权。
+
+它没有 Acceptance 表，换成两张：保护表列出入口路径经过 write_scope 的已交付 A-ID，开工前在起点
+commit 各调一次记下基线，收口时在新 commit 上再各调一次；结构表放一条现在会失败的检查命令，
+比如依赖方向检查，收口时它必须通过。两张表填齐，重构才算收口，有它在途时不做任务收尾。
+完整规则在 [`00-refactor-path.md`](references/00-refactor-path.md)。
 
 ## 你的项目里会出现什么
 
@@ -338,6 +353,7 @@ LEAN 有两条不打折：**06 的干净 clone 验证加一条 CI**，以及**�
 | 工具链或环境不可重复 | 06 | 后续每一步的可重复性都建立在这里 |
 | 09 发现缺少实现 | 08 | 测试与集成没问题，回实现循环 |
 | 发布或恢复暴露新风险 | 10 | 范围不变，补的是运行准备 |
+| 用户要求重构；复盘决定演化架构；边界修复超出当前切片 write_scope | 重构路径 | 不是新阶段：保住已交付的 A-ID，改结构，见 [`00-refactor-path.md`](references/00-refactor-path.md) |
 
 回流不作废已有产出：保留已有 ID 和证据，按变更协议补项，不能删改承诺凑出完成。
 
@@ -358,6 +374,7 @@ LEAN 有两条不打折：**06 的干净 clone 验证加一条 CI**，以及**�
 | 09 | 各模块单测通过 ≠ 用户结果成立 | 单条：调用过并记下返回；批次：全部 Must 已 delivered、产物可追溯 | [09-testing-review-integration](references/09-testing-review-integration.md) |
 | 10 | 发得出去但收不回来 | 不可变产物、迁移与回滚方案、阈值与观察窗口、可执行 runbook | [10-release-operations](references/10-release-operations.md) |
 | 11 | 凭偏好自动重构 | 运行证据对照 Q-ID 与 H-ID；下一步只有一个有边界的动作 | [11-retrospective-evolution](references/11-retrospective-evolution.md) |
+| R | 顺手重构；重构悄悄改了行为 | 授权指针；保护表每行在起点和收口各一次真实调用；结构检查由红转绿 | [00-refactor-path](references/00-refactor-path.md) |
 
 路由、生命周期状态和全局门禁在 [`00-progress-router.md`](references/00-progress-router.md)；
 LEAN 快路径在 [`00-lean-path.md`](references/00-lean-path.md)；跨会话状态、台账和完成判定在
@@ -385,6 +402,7 @@ LEAN 快路径在 [`00-lean-path.md`](references/00-lean-path.md)；跨会话状
 │   ├── 00-progress-router.md           # 常驻：路由算法、阶段选择表、全局门禁
 │   ├── 00-project-profile.md           # 画像、档位判定、HIGH-RISK 加深清单
 │   ├── 00-lean-path.md                 # 一页项目合同、LEAN 减免清单、升级触发
+│   ├── 00-refactor-path.md             # 重构路径：授权、保护基线、结构检查、重构切片格式
 │   ├── 01 … 11                         # 各阶段
 │   └── 99-state-and-handoff.md         # 状态文件、台账、完成判定（认领规则在 07）
 ├── examples/                           # 一份完整、能直接跑的状态目录，上面几段就截自这里
@@ -468,7 +486,9 @@ HIGH-RISK 加深清单归 `00-project-profile.md`，切片认领与归还归 `07
 那半边就空了（`<调用> → @ abc123` 两个半边都填了、末尾也有锚点，却没记下任何观察到的东西）；
 deferred/dropped 的 note 不指向变更记录（只认 `C-<数字>`、带文档扩展名的路径和链接，
 "follow-up"和"ask/bob"都不算）；
-切片归属不一致；写入路径重叠；认领信息缺失；同一 owner 持有多条在途切片。
+切片归属不一致；写入路径重叠；认领信息缺失；同一 owner 持有多条在途切片（功能切片写了
+`waiting_on` 在等自己的重构切片时除外）；重构切片（`R-` 开头）缺 `authorized_by` 指针、保护行
+没有基线、基线与收口证据落在同一个锚点、列了 Acceptance 行，或 backlog 把 A-ID 指向它。
 
 「已经开始记台账」是 `next_action` 必填的前提，不是修辞：backlog 和 `slices/` 都还空着、
 `lifecycle` 还是 `IDEA` 或 `DEFINED` 的草稿期不会被这条挡住，那时还没有什么可交接的。占位词那条
@@ -493,8 +513,11 @@ stdout 和 stderr 强制 UTF-8：非 UTF-8 控制台（例如英文 Windows 的 
 
 旧版是以 feature/change round、Delivery Anchor、TOS 和复杂状态治理为中心的流程，已完整保存在
 [`archive/general-workflow-v0.12.0/`](archive/general-workflow-v0.12.0/)。当前版本只针对
-Greenfield，不把旧项目接手、重构、迁移或线上故障恢复自动塞进流程——发现任务其实是这些时，
-router 会先说明边界并请你确认是否扩展范围。
+Greenfield，外加对本流程建起来的项目的重构路径：旧版 refactor intake 的思路——授权、分类、
+保护基线、有限的特征测试——以重构切片的形式回到了
+[`00-refactor-path.md`](references/00-refactor-path.md)，它的术语没有跟着回来。接手旧项目、
+迁移或线上故障恢复仍不自动塞进流程——发现任务其实是这些时，router 会先说明边界并请你确认
+是否扩展范围。
 
 ## 许可
 

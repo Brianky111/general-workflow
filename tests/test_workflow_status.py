@@ -16,6 +16,13 @@ CALL = "POST /items {\"name\": \"x\"} -> 201 id=it_7; GET /items has name=x @ ab
 # delivery_target is a pointer plus one of the three completion boundaries.
 TARGET = "docs/contract.md#Done / deployed:staging"
 NEXT = "write the failing test for A-01; verify: pytest tests/items -q"
+# A refactor keeps delivered behavior: the same call at the start commit and
+# again at the closing commit, plus a structure check that fails before and
+# passes after.
+BASELINE = "`report-export --from 2026-09-01` -> exit 0, 3 rows @ abc123"
+REVERIFIED = "`report-export --from 2026-09-01` -> exit 0, 3 rows @ def456"
+BEFORE = "2 modules import psycopg directly @ abc123"
+AFTER = "0 modules import psycopg directly @ def456"
 
 
 class WorkflowStatusTests(unittest.TestCase):
@@ -647,6 +654,182 @@ class WorkflowStatusTests(unittest.TestCase):
         run = self.run_cli()
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertIn(f"next action: {NEXT}", run.stdout)
+
+    # Refactor slices: R-<n>.md keeps delivered behavior and changes structure.
+
+    def refactor(self, rid="R-01", owner="bob", claimed="2026-09-09 / abc123", scope="src/db",
+                 authorized="docs/reviews.md#Decisions",
+                 protection=(("A-01", BASELINE, "-"),),
+                 structure=(("`lint-imports`", BEFORE, "-"),),
+                 extra="", acceptance=""):
+        head = (f"# Refactor {rid}\n- owner: {owner}\n- claimed: {claimed}\n"
+                f"- stage: 8 refactor\n- write_scope: {scope}\n"
+                f"- authorized_by: {authorized}\n{extra}")
+        kept = ("\n## Protection\n| ID | baseline | evidence |\n| --- | --- | --- |\n"
+                + "".join(f"| {pid} | {base} | {ev} |\n" for pid, base, ev in protection))
+        checks = ("\n## Structure\n| check | before | after |\n| --- | --- | --- |\n"
+                  + "".join(f"| {c} | {b} | {a} |\n" for c, b, a in structure))
+        self.write(self.state / "slices" / f"{rid}.md", head + acceptance + kept + checks)
+
+    def delivered_feature(self, **kwargs):
+        """S-01 with A-01 delivered, so a refactor has behavior to keep."""
+        self.slice(status="delivered", evidence=CALL, **kwargs)
+
+    def test_a_refactor_slice_is_live_and_holds_closeout(self):
+        self.delivered_feature()
+        self.refactor()
+        code, report = self.run_status()
+        self.assertEqual(code, 0, report)
+        # The ledger is done; the report says so and says closeout still waits.
+        self.assertTrue(report["scope_complete"], report)
+        self.assertEqual(report["refactors_in_flight"], ["R-01"])
+        entry = next(item for item in report["slices"] if item["id"] == "R-01")
+        self.assertEqual(entry["kind"], "refactor")
+        self.assertEqual(entry["protected"], ["A-01"])
+        self.assertEqual(entry["reverified"], [])
+        self.assertEqual((entry["structure_passed"], entry["structure_checks"]), (0, 1))
+
+    def test_a_refactor_needs_an_authorization_pointer(self):
+        # A cleanup an agent noticed is not authorization; the file has to point
+        # at who decided: a change id, the review decision, or the user's words.
+        self.delivered_feature()
+        for value in ("agent noticed duplication", "-", "user said so"):
+            with self.subTest(value=value):
+                self.refactor(authorized=value)
+                self.assert_invalid("authorized_by")
+        for value in ("C-03", "docs/workflow/slices/R-01.md#Request",
+                      "https://example.test/issues/7"):
+            with self.subTest(value=value):
+                self.refactor(authorized=value)
+                self.assertEqual(self.run_status()[0], 0)
+
+    def test_a_refactor_claims_no_acceptance_rows(self):
+        # The last time a refactor could carry acceptance rows it was filed as
+        # a feature; the rule is enforced here, not remembered.
+        self.delivered_feature()
+        self.refactor(acceptance=(
+            "\n## Acceptance\n| A-ID | status | evidence |\n| --- | --- | --- |\n"
+            "| A-01 | in-slice | - |\n"
+        ))
+        self.assert_invalid("claims no A-ID")
+
+    def test_the_backlog_cannot_assign_an_id_to_a_refactor(self):
+        self.delivered_feature()
+        self.refactor()
+        self.backlog(("A-01", "R-01", ""))
+        self.assert_invalid("refactor owns no A-ID")
+
+    def test_a_refactor_keeps_only_delivered_behavior(self):
+        self.slice()  # A-01 still in-slice: nothing to keep yet
+        self.refactor()
+        self.assert_invalid("has not been delivered")
+
+    def test_a_protection_row_needs_its_baseline_before_work_starts(self):
+        self.delivered_feature()
+        self.refactor(protection=(("A-01", "-", "-"),))
+        self.assert_invalid("no baseline")
+        self.refactor(protection=(("A-01", "`report-export` @ abc123", "-"),))
+        self.assert_invalid("records no observed result")
+
+    def test_baseline_and_evidence_must_be_separate_runs(self):
+        self.delivered_feature()
+        self.refactor(protection=(("A-01", BASELINE, BASELINE),))
+        self.assert_invalid("same anchor")
+
+    def test_a_refactor_protects_something_and_checks_something(self):
+        self.delivered_feature()
+        self.refactor(protection=())
+        self.assert_invalid("protects nothing")
+        self.refactor(structure=())
+        self.assert_invalid("no structure check")
+
+    def test_a_structure_check_records_its_failing_output_first(self):
+        self.delivered_feature()
+        self.refactor(structure=(("`lint-imports`", "-", "-"),))
+        self.assert_invalid("has no before")
+        self.refactor(structure=(("`lint-imports`", "2 violations @ later", "-"),))
+        self.assert_invalid("cannot be located")
+        self.refactor(structure=(("`lint-imports`", BEFORE, BEFORE),))
+        self.assert_invalid("same anchor")
+
+    def test_a_characterization_row_needs_no_ledger_entry(self):
+        self.delivered_feature()
+        self.refactor(protection=(("A-01", BASELINE, "-"), ("P-01", BASELINE, "-")))
+        self.assertEqual(self.run_status()[0], 0)
+        self.refactor(protection=(("X-01", BASELINE, "-"),))
+        self.assert_invalid("neither an A-ID")
+
+    def test_a_refactor_closes_when_every_row_is_called_again(self):
+        self.delivered_feature()
+        self.refactor(protection=(("A-01", BASELINE, REVERIFIED),),
+                      structure=(("`lint-imports`", BEFORE, AFTER),))
+        code, report = self.run_status()
+        self.assertEqual(code, 0, report)
+        self.assertEqual(report["refactors_in_flight"], [])
+        # A closed refactor releases its owner and its paths.
+        self.source(("A-01", "A-02"))
+        self.backlog(("A-01", "S-01", ""), ("A-02", "S-02", ""))
+        self.slice(sid="S-02", aid="A-02", owner="bob", scope="src/db")
+        self.assertEqual(self.run_status()[0], 0)
+
+    def paused_feature(self, waiting="- waiting_on: R-01\n"):
+        """S-01 owned by alice, A-01 delivered, A-02 in-slice, paused on R-01."""
+        self.source(("A-01", "A-02"))
+        self.backlog(("A-01", "S-01", ""), ("A-02", "S-01", ""))
+        self.write(self.state / "slices/S-01.md", (
+            "# Slice S-01\n- owner: alice\n- claimed: 2026-09-08 / abc123\n"
+            f"- stage: 8 implementation\n- write_scope: src/a\n{waiting}\n## Acceptance\n"
+            "| A-ID | status | evidence |\n| --- | --- | --- |\n"
+            f"| A-01 | delivered | {CALL} |\n| A-02 | in-slice | - |\n"
+        ))
+
+    def test_a_feature_slice_may_pause_for_its_owners_refactor(self):
+        # Same owner, overlapping paths: allowed only because S-01 says it is
+        # waiting, which is what makes the overlap harmless.
+        self.paused_feature()
+        self.refactor(owner="alice", scope="src/a")
+        code, report = self.run_status()
+        self.assertEqual(code, 0, report)
+        self.assertEqual(report["in_flight"], ["A-02"])
+        self.assertEqual(report["refactors_in_flight"], ["R-01"])
+
+    def test_holding_a_feature_and_a_refactor_needs_the_pause_declared(self):
+        self.paused_feature(waiting="")
+        self.refactor(owner="alice", scope="src/a")
+        report = self.assert_invalid("add '- waiting_on: R-01' to S-01")
+        self.assertTrue(any("write_scope overlap" in e for e in report["errors"]), report)
+
+    def test_waiting_on_must_name_a_refactor_still_in_flight(self):
+        self.paused_feature(waiting="- waiting_on: S-02\n")
+        self.refactor(owner="alice", scope="src/a")
+        self.assert_invalid("names no refactor slice")
+        self.paused_feature()
+        self.refactor(owner="alice", scope="src/a",
+                      protection=(("A-01", BASELINE, REVERIFIED),),
+                      structure=(("`lint-imports`", BEFORE, AFTER),))
+        self.assert_invalid("not in flight any more")
+        self.paused_feature(waiting="")
+        self.refactor(owner="bob", scope="src/b", extra="- waiting_on: R-01\n")
+        self.assert_invalid("not on the refactor itself")
+
+    def test_a_live_refactor_carries_the_cursor(self):
+        self.source(("A-01", "A-02"))
+        self.backlog(("A-01", "S-01", ""), ("A-02", "-", ""))
+        self.delivered_feature()
+        self.project(next_action="-")
+        self.refactor()
+        self.assertEqual(self.run_status()[0], 0)
+        (self.state / "slices/R-01.md").unlink()
+        self.assert_invalid("next_action is required")
+
+    def test_render_shows_refactor_progress(self):
+        self.delivered_feature()
+        self.refactor()
+        run = self.run_cli()
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertIn("R-01  owner=bob  stage=8 refactor  protected=1 reverified=0 structure=0/1",
+                      run.stdout)
+        self.assertIn("refactor in flight: R-01", run.stdout)
 
 
 if __name__ == "__main__":

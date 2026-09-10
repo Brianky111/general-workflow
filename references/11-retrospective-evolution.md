@@ -57,7 +57,7 @@
 - 当前范围缺陷：回到 02-scenarios-and-acceptance.md 或直接修实现；
 - 已接受风险：继续观察并记录阈值；
 - 新需求：回到 01-requirements-and-goals.md 与 03-scope-and-nongoals.md；
-- 架构假设失效：回到 04-constraints-quality-risks.md 与 05-architecture-design.md，先做实验和 ADR；机制或对外契约失效则是 05a-mechanisms-and-contracts.md；
+- 架构假设失效：回到 04-constraints-quality-risks.md 与 05-architecture-design.md，先做实验和 ADR，落地走 00-refactor-path.md；机制或对外契约失效则是 05a-mechanisms-and-contracts.md；
 - 工具链或环境不可重复：回到 06-scaffolding-and-ci.md；
 - 发布或恢复出现新风险：回到 10-release-operations.md；
 - 仅优化建议：进入后续队列，不阻塞已完成版本。
@@ -71,6 +71,8 @@
 - 数据迁移、兼容、发布和回滚影响；
 - 先做的最小实验或垂直切片；
 - 成功阈值、停止条件和所有者。
+
+提案被采纳后，执行载体是重构切片：决策表那一行就是它的授权指针，做法和收口见 00-refactor-path.md。它不产生新 A-ID，也不在复盘里直接改代码。
 
 不要因为“代码不够优雅”“别的团队都用微服务”或一次低概率理论风险自动重构。若架构仍满足目标，保留简单方案并记录重新评估条件。
 

@@ -15,6 +15,7 @@ point or guards it.
 │   ├── 00-progress-router.md           # resident: routing algorithm, stage table, global gates
 │   ├── 00-project-profile.md           # profile, risk tier, HIGH-RISK deepening list
 │   ├── 00-lean-path.md                 # LEAN one-page contract and the single reduction list
+│   ├── 00-refactor-path.md             # refactor path: authorization, protection baseline, structure check, R-slice format
 │   ├── 01 … 11                         # one file per stage
 │   └── 99-state-and-handoff.md         # state files, ledger, completion rules
 ├── scripts/
@@ -34,7 +35,8 @@ lists, mechanism trade-offs and test boundaries live in `references/` and are
 paid for one file per turn. A rule with two homes drifts, so each rule has
 exactly one authoritative file and the others point at it: LEAN reductions only
 in `00-lean-path.md`, HIGH-RISK deepening only in `00-project-profile.md`,
-claiming and returning a slice only in `07-vertical-slice.md`. Two checks
+claiming and returning a slice only in `07-vertical-slice.md`, the refactor
+slice's format and gates only in `00-refactor-path.md`. Two checks
 enforce that, and both stop short of the whole job; the checker section below
 says where.
 

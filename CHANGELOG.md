@@ -1,5 +1,64 @@
 # Changelog
 
+## 1.9.0 - 2026-09-09
+
+Refactoring is back in the workflow, as a path rather than a stage. A refactor
+walks the same 05-to-09 line a feature does, with every gate in place and the
+evidence swapped: instead of claiming acceptance ids it keeps the delivered
+ones, and instead of a behavior test going red it has a structure check that
+fails before the change and passes after it. The carrier is a second kind of
+slice file, `R-<n>.md`, and the status script gates it.
+
+- New `references/00-refactor-path.md`: the three entries (a user request, a
+  decision in the stage 11 review table, a boundary problem found in 07 or 09
+  whose fix crosses the current slice's write_scope), authorization, the
+  pure/behavior-changing/unprotected classification, the protection baseline,
+  the structure check, claiming, execution, the exit gate and the stop
+  conditions. The ideas come from the archived refactor intake; its vocabulary
+  does not.
+- A refactor slice claims no A-ID. The script rejects acceptance rows in an
+  `R-` file and a backlog row that points at one -- the failure the old
+  workflow fixed by rule in 81fea85 and then could not enforce. Its ledger is
+  a `## Protection` table of delivered A-IDs (or `P-<n>` characterization
+  rows) with a baseline call at the start commit and the same call again at
+  the closing commit, and a `## Structure` table whose before/after cells
+  carry the check's output. Baseline and before are required while the slice
+  is live; evidence and after must end at a different anchor than the cell
+  beside them, because one anchor means one of the two runs did not happen.
+- `authorized_by` is required on a live refactor slice and must be a pointer
+  (`C-<n>`, a document path with an optional heading, or a link). The router's
+  "do not start a refactor on your own" rule now has a check behind it: a
+  cleanup an agent noticed has nothing to point at.
+- Refactor slices take part in the one-live-slice-per-owner rule and the
+  write_scope overlap check. The one exception is a feature slice paused for
+  its owner's own refactor, declared with `- waiting_on: R-<n>`: that pair may
+  share an owner and overlapping paths, and the script says so when the pause
+  is missing, when it names something that is not a refactor slice, or when
+  the refactor is already closed. Returning the feature slice instead would
+  throw away its rows.
+- The report gains `kind` on every slice, `protected`, `reverified` and
+  structure counts on refactor slices, and a top-level `refactors_in_flight`.
+  `scope_complete` is unchanged -- scope is the A-ID ledger -- and the rendered
+  report prints the refactor in flight next to it, because 99's task closeout
+  now waits for it. A live refactor also carries the cursor, so `next_action`
+  may rest while one is open.
+- Routing: the stage table sends an authorized refactor to the path; step 2
+  no longer lists refactoring among the non-Greenfield triggers (a brownfield
+  repository with no ledger still goes through the compatibility-surface
+  confirmation and is explicitly outside the path for now); the end-of-round
+  rule points at where a refactor is opened. Stage 7 names the pause exception
+  beside the one-live-slice rule and sends a boundary fix that leaves the
+  slice's write_scope to the path; stage 8 says which refactors stay in its
+  Refactor step; stages 9 and 11 route a failed architecture constraint and an
+  adopted evolution proposal there; stage 3's firewall says the follow-up
+  queue is not authorization. The LEAN reduction list and the HIGH-RISK
+  deepening table each gain one refactor row, in their own files.
+- No state migration. The kind is read from the filename, `waiting_on` and
+  `authorized_by` are new fields, and a project with no `R-` file sees no new
+  rejection.
+- Sixteen tests cover the new rejections and the two accepted shapes; the
+  consistency checker lists the new reference and anchors its sections.
+
 ## 1.8.0 - 2026-09-09
 
 Closed the gates that read as checks but accepted anything, gave the state file

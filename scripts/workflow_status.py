@@ -26,6 +26,8 @@ Expected layout (see references/99-state-and-handoff.md):
       project.md          state_version, lifecycle, tier, path, next_action, sources
       backlog.md          which slice owns each A-ID, or unclaimed/deferred/dropped
       slices/S-01.md      owner, claimed, stage, acceptance status, evidence
+      slices/R-01.md      a refactor: authorized_by, the delivered ids it keeps, a
+                          structure check that fails before and passes after
 """
 
 from __future__ import annotations
@@ -78,6 +80,13 @@ TERMINAL = {"deferred", "dropped"}
 IN_FLIGHT = "in-slice"
 DELIVERED = "delivered"
 A_ID = re.compile(r"A-[A-Za-z0-9][A-Za-z0-9._-]*")
+# A refactor slice is named R-<n>. It claims no A-ID: its rows are the delivered
+# ids whose entrypoint crosses its write_scope and must keep answering the same
+# way, plus P-<n> characterization rows minted in the file for behavior the
+# ledger never named. Its acceptance is the structure check turning green while
+# every one of those rows is called again on the closing commit.
+REFACTOR_PREFIX = "R-"
+P_ID = re.compile(r"P-[0-9]+")
 # The shape this script knows how to read. A file written for an older layout is
 # not half-valid; it has to be migrated before any gate below means anything.
 STATE_VERSION = "2"
@@ -130,11 +139,17 @@ POINTER = re.compile(
 @dataclass
 class Slice:
     id: str
+    kind: str = "feature"  # "refactor" when the file is named R-<n>.md
     owner: str = ""
     claimed: str = ""
     stage: str = ""
+    authorized_by: str = ""
+    waiting_on: str = ""
     write_scope: list[str] = field(default_factory=list)
     acceptance: list[tuple[str, str, str]] = field(default_factory=list)
+    # Refactor tables: (id, baseline, evidence) and (check, before, after).
+    protection: list[tuple[str, str, str]] = field(default_factory=list)
+    structure: list[tuple[str, str, str]] = field(default_factory=list)
 
 
 def visible_lines(text: str) -> list[str]:
@@ -200,8 +215,8 @@ def section_lines(lines: list[str], section: str) -> list[str]:
     return lines[start + 1:end]
 
 
-def rows_in(lines: list[str]) -> list[list[str]]:
-    """Rows of every Markdown table whose first column header is A-ID."""
+def rows_in(lines: list[str], header: str = "A-ID") -> list[list[str]]:
+    """Rows of every Markdown table whose first column header is `header`."""
     rows: list[list[str]] = []
     active = False
     for line in lines:
@@ -210,7 +225,7 @@ def rows_in(lines: list[str]) -> list[list[str]]:
             active = False
             continue
         cells = [cell.strip() for cell in re.split(r"(?<!\\)\|", line.strip("|"))]
-        if cells[0].strip("`") == "A-ID":
+        if cells[0].strip("`") == header:
             active = True
             continue
         if not cells or all(set(cell) <= {"-", ":"} for cell in cells if cell):
@@ -221,15 +236,15 @@ def rows_in(lines: list[str]) -> list[list[str]]:
     return rows
 
 
-def table_rows(text: str, section: str | None = None) -> list[list[str]]:
-    """Read A-ID tables in an optional exact heading, ignoring fenced examples."""
+def table_rows(text: str, section: str | None = None, header: str = "A-ID") -> list[list[str]]:
+    """Read tables under an optional exact heading, ignoring fenced examples."""
     lines = visible_lines(text)
     if section is not None:
         try:
             lines = section_lines(lines, section)
         except TableProblem:
             return []
-    return rows_in(lines)
+    return rows_in(lines, header)
 
 
 def fields_of(text: str, errors: list[str] | None = None, source: str = "") -> dict[str, str]:
@@ -293,6 +308,49 @@ def split_anchor(result: str) -> tuple[str, str] | None:
     tail = result.strip()
     match = TRAILING_REF.search(tail) or TRAILING_LINK.search(tail)
     return (tail[:match.start()].strip(), match[1]) if match else None
+
+
+# Why one cell fails, keyed by which half is wrong. The delivered-row messages
+# in check() spell each case out at length; the refactor tables reuse the same
+# reasons with a shorter sentence, because the repair is the same one.
+CALL_DEFECTS = {
+    "result": "records no observed result; write '<invocation> -> <what came back>' from a "
+              "real call, not a command on its own",
+    "anchor": "cannot be located again; end the result half with '@ <commit or ref>' or the "
+              "run's link, not a placeholder or a moving ref",
+    "placeholder": "puts an anchor where the result belongs; write what came back to the "
+                   "right of the arrow",
+}
+OUTPUT_DEFECTS = {
+    "anchor": "cannot be located again; end it with '@ <commit or ref>' or the run's link, "
+              "not a placeholder or a moving ref",
+    "placeholder": "names an anchor and nothing observed; write what the check printed, "
+                   "then the anchor",
+}
+
+
+def output_defect(value: str) -> str | None:
+    """Why this is not an observed output ending in a findable anchor; None when it is."""
+    found = split_anchor(value)
+    if found is None or not anchors(found[1]):
+        return "anchor"
+    if is_placeholder(found[0]):
+        return "placeholder"
+    return None
+
+
+def call_defect(value: str) -> str | None:
+    """Why this is not one real call plus what came back; None when it is."""
+    sides = [side.strip() for side in RESULT.split(value, maxsplit=1)]
+    if len(sides) < 2 or not all(sides):
+        return "result"
+    return output_defect(sides[1])
+
+
+def anchor_of(value: str) -> str:
+    """The trailing anchor of a cell that output_defect or call_defect accepted."""
+    found = split_anchor(value)
+    return normalized(found[1]) if found else ""
 
 
 def normalize(root: Path, path: str) -> Path:
@@ -398,9 +456,12 @@ def load_slices(root: Path, errors: list[str]) -> list[Slice]:
         raw_scope = values.get("write_scope", "")
         item = Slice(
             id=path.stem,
+            kind="refactor" if path.stem.startswith(REFACTOR_PREFIX) else "feature",
             owner=values.get("owner", ""),
             claimed=values.get("claimed", ""),
             stage=values.get("stage", ""),
+            authorized_by=values.get("authorized_by", ""),
+            waiting_on=values.get("waiting_on", ""),
             write_scope=[p.strip() for p in re.split(r"[,;；，]", raw_scope) if p.strip()]
             if is_set(raw_scope) else [],
         )
@@ -409,8 +470,39 @@ def load_slices(root: Path, errors: list[str]) -> list[Slice]:
                 item.acceptance.append((row[0], row[1].lower(), row[2]))
             else:
                 errors.append(f"{path.name}: acceptance row has fewer than 3 columns: {row}")
+        for section, header, rows in (("Protection", "ID", item.protection),
+                                      ("Structure", "check", item.structure)):
+            for row in table_rows(text, section, header):
+                if len(row) >= 3:
+                    rows.append((row[0], row[1], row[2]))
+                else:
+                    errors.append(f"{path.name}: {section} row has fewer than 3 columns: {row}")
         slices.append(item)
     return slices
+
+
+def refactor_complete(item: Slice) -> bool:
+    """Every kept behavior called again and every structure check passed."""
+    return (
+        bool(item.protection) and bool(item.structure)
+        and all(is_set(evidence) for _, _, evidence in item.protection)
+        and all(is_set(after) for _, _, after in item.structure)
+    )
+
+
+def pauses_for(one: Slice, other: Slice) -> bool:
+    """A feature slice that declares it waits on a refactor is not writing."""
+    return one.waiting_on.strip() == other.id or other.waiting_on.strip() == one.id
+
+
+def paused_pair(held: list[Slice]) -> bool:
+    """One feature slice waiting on one refactor slice, both in the same hands."""
+    if len(held) != 2:
+        return False
+    features = [item for item in held if item.kind == "feature"]
+    refactors = [item for item in held if item.kind == "refactor"]
+    return (len(features) == 1 and len(refactors) == 1
+            and features[0].waiting_on.strip() == refactors[0].id)
 
 
 def check(root: Path) -> tuple[dict, list[str]]:
@@ -480,14 +572,18 @@ def check(root: Path) -> tuple[dict, list[str]]:
         alone is enough to be in flight; a slice whose rows are all delivered is
         finished and releases its paths to the next claim.
         """
+        if item.kind == "refactor":
+            return is_set(item.owner) and not refactor_complete(item)
         if any(status == IN_FLIGHT for _, status, _ in item.acceptance):
             return True
         return is_set(item.owner) and not any(
             status == DELIVERED for _, status, _ in item.acceptance
         )
 
+    features = [item for item in slices if item.kind == "feature"]
     live = [item for item in slices if in_flight(item)]
-    owners: dict[str, str] = {}
+    live_ids = {item.id for item in live}
+    held: dict[str, list[Slice]] = {}
     scopes: dict[str, list[Path]] = {}
     for item in slices:
         if is_set(item.owner) != is_set(item.claimed):
@@ -496,14 +592,7 @@ def check(root: Path) -> tuple[dict, list[str]]:
         if not is_set(item.owner):
             errors.append(f"{item.id}: live slice requires an owner")
         else:
-            owner = item.owner.casefold()
-            if owner in owners:
-                errors.append(
-                    f"owner '{item.owner}' holds two live slices: {owners[owner]} and {item.id}; "
-                    "returning a slice means clearing its owner and claimed as well as its "
-                    "unfinished rows, or the next claim by that owner lands here again"
-                )
-            owners[owner] = item.id
+            held.setdefault(item.owner.casefold(), []).append(item)
         try:
             claimed_date = item.claimed.split(" / ", 1)[0]
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", claimed_date):
@@ -520,8 +609,52 @@ def check(root: Path) -> tuple[dict, list[str]]:
             except (OSError, ValueError) as exc:
                 errors.append(f"{item.id}: invalid write_scope '{scope}': {exc}")
 
-    seen: dict[str, str] = {}
+    # One person, one live slice. The one exception is a feature slice that has
+    # stopped for its owner's own refactor and says so with waiting_on: the rule
+    # exists to keep two writers off the same paths, and a paused slice writes
+    # nothing. Returning the feature slice instead would throw away its rows.
+    for owner_slices in held.values():
+        if len(owner_slices) < 2 or paused_pair(owner_slices):
+            continue
+        first, second = owner_slices[:2]
+        feature = next((item for item in owner_slices if item.kind == "feature"), None)
+        refactor = next((item for item in owner_slices if item.kind == "refactor"), None)
+        if len(owner_slices) == 2 and feature and refactor:
+            errors.append(
+                f"owner '{first.owner}' holds {feature.id} and refactor {refactor.id}; a feature "
+                "slice may pause for its owner's refactor only when it says so: add "
+                f"'- waiting_on: {refactor.id}' to {feature.id}, or return one of them"
+            )
+        else:
+            errors.append(
+                f"owner '{first.owner}' holds two live slices: {first.id} and {second.id}; "
+                "returning a slice means clearing its owner and claimed as well as its "
+                "unfinished rows, or the next claim by that owner lands here again"
+            )
+
     for item in slices:
+        target_id = item.waiting_on.strip()
+        if not is_set(target_id):
+            continue
+        target = by_id.get(target_id)
+        if item.kind == "refactor":
+            errors.append(
+                f"{item.id}: waiting_on belongs on the feature slice that pauses for a "
+                "refactor, not on the refactor itself"
+            )
+        elif target is None or target.kind != "refactor":
+            errors.append(
+                f"{item.id}: waiting_on '{target_id}' names no refactor slice; write the R-<n> "
+                "id of the refactor this slice pauses for"
+            )
+        elif target.id not in live_ids:
+            errors.append(
+                f"{item.id}: waiting_on {target.id}, but {target.id} is not in flight any more; "
+                "clear waiting_on and continue from this slice's stage"
+            )
+
+    seen: dict[str, str] = {}
+    for item in features:
         for aid, status, evidence in item.acceptance:
             if aid in seen:
                 errors.append(f"{aid} appears in both {seen[aid]} and {item.id}")
@@ -538,23 +671,23 @@ def check(root: Path) -> tuple[dict, list[str]]:
                     f"{aid}: backlog assigns it to '{backlog[aid][0]}' but it lives in {item.id}"
                 )
             if status == DELIVERED:
-                sides = [side.strip() for side in RESULT.split(evidence, maxsplit=1)]
+                defect = call_defect(evidence) if is_set(evidence) else None
                 if not is_set(evidence):
                     errors.append(f"{item.id}: {aid} is delivered with no evidence pointer")
-                elif len(sides) < 2 or not all(sides):
+                elif defect == "result":
                     errors.append(
                         f"{item.id}: {aid} evidence records no observed result; write it as "
                         "'<invocation> -> <what came back>' from a real call against the "
                         "entrypoint, not a command on its own"
                     )
-                elif (found := split_anchor(sides[1])) is None or not anchors(found[1]):
+                elif defect == "anchor":
                     errors.append(
                         f"{item.id}: {aid} evidence cannot be located again; end the result "
                         "half with '@ <commit or ref>' or the run's link. A URL inside the "
                         "call is not an anchor, and neither is a placeholder ('@ later') or a "
                         "moving ref ('@ HEAD'); nobody can re-run the call being trusted"
                     )
-                elif is_placeholder(found[0]):
+                elif defect == "placeholder":
                     errors.append(
                         f"{item.id}: {aid} evidence puts an anchor where the result belongs; "
                         "write what came back to the right of the arrow. The trailing "
@@ -564,6 +697,102 @@ def check(root: Path) -> tuple[dict, list[str]]:
                     )
             if status not in {DELIVERED, IN_FLIGHT}:
                 errors.append(f"{item.id}: {aid} has status '{status}'; expected in-slice or delivered")
+
+    # A refactor is judged on what it keeps and on the structure it was opened
+    # to change, never on acceptance rows: the last time refactors could carry
+    # those, they were filed as features and grew a document set each.
+    delivered_ids = {aid for item in features for aid, s, _ in item.acceptance if s == DELIVERED}
+    for item in slices:
+        if item.kind != "refactor":
+            continue
+        is_live = item.id in live_ids
+        if item.acceptance:
+            listed = ", ".join(aid for aid, _, _ in item.acceptance)
+            errors.append(
+                f"{item.id}: refactor slice lists acceptance rows ({listed}); a refactor claims "
+                "no A-ID and delivers none. Behavior that changes goes through the change "
+                "protocol into a feature slice; behavior that stays goes in ## Protection"
+            )
+        if is_live:
+            if not is_set(item.authorized_by) or not POINTER.search(item.authorized_by):
+                errors.append(
+                    f"{item.id}: live refactor slice requires authorized_by pointing at its "
+                    "authorization: a change id such as C-03, the document and heading holding "
+                    "the review decision, or this file's own #Request section. A cleanup an "
+                    "agent noticed is not authorization"
+                )
+            if not item.protection:
+                errors.append(
+                    f"{item.id}: refactor slice protects nothing; list every delivered A-ID whose "
+                    "entrypoint path crosses write_scope, or a P-<n> characterization row, with "
+                    "the call run at the start commit as its baseline"
+                )
+            if not item.structure:
+                errors.append(
+                    f"{item.id}: refactor slice has no structure check; name the command that "
+                    "fails before the change and passes after it, with what it printed at the "
+                    "start commit"
+                )
+        rows_seen: set[str] = set()
+        for pid, baseline, evidence in item.protection:
+            if pid in rows_seen:
+                errors.append(f"{item.id}: {pid} is listed twice in Protection")
+            rows_seen.add(pid)
+            if A_ID.fullmatch(pid):
+                if pid not in backlog:
+                    errors.append(f"{item.id}: protected {pid} is not listed in backlog.md")
+                elif pid not in delivered_ids:
+                    errors.append(
+                        f"{item.id}: protected {pid} has not been delivered by any feature "
+                        "slice; a refactor keeps behavior that already has evidence, so deliver "
+                        "it first or drop the row"
+                    )
+            elif not P_ID.fullmatch(pid):
+                errors.append(
+                    f"{item.id}: protection row '{pid}' is neither an A-ID from the ledger nor "
+                    "a P-<n> characterization id"
+                )
+            if not is_set(baseline):
+                if is_live:
+                    errors.append(
+                        f"{item.id}: {pid} has no baseline; run the call at the start commit "
+                        "before touching code and record "
+                        "'<invocation> -> <what came back> @ <commit>'"
+                    )
+            elif defect := call_defect(baseline):
+                errors.append(f"{item.id}: {pid} baseline {CALL_DEFECTS[defect]}")
+            if is_set(evidence):
+                if defect := call_defect(evidence):
+                    errors.append(f"{item.id}: {pid} evidence {CALL_DEFECTS[defect]}")
+                elif (is_set(baseline) and not call_defect(baseline)
+                      and anchor_of(baseline) == anchor_of(evidence)):
+                    errors.append(
+                        f"{item.id}: {pid} baseline and evidence end at the same anchor "
+                        f"'{split_anchor(evidence)[1]}'; the baseline is the call at the start "
+                        "commit and the evidence is the same call after the change, so one "
+                        "anchor means one of them was not run"
+                    )
+        for check_name, before, after in item.structure:
+            label = f"structure check '{check_name}'"
+            if not is_set(check_name):
+                errors.append(f"{item.id}: a structure row names no check; write the command first")
+            if not is_set(before):
+                if is_live:
+                    errors.append(
+                        f"{item.id}: {label} has no before; record what it printed at the start "
+                        "commit, ending in '@ <commit>'"
+                    )
+            elif defect := output_defect(before):
+                errors.append(f"{item.id}: {label} before {OUTPUT_DEFECTS[defect]}")
+            if is_set(after):
+                if defect := output_defect(after):
+                    errors.append(f"{item.id}: {label} after {OUTPUT_DEFECTS[defect]}")
+                elif (is_set(before) and not output_defect(before)
+                      and anchor_of(before) == anchor_of(after)):
+                    errors.append(
+                        f"{item.id}: {label} before and after end at the same anchor; run the "
+                        "check again on the commit that closes the refactor"
+                    )
 
     for aid, (assignment, note) in backlog.items():
         if assignment in TERMINAL:
@@ -577,12 +806,19 @@ def check(root: Path) -> tuple[dict, list[str]]:
         elif is_set(assignment):
             if assignment not in by_id:
                 errors.append(f"backlog.md: {aid} points at unknown slice '{assignment}'")
+            elif by_id[assignment].kind == "refactor":
+                errors.append(
+                    f"backlog.md: {aid} points at refactor slice {assignment}; a refactor owns "
+                    "no A-ID, so the row keeps the feature slice that delivers it, or '-'"
+                )
             elif aid not in {row[0] for row in by_id[assignment].acceptance}:
                 errors.append(f"backlog.md: {aid} claims {assignment}, which does not list it")
 
     # Two live slices writing the same paths collide in code, not just on paper.
     for i, one in enumerate(live):
         for other in live[i + 1:]:
+            if pauses_for(one, other):
+                continue
             for a in scopes[one.id]:
                 for b in scopes[other.id]:
                     if overlaps(a, b):
@@ -591,8 +827,8 @@ def check(root: Path) -> tuple[dict, list[str]]:
                         )
 
     unclaimed = sorted(aid for aid, (assign, _) in backlog.items() if not is_set(assign))
-    in_flight = sorted(aid for item in slices for aid, s, _ in item.acceptance if s == IN_FLIGHT)
-    delivered = sorted(aid for item in slices for aid, s, _ in item.acceptance if s == DELIVERED)
+    in_flight = sorted(aid for item in features for aid, s, _ in item.acceptance if s == IN_FLIGHT)
+    delivered = sorted(delivered_ids)
     terminal = sorted(aid for aid, (assign, _) in backlog.items() if assign in TERMINAL)
 
     # Something has to say where the next hand lands. While a slice is in flight
@@ -628,24 +864,32 @@ def check(root: Path) -> tuple[dict, list[str]]:
         "next_action": next_action,
         "acceptance_source": pointer,
         "scope_verified": scope_verified,
-        "slices": [
-            {
-                "id": item.id,
-                "owner": item.owner or "unclaimed",
-                "stage": item.stage,
-                "delivered": [a for a, s, _ in item.acceptance if s == DELIVERED],
-                "in_slice": [a for a, s, _ in item.acceptance if s == IN_FLIGHT],
-            }
-            for item in slices
-        ],
+        "slices": [slice_report(item) for item in slices],
         "unclaimed": unclaimed,
         "in_flight": in_flight,
         "delivered": delivered,
         "deferred_or_dropped": terminal,
+        # Scope is the A-ID ledger and stays so; a refactor in flight is reported
+        # beside it because task closeout has to wait for it, per 99's rule.
+        "refactors_in_flight": sorted(item.id for item in live if item.kind == "refactor"),
         "scope_complete": scope_verified and not errors and not unclaimed and not in_flight,
         "errors": errors,
     }
     return report, errors
+
+
+def slice_report(item: Slice) -> dict:
+    entry = {"id": item.id, "kind": item.kind, "owner": item.owner or "unclaimed",
+             "stage": item.stage}
+    if item.kind == "refactor":
+        entry["protected"] = [pid for pid, _, _ in item.protection]
+        entry["reverified"] = [pid for pid, _, evidence in item.protection if is_set(evidence)]
+        entry["structure_checks"] = len(item.structure)
+        entry["structure_passed"] = sum(1 for _, _, after in item.structure if is_set(after))
+    else:
+        entry["delivered"] = [a for a, s, _ in item.acceptance if s == DELIVERED]
+        entry["in_slice"] = [a for a, s, _ in item.acceptance if s == IN_FLIGHT]
+    return entry
 
 
 def render(report: dict) -> None:
@@ -664,6 +908,11 @@ def render(report: dict) -> None:
               "references/99-state-and-handoff.md before trusting what follows")
     print(f"lifecycle {report['lifecycle']} | tier {report['tier']} | path {report['path']}")
     for item in report["slices"]:
+        if item.get("kind") == "refactor":
+            print(f"  {item['id']}  owner={item['owner']}  stage={item['stage']}  "
+                  f"protected={len(item['protected'])} reverified={len(item['reverified'])} "
+                  f"structure={item['structure_passed']}/{item['structure_checks']}")
+            continue
         done, live = len(item["delivered"]), len(item["in_slice"])
         print(f"  {item['id']}  owner={item['owner']}  stage={item['stage']}  "
               f"delivered={done} in-slice={live}")
@@ -678,6 +927,9 @@ def render(report: dict) -> None:
         print("scope complete; verify the delivery target and evidence before task closeout")
     else:
         print(f"still owed: {owed} acceptance ids")
+    if report.get("refactors_in_flight"):
+        print(f"refactor in flight: {', '.join(report['refactors_in_flight'])}; "
+              "task closeout waits for it")
     print(f"delivery target: {report['delivery_target']}")
     print(f"next action: {report['next_action'] or '-'}")
 
@@ -688,7 +940,8 @@ def incomplete_report(status: str, errors: list[str], legacy: list[str] | None =
         "state_version": "?", "lifecycle": "?", "tier": "?", "path": "?",
         "delivery_target": "?", "next_action": "", "acceptance_source": "", "scope_verified": False,
         "slices": [], "unclaimed": [], "in_flight": [], "delivered": [],
-        "deferred_or_dropped": [], "scope_complete": False, "errors": errors,
+        "deferred_or_dropped": [], "refactors_in_flight": [], "scope_complete": False,
+        "errors": errors,
     }
 
 

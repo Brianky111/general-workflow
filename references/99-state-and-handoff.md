@@ -19,6 +19,7 @@ docs/workflow/
   project.md        ← 罕见变更
   backlog.md        ← A-ID 归属哪条切片
   slices/S-01.md    ← 单一 owner 独占
+  slices/R-01.md    ← 重构切片，格式在 00-refactor-path.md
 ```
 
 一条切片一个文件：没人认领半条，按 A-ID 拆只多出几十个碎文件。单人项目也用这套布局，等第二个人来再拆更贵。
@@ -110,7 +111,7 @@ updated: <YYYY-MM-DD> / <commit>
 - <本切片内部的阻塞；没有就删掉本节>
 ~~~
 
-这是切片文件的唯一格式：07-vertical-slice.md 的切片地图字段写进本文件的 `## Slice map` 一节，不另建文件。**字段只在第一个 `##` 之前生效**：Blockers 里的 `- owner: 等 X 确认` 是叙述不是认领；写两次报错。
+这是功能切片的唯一格式：07-vertical-slice.md 的切片地图字段写进本文件的 `## Slice map` 一节，不另建文件。重构切片以 `R-` 开头，格式和规则在 00-refactor-path.md。**字段只在第一个 `##` 之前生效**：Blockers 里的 `- owner: 等 X 确认` 是叙述不是认领；写两次报错。
 
 ## 范围台账规则
 
@@ -124,7 +125,7 @@ updated: <YYYY-MM-DD> / <commit>
 完成判定的权威定义在这里，其余阶段引用本节：
 
 1. **验收范围完成**：权威 A-ID 集合已读取且与 backlog 相等，校验无错误，没有 remaining 和 in-slice，delivered 都有证据指针——同时成立才输出 `scope_complete=true`。来源未定义或不可验证时不得判完成。
-2. **任务结束**：再对照原始请求及已接受变更，逐项核对 `delivery_target` 指向的承诺、约束和证据。终点决定收尾位置：`implementation-and-tests` 可在 09 后结束，`release-ready` 要过 10 的 Release Ready，`deployed:环境` 要完成该环境的发布和观察窗口。台账清空不证明需求拆解完整，退出码 0 也只说明状态有效。
+2. **任务结束**：再对照原始请求及已接受变更，逐项核对 `delivery_target` 指向的承诺、约束和证据。终点决定收尾位置：`implementation-and-tests` 可在 09 后结束，`release-ready` 要过 10 的 Release Ready，`deployed:环境` 要完成该环境的发布和观察窗口。台账清空不证明需求拆解完整，退出码 0 也只说明状态有效。有在途的重构切片时不结束任务，先按 00-refactor-path.md 收口它。
 
 完成边界在 01 或 LEAN 合同里确定，按 03 的变更协议维护，状态只存指针。收尾发现遗漏按 00-progress-router.md 的“结束与回流”回到成因阶段，保留已有 ID 和证据。用户只要设计或骨架就以该阶段产出收尾，留着未完成台账；被外部条件挡住就记阻塞和下一动作，不伪造完成。
 
