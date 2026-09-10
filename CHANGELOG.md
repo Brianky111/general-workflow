@@ -1,5 +1,71 @@
 # Changelog
 
+## 1.10.0 - 2026-09-11
+
+Taking over a repository the workflow did not build now has an entry. It is
+not a twelfth stage: it walks P0 to 07 in the other direction, reading out of
+the code the facts a new project would have asked the user for, and it stops
+for the user once, in the middle, with a document to review.
+
+- New `references/00-brownfield-entry.md`. Step 0 runs the repository the way
+  06's clean-clone check already demands and creates `docs/workflow/` with
+  `lifecycle: IDEA`, because the takeover's contract does not exist yet, and a
+  `next_action` that is the survey's cursor, so a repository too large for one
+  session resumes where the last one stopped. Step 1 reads everything at the
+  entrypoint and module level -- profile, entrypoints found from the
+  composition root rather than guessed from directory names, modules, data,
+  observed shape and dependency direction, and structural deviations recorded
+  as facts marked `未授权` -- into an as-is document; module `AGENTS.md` files
+  may be written, marked `observed`. Step 2 has the agent state what it thinks
+  the project is for, with the basis of each claim, and derive a requirements
+  document (`status: derived`, a basis and confidence column, low-confidence
+  rows first); the agent stops there. Step 3 is the user's review, with four
+  answers -- keep, change, drop, and "don't know" -- and the fourth exists so
+  that uncertainty is not filed as confirmation. Step 4 calls every kept row
+  once at the takeover commit into a no-owner characterization slice `S-00`;
+  a row that cannot be called in any available environment goes to `deferred`
+  with a change record saying it is unprotected, rather than sitting at `-`
+  and holding the takeover open forever.
+- Reading and calling are separated on purpose. The survey is complete at the
+  entrypoint level before the review, and no baseline runs before it, so no
+  effort goes into verifying behavior the user is about to change. Only
+  zero-cost calls -- tests that were already green, `--help`, read-only GETs --
+  may serve as a row's basis before the review.
+- No new lifecycle value and no script change. The ladder already fits: IDEA
+  while there is no contract, DEFINED once the derived document is reviewed,
+  then BUILDING or OPERATING by the facts the survey recorded. A
+  characterization slice is an ordinary feature-kind slice with `owner`,
+  `claimed` and `write_scope` at `-` and every row delivered, and the status
+  script accepted that shape unchanged. A refactor with only `P-<n>` rows and
+  no acceptance source is still rejected, which is the point: the takeover
+  produces the acceptance source first, and the 1.9.0 refactor path then
+  applies as it is.
+- Routing: the first judgement sends an uninitialized repository that already
+  has code to the entry; the stage table gains a row for a takeover whose
+  as-is document, review or baseline is unfinished; step 2 keeps the
+  compatibility-surface confirmation for a new project and no longer lists
+  taking over an old system among its triggers. 99 lists `S-00` in the layout
+  and sends an uninitialized state with code to the entry; 07's module guide
+  template says how an observed guide is marked; 08's Red rule points at the
+  characterization slice for behavior that already exists; the refactor path
+  no longer excludes old repositories, it requires them to come through the
+  entry first; the profile says the entry calls its template and where to
+  return; LEAN and HIGH-RISK each gain one takeover row, in their own files.
+- `examples/` now holds two projects: `greenfield/` is the existing
+  report-export tree, moved down one level, and `takeover/` is an old billing
+  tool surveyed, reviewed and baselined -- as-is document, derived
+  requirements carrying all four review answers, three change records, and
+  an `S-00` with six delivered rows. `tests/test_examples.py` runs the CLI
+  against both and checks that every tracked A-ID carries a review answer and
+  every deviation is marked unauthorized.
+- SKILL.md's description triggers on taking over an old project, surveying an
+  existing codebase and reverse-engineering requirements; its boundary line
+  names the entry. SKILL.md, the router and 99 were trimmed to fit their
+  budgets: each sentence removed had a second home (the router's profile
+  counterexample, the README, principle 6), so no rule was lost. The checker
+  lists the new reference and anchors its steps, the fourth review answer, the
+  `status: derived` marker and the `未授权` label.
+
 ## 1.9.0 - 2026-09-09
 
 Refactoring is back in the workflow, as a path rather than a stage. A refactor

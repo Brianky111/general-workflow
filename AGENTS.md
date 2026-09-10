@@ -16,13 +16,14 @@ point or guards it.
 │   ├── 00-project-profile.md           # profile, risk tier, HIGH-RISK deepening list
 │   ├── 00-lean-path.md                 # LEAN one-page contract and the single reduction list
 │   ├── 00-refactor-path.md             # refactor path: authorization, protection baseline, structure check, R-slice format
+│   ├── 00-brownfield-entry.md          # takeover of an old repository: run it, survey it, derive requirements, review, baseline
 │   ├── 01 … 11                         # one file per stage
 │   └── 99-state-and-handoff.md         # state files, ledger, completion rules
 ├── scripts/
 │   ├── check_consistency.py            # validates this repository
 │   └── workflow_status.py              # ships with the skill, runs inside a user's project
 ├── tests/                              # regression tests for scripts/ and for examples/
-├── examples/                           # a worked project tree: contract, change record, state
+├── examples/                           # two worked project trees: greenfield/ and takeover/
 ├── archive/general-workflow-v0.12.0/   # read-only previous version, not part of an install
 ├── AGENTS.md                           # conventions for editing this repo, not part of the skill
 ├── README.md
@@ -36,7 +37,8 @@ paid for one file per turn. A rule with two homes drifts, so each rule has
 exactly one authoritative file and the others point at it: LEAN reductions only
 in `00-lean-path.md`, HIGH-RISK deepening only in `00-project-profile.md`,
 claiming and returning a slice only in `07-vertical-slice.md`, the refactor
-slice's format and gates only in `00-refactor-path.md`. Two checks
+slice's format and gates only in `00-refactor-path.md`, the takeover survey's
+order and gates only in `00-brownfield-entry.md`. Two checks
 enforce that, and both stop short of the whole job; the checker section below
 says where.
 
@@ -44,12 +46,16 @@ says where.
 and must never be referenced from `SKILL.md` or an active reference; the
 consistency checker fails if the active tree routes through it.
 
-`examples/` holds one filled-in project that uses the workflow -- contract,
-change record and a `docs/workflow/` state directory that `workflow_status.py`
-exits 0 on. The consistency checker does not read it, but
-`tests/test_examples.py` runs the status CLI against it and asserts the shared
-contract fields, so a template change in `references/` that the example does
-not follow fails the suite rather than sitting there stale.
+`examples/` holds two filled-in projects. `greenfield/` was built with the
+workflow from scratch: contract, change record and a `docs/workflow/` state
+directory. `takeover/` is an old repository brought in through
+`00-brownfield-entry.md`: an as-is document, a derived requirements document
+that carries every review answer, three change records and a no-owner `S-00`
+baseline. `workflow_status.py` exits 0 on both. The consistency checker does
+not read them, but `tests/test_examples.py` runs the status CLI against each
+and asserts the shared contract fields, so a template change in `references/`
+that an example does not follow fails the suite rather than sitting there
+stale.
 
 ## Build, Test, and Development Commands
 
@@ -110,9 +116,9 @@ so `--root` must point at a *project*, never at this checkout:
 python -X utf8 scripts/workflow_status.py --root "C:\path\to\a\project" --json
 ```
 
-Exercise it against `examples/`, which is a project of exactly that shape and
-exits 0, or against a scratch project. Running it against this checkout only
-proves that the script starts.
+Exercise it against `examples/greenfield` or `examples/takeover`, which are
+projects of exactly that shape and exit 0, or against a scratch project.
+Running it against this checkout only proves that the script starts.
 
 ## Coding Style & Naming Conventions
 
@@ -141,7 +147,8 @@ check in the status gate stays green there and is only caught by the suite.
 The suite has three parts: `test_workflow_status.py` for the shipped status
 gate, `test_check_consistency.py` for this repository's own checker (it builds
 a copy of the tree and points `--root` at it), and `test_examples.py`, which
-runs the status CLI against `examples/` the way a consumer would.
+runs the status CLI against both trees under `examples/` the way a consumer
+would.
 
 `test_check_consistency.py` also pins the three size budgets. Raising a number
 is the only edit that gets oversized prose past the checker with both gates

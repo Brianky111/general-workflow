@@ -1,19 +1,27 @@
-# 示例：一份能被脚本读的工作流状态
+# 示例：两份能被脚本读的工作流状态
 
-这是一个假想项目的完整状态目录，不是模板片段。它存在的理由很具体：`tests/` 里的回归测试自己
+这里是两个假想项目的完整状态目录，不是模板片段。它们存在的理由很具体：`tests/` 里的回归测试自己
 合成状态文件，那些文件跑完就删，没人看得到；仓库 README 只有截出来的几行。于是模板改了一个
-字段、脚本多了一条拒绝规则，谁都不会先撞到红灯。这个目录把模板固定成一份实例，
-`tests/test_examples.py` 每次对它跑一遍状态脚本，模板一漂测试就红。
+字段、脚本多了一条拒绝规则，谁都不会先撞到红灯。这两个目录把模板固定成实例，
+`tests/test_examples.py` 每次对它们各跑一遍状态脚本，模板一漂测试就红。
+
+- `greenfield/`：用本流程从零建起来的项目，一个内部报表导出 CLI。档位 LEAN，路径 lean，
+  交付终点 `implementation-and-tests`。
+- `takeover/`：接手一个不是本流程建的旧仓库，一个用了三年的内部账单工具。走
+  `references/00-brownfield-entry.md`：跑起来、全量读、反向出需求文档、用户审阅、基线。
+  档位 STANDARD，路径 full。
+
+## greenfield/：从零建起来的项目
 
 假想的项目是一个内部用的报表导出 CLI：运营自己按日期区间导出订单明细 CSV，不再提工单等工程师
-跑 SQL。档位 LEAN，路径 lean，交付终点 `implementation-and-tests`。
+跑 SQL。
 
-## 怎么跑
+### 怎么跑
 
 在仓库根目录：
 
 ```powershell
-python -X utf8 scripts/workflow_status.py --root examples
+python -X utf8 scripts/workflow_status.py --root examples/greenfield
 ```
 
 预期退出码 0，输出：
@@ -31,10 +39,10 @@ next action: -
 
 加 `--json` 看机器读的那份：`scope_verified` 为 true，`scope_complete` 为 false。
 
-## 文件
+### 文件
 
 ```text
-examples/
+greenfield/
 ├── docs/contract.md                  # 权威验收来源：完成边界、A-ID 表、一页架构决策
 ├── docs/changes.md                   # 变更记录，C-01（延后）和 C-02（取消）在这里
 └── docs/workflow/
@@ -43,7 +51,7 @@ examples/
     └── slices/S-01.md                # owner、write_scope、Slice map、验收与证据
 ```
 
-## 它证明了什么
+### 它证明了什么
 
 backlog 归属列的四种取值——切片 ID、`-`、`deferred`、`dropped`——各占一行，切片文件的两种
 status 也各占一行，每一行卡住一条规则：
@@ -67,7 +75,7 @@ status 也各占一行，每一行卡住一条规则：
 - `project.md` 用满共享契约的七个字段，写错 `lifecycle`、`tier`、`path` 的取值会直接报错；
   以前不校验，`BUILDNG` 拼错也能一路通过。
 
-## 它不证明什么
+### 它不证明什么
 
 - **这里没有 `src/` 和 `tests/`。** 示例演示的是状态文件本身。S-01 的 `write_scope` 指向
   `src/report` 和 `tests/report`，脚本不要求这些路径已经存在——认领发生在写第一行代码之前，
@@ -76,9 +84,64 @@ status 也各占一行，每一行卡住一条规则：
   校验；真实项目里它必须来自真跑过的那次调用，否则第一层完成就是伪造的，而这一层正是最容易
   被叙述糊弄的一层。照抄这个目录时，先把 evidence 整列清空。
 
-## 拿它当起点
+### 拿它当起点
 
 复制 `docs/workflow/` 三个文件到你的项目，然后依次替换：`acceptance_source` 指向你自己的验收
 表，backlog 换成你的 A-ID，切片文件只留头部字段和 `## Slice map`，evidence 清空、status 全改
 `in-slice`。`docs/contract.md` 是 LEAN 一页合同的样子，用不用它取决于你的档位。每改一步跑一次
 状态脚本，退出码 0 再往下走。
+
+## takeover/：接手一个旧仓库
+
+假想的旧仓库 ledger-tool：Flask 管理台给财务查账单、开账单、登记支付、作废，CLI 给运营导明细，
+两个 cron 脚本夜里对账和发摘要邮件。没有 README，40 个测试 6 个红，两家客户的对账系统按
+`/api/v1` 拉账单。用户说"先接手，之后作废要留痕"。
+
+### 怎么跑
+
+```powershell
+python -X utf8 scripts/workflow_status.py --root examples/takeover
+```
+
+预期退出码 0，输出：
+
+```text
+lifecycle BUILDING | tier STANDARD | path full
+  S-00  owner=-  stage=0 接手基线  delivered=6 in-slice=0
+  unclaimed: A-10
+  deferred/dropped: A-04, A-08, A-09
+still owed: 1 acceptance ids
+delivery target: docs/requirements.md#审阅结论 / implementation-and-tests
+next action: 认领 A-10：建 S-01，先写「作废后 audit 表新增 1 行」的失败测试；验证：pytest tests/test_web.py -k void_audit 红，状态脚本退出 0 且 A-10 in-slice
+0 error(s)
+```
+
+### 文件
+
+```text
+takeover/
+├── docs/architecture-as-is.md        # 现状：跑起来的记录、画像、入口表、模块表、数据、形态、结构偏离
+├── docs/requirements.md              # 反向需求文档：status reviewed，每行带依据、置信度和审阅答案
+├── docs/changes.md                   # C-01 改、C-02 不要了、C-03 无环境可调
+└── docs/workflow/
+    ├── project.md                    # 跳完之后的样子：BUILDING，next_action 指向 A-10
+    ├── backlog.md                    # 四种审阅答案落成四种取值
+    └── slices/S-00.md                # 接手基线：无 owner，六行 delivered
+```
+
+### 它证明了什么
+
+| 这一行 | 在哪 | 少了它就漏掉哪条规则 |
+| --- | --- | --- |
+| A-01 到 A-07 中保留的六行 | S-00.md | 保留的行在接手 commit 真调一次才算基线；`owner`、`claimed`、`write_scope` 全是 `-`，脚本照样通过，因为它不在途。web 那三条审阅时只有走替身的测试，这里的证据是它们第一次经过真实组合根 |
+| A-04 改成… | backlog `dropped` → C-01；A-10 `-` | 改行为不是改旧行：旧行留作记录、指向 C-ID，新 A-ID 等认领。`scope_complete` 因此为 false——接手收口了，工作没完 |
+| A-09 不要了 | backlog `dropped` → C-02 | 不要的行为也留一行，删行会让它从台账上消失；要删代码另立 A-ID |
+| A-08 不知道 | backlog `deferred` → C-03；project.md 的 D-01 | 第四种答案：不确定就先保留并基线。这条调不了，于是 deferred 并写明未受保护，而不是留 `-` 让接手永远收不了口 |
+| `status: reviewed` | requirements.md | 审阅前它是 derived，`acceptance_source` 不能指向一份没审过的文档 |
+| 结构偏离三行 | architecture-as-is.md | 都标 `未授权`；用户在审阅结论里圈了一条，那一条才会变成 R- 切片，`authorized_by` 指向审阅结论 |
+
+### 它不证明什么
+
+- **没有 `src/`、`tests/`、模块 `AGENTS.md`。** 示例演示的是状态和文档；模块指引和代码不在这里。
+- **commit `3f9e2c1`、行号和「表头加 41 行」是编的。** 真实项目里 basis 和 evidence 必须来自真
+  跑过的测试和调用；照抄时先把 evidence 整列清空，把 `status` 改回 `derived`。

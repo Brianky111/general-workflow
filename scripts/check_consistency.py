@@ -45,6 +45,7 @@ EXPECTED_REFERENCES = {
     "00-project-profile.md",
     "00-lean-path.md",
     "00-refactor-path.md",
+    "00-brownfield-entry.md",
     "01-requirements-and-goals.md",
     "02-scenarios-and-acceptance.md",
     "03-scope-and-nongoals.md",
@@ -187,6 +188,31 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         # after. Dropping either turns the path back into "tests still pass".
         "baseline",
         "不改断言，不改公开签名",
+    ),
+    "00-brownfield-entry.md": (
+        "## 入口条件",
+        "## 第 0 步：跑起来，建游标",
+        "## 第 1 步：全量读",
+        "## 第 2 步：agent 先下结论，反向出需求文档",
+        "## 第 3 步：用户审阅",
+        "## 第 4 步：基线，再调偏差",
+        "## 收口门禁",
+        "## 停止条件",
+        # Read everything, call only what the user keeps. The survey is complete
+        # at the entrypoint and module level before the review, and no baseline
+        # runs before it; drop either half and the entry becomes a guess that
+        # was verified against itself.
+        "先读全量，再调用",
+        "从组合根反查",
+        # The derived document is a hypothesis until the user has read it, and
+        # the status line is the only thing that says which of the two it is.
+        "status: derived",
+        # The fourth review answer. Without it the reviewer is pushed into
+        # "keep" whenever unsure, and the deviation is filed as confirmed.
+        "不知道",
+        # A deviation is a fact, never work: the queue is not authorization.
+        "未授权",
+        "S-00",
     ),
     "01-requirements-and-goals.md": (
         "## 需求提炼顺序",

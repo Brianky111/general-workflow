@@ -428,6 +428,13 @@ class CheckConsistencyTests(unittest.TestCase):
         code, out = self.run_check("--root", str(self.root))
         self.assertEqual(code, 0, out)
 
+    def test_the_takeover_review_keeps_its_fourth_answer(self):
+        # "不知道" is the answer that stops a reviewer from filing a guess as
+        # confirmed. Drop that row and the entry still reads as a complete
+        # procedure, which is why the anchor names the row and not the section.
+        self.replace("references/00-brownfield-entry.md", "| 不知道 |", "| 存疑 |")
+        self.assert_only_error("00-brownfield-entry.md is missing policy anchor: 不知道")
+
     def test_an_incomplete_archive_is_reported(self):
         (self.root / ARCHIVE / "README.md").unlink()
         self.assert_only_error(f"archive is incomplete: {Path(ARCHIVE) / 'README.md'}")

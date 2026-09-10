@@ -20,6 +20,7 @@ docs/workflow/
   backlog.md        ← A-ID 归属哪条切片
   slices/S-01.md    ← 单一 owner 独占
   slices/R-01.md    ← 重构切片，格式在 00-refactor-path.md
+  slices/S-00.md    ← 接手基线，无 owner，见 00-brownfield-entry.md
 ```
 
 一条切片一个文件：没人认领半条，按 A-ID 拆只多出几十个碎文件。单人项目也用这套布局，等第二个人来再拆更贵。
@@ -137,7 +138,7 @@ updated: <YYYY-MM-DD> / <commit>
 python "<skill绝对路径>/scripts/workflow_status.py" --root "<目标项目绝对路径>" --json
 ```
 
-它给出当前切片、owner、未认领项和违规项，退出码非零先修状态。没有状态目录返回 `state_status=uninitialized`（旁边有旧单文件状态则返回 `legacy`）且范围未完成，有目录却缺文件报错，两种都仍输出 JSON。`uninitialized` 只说明没有 `docs/workflow/`：先看 `docs/` 下有没有旧单文件状态，有就按“状态格式版本”迁移；确实没有，再按 00-progress-router.md 推导阶段并在本轮结束前建。
+它给出当前切片、owner、未认领项和违规项，退出码非零先修状态。没有状态目录返回 `state_status=uninitialized`（旁边有旧单文件状态则返回 `legacy`）且范围未完成，有目录却缺文件报错，两种都仍输出 JSON。`uninitialized` 只说明没有 `docs/workflow/`：先看 `docs/` 下有没有旧单文件状态，有就按“状态格式版本”迁移；确实没有：仓库已有代码走 00-brownfield-entry.md，空仓库按 00-progress-router.md 推导阶段并在本轮结束前建。
 
 认领与归还的规则见 07-vertical-slice.md：规则跟着阶段 7 走，本文件常驻上下文，不替它背这一段。
 

@@ -27,6 +27,7 @@ flowchart TD
     S10["10 · 发布 监控 回滚<br/>Release Ready"]
     S11["11 · 复盘与架构演化"]
     R["R · 重构路径<br/>授权 · 保护表 · 结构检查"]
+    B["B · 接手旧项目入口<br/>跑起来 · 全量读 · 反向需求 · 审阅 · 基线"]
     OUT(["closeout · 停止本轮"])
 
     P0 --> TIER
@@ -45,6 +46,8 @@ flowchart TD
     S11 -.->|"演化决策"| R
     S7 -.->|"边界问题超出 write_scope"| R
     R -.->|"收口：回到触发它的阶段"| S7
+    B -.->|"审阅后：要改的行"| S7
+    B -.->|"圈定的结构偏离"| R
 ```
 
 三件事值得先说清楚：
@@ -136,7 +139,7 @@ no workflow state; derive the stage per 00-progress-router.md and create it this
 > 我要做一个内部用的报表导出工具，Python，先跑起来。用 general-workflow。
 
 agent 会按固定顺序动作：先读 router → 分清你是问方法还是要动手（只问方法就直接回答，不落盘
-任何文件）→ 找 `docs/workflow/`，有就跑状态脚本，没有就推导阶段 → 选中最早未满足门禁的那个
+任何文件）→ 找 `docs/workflow/`，有就跑状态脚本，没有就看仓库：空的推导阶段，已有代码走接手入口 → 选中最早未满足门禁的那个
 阶段 → 只加载那一份 reference → 本轮结束前建立状态文件。
 
 第一次会话一定会先立项目画像和风险档位——状态里还没有 `tier` 和 `path`，不先定就没法选深度。
@@ -201,6 +204,27 @@ commit 各调一次记下基线，收口时在新 commit 上再各调一次；�
 比如依赖方向检查，收口时它必须通过。两张表填齐，重构才算收口，有它在途时不做任务收尾。
 完整规则在 [`00-refactor-path.md`](references/00-refactor-path.md)。
 
+### 接手一个旧项目
+
+仓库不是本流程建的、没有 `docs/workflow/`，router 会把它送进接手入口，而不是当成新项目从阶段 1 问起。
+它不是新阶段，是 P0 到 07 的另一种走法：同一套模板，来源从对话换成仓库。五步，中间停一次：
+
+1. **跑起来。** 06 的干净 clone 门禁原样执行；建状态目录，`lifecycle: IDEA`，`next_action` 记梳理到了
+   哪个模块，大仓库分几个会话也能续上。
+2. **全量读。** 每个注册入口一行、每个模块一行，写进一份现状文档：画像、入口表（从组合根反查，不从目录名
+   猜）、模块表、数据、形态和依赖方向、结构偏离。偏离只是事实，标 `未授权`，不是待办。
+3. **agent 先下结论，反向出需求文档。** 项目做什么、给谁用、每个入口的行为各一条 A-ID，每行带依据和
+   置信度，`status: derived`，低置信度的行排前面。然后停下来等你。
+4. **你审阅。** 每行四种答案：保留、改成什么、不要了、不知道。改的走变更协议拿 C-ID，新 A-ID 等认领；
+   不知道的按保留处理并另记一条待决。审阅完 `status: reviewed`，它就是 `acceptance_source`。
+5. **基线。** 保留的行在接手 commit 各真调一次，进一条没有 owner 的特征切片 `S-00`；调不了的行
+   `deferred` 并写明未受保护，不留 `-` 让接手永远收不了口。之后 router 正常接管：要改的行走 07 到 09，
+   你圈定的结构偏离开 `R-` 切片，`authorized_by` 指向审阅结论。
+
+读和调分开：审阅前只读，审阅后只调你保留的行。完整规则在
+[`00-brownfield-entry.md`](references/00-brownfield-entry.md)，一份跑得通的例子在
+[`examples/takeover/`](examples/takeover/)。
+
 ## 你的项目里会出现什么
 
 只有一个目录，**分片存放**，这样第二个人可以随时插入：
@@ -212,6 +236,7 @@ docs/workflow/
   slices/
     S-01.md           owner · claimed · stage · write_scope · 验收状态 · 证据 ← 单一 owner 独占
     S-02.md
+    S-00.md           只有接手旧仓库时出现：无 owner，全部 delivered，是接手 commit 上的基线
 ```
 
 关键是 **`stage` 属于切片而不是项目**：甲在 S-01 做阶段 8、乙在 S-02 做阶段 5，一个共享的
@@ -265,11 +290,12 @@ updated: 2026-09-09 / a1b2c3d
 1–6 的游标：上面这份已经有一条在途切片 S-01，游标交给切片文件的 `stage`，所以它填 `-`；台账
 已经开始记、又没有在途切片时，它必须写着下一个可执行动作及其验证命令。
 
-上面三段是截出来的。完整的一份在 [`examples/`](examples/)：同一个假想项目，backlog 归属列的四种
-取值各占一行，可以直接跑，也可以复制过去当起点。
+上面三段是截出来的。完整的一份在 [`examples/greenfield/`](examples/greenfield/)：同一个假想项目，backlog 归属列的四种
+取值各占一行，可以直接跑，也可以复制过去当起点。接手旧仓库的那份在
+[`examples/takeover/`](examples/takeover/)，从现状文档、审阅过的需求文档到 S-00 基线都齐。
 
 ```bash
-python -X utf8 scripts/workflow_status.py --root examples
+python -X utf8 scripts/workflow_status.py --root examples/greenfield
 ```
 
 状态是**游标和索引，不是第二份真相**：它用指针引用需求、ADR、测试和发布证据的权威位置，
@@ -354,6 +380,7 @@ LEAN 有两条不打折：**06 的干净 clone 验证加一条 CI**，以及**�
 | 09 发现缺少实现 | 08 | 测试与集成没问题，回实现循环 |
 | 发布或恢复暴露新风险 | 10 | 范围不变，补的是运行准备 |
 | 用户要求重构；复盘决定演化架构；边界修复超出当前切片 write_scope | 重构路径 | 不是新阶段：保住已交付的 A-ID，改结构，见 [`00-refactor-path.md`](references/00-refactor-path.md) |
+| 接手旧仓库时发现结构偏离 | 后续队列 | 偏离是事实不是授权；你在审阅结论里圈定的那几条才进重构路径 |
 
 回流不作废已有产出：保留已有 ID 和证据，按变更协议补项，不能删改承诺凑出完成。
 
@@ -375,6 +402,7 @@ LEAN 有两条不打折：**06 的干净 clone 验证加一条 CI**，以及**�
 | 10 | 发得出去但收不回来 | 不可变产物、迁移与回滚方案、阈值与观察窗口、可执行 runbook | [10-release-operations](references/10-release-operations.md) |
 | 11 | 凭偏好自动重构 | 运行证据对照 Q-ID 与 H-ID；下一步只有一个有边界的动作 | [11-retrospective-evolution](references/11-retrospective-evolution.md) |
 | R | 顺手重构；重构悄悄改了行为 | 授权指针；保护表每行在起点和收口各一次真实调用；结构检查由红转绿 | [00-refactor-path](references/00-refactor-path.md) |
+| B | 把从代码里猜出来的当成确认过的 | 入口表从组合根反查；需求文档 status 为 reviewed；保留行在接手 commit 各调一次进 S-00 | [00-brownfield-entry](references/00-brownfield-entry.md) |
 
 路由、生命周期状态和全局门禁在 [`00-progress-router.md`](references/00-progress-router.md)；
 LEAN 快路径在 [`00-lean-path.md`](references/00-lean-path.md)；跨会话状态、台账和完成判定在
@@ -403,9 +431,10 @@ LEAN 快路径在 [`00-lean-path.md`](references/00-lean-path.md)；跨会话状
 │   ├── 00-project-profile.md           # 画像、档位判定、HIGH-RISK 加深清单
 │   ├── 00-lean-path.md                 # 一页项目合同、LEAN 减免清单、升级触发
 │   ├── 00-refactor-path.md             # 重构路径：授权、保护基线、结构检查、重构切片格式
+│   ├── 00-brownfield-entry.md          # 接手旧仓库：跑起来、全量读、反向需求文档、用户审阅、基线
 │   ├── 01 … 11                         # 各阶段
 │   └── 99-state-and-handoff.md         # 状态文件、台账、完成判定（认领规则在 07）
-├── examples/                           # 一份完整、能直接跑的状态目录，上面几段就截自这里
+├── examples/                           # 两份能直接跑的状态目录：greenfield/（上面几段截自这里）和 takeover/
 ├── scripts/
 │   ├── check_consistency.py            # 校验本仓库自身
 │   └── workflow_status.py              # 随 skill 分发，在目标项目里跑
@@ -515,8 +544,9 @@ stdout 和 stderr 强制 UTF-8：非 UTF-8 控制台（例如英文 Windows 的 
 [`archive/general-workflow-v0.12.0/`](archive/general-workflow-v0.12.0/)。当前版本只针对
 Greenfield，外加对本流程建起来的项目的重构路径：旧版 refactor intake 的思路——授权、分类、
 保护基线、有限的特征测试——以重构切片的形式回到了
-[`00-refactor-path.md`](references/00-refactor-path.md)，它的术语没有跟着回来。接手旧项目、
-迁移或线上故障恢复仍不自动塞进流程——发现任务其实是这些时，router 会先说明边界并请你确认
+[`00-refactor-path.md`](references/00-refactor-path.md)，它的术语没有跟着回来。接手旧项目从 1.10.0 起有自己的入口
+[`00-brownfield-entry.md`](references/00-brownfield-entry.md)：跑起来、全量读、反向出需求文档给你审阅、
+再基线。迁移或线上故障恢复仍不自动塞进流程——发现任务其实是这些时，router 会先说明边界并请你确认
 是否扩展范围。
 
 ## 许可
