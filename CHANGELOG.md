@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.10.1 - 2026-09-11
+
+- The consistency checker no longer reports an installed copy as a broken
+  archive. The README's install step deletes `archive/` on purpose, and the
+  README also says to point `--root` at the installed copy to confirm it is
+  complete; the two could not both hold, because the checker demanded five
+  archive paths wherever it ran, so every documented install failed with five
+  errors and the answer was buried under them. Archive completeness is now
+  checked only where `archive/` exists; a tree without it prints a `NOTE`
+  line saying it reads as an installed copy. The routing check -- no active
+  document may depend on `archive/` -- runs everywhere, because that is the
+  half that breaks on an install. Not caught: the whole directory deleted
+  from the repository, which then reads as an install; git shows that, and a
+  file missing inside the archive is still an error. Two tests cover the
+  clean pass and the routing error without an archive.
+
 ## 1.10.0 - 2026-09-11
 
 Taking over a repository the workflow did not build now has an entry. It is

@@ -439,6 +439,25 @@ class CheckConsistencyTests(unittest.TestCase):
         (self.root / ARCHIVE / "README.md").unlink()
         self.assert_only_error(f"archive is incomplete: {Path(ARCHIVE) / 'README.md'}")
 
+    def test_an_installed_copy_without_the_archive_is_not_incomplete(self):
+        # The README's install step deletes archive/ on purpose, and the README
+        # also says to point --root at the installed copy to confirm it. While
+        # the five archive paths were demanded everywhere, the two could not
+        # both hold: every documented install failed with five errors.
+        shutil.rmtree(self.root / "archive")
+        code, out = self.run_check("--root", str(self.root))
+        self.assertEqual(code, 0, out)
+        self.assertIn("NOTE  archive/ is absent", out)
+        self.assertIn(f"{len(REFERENCES)} active reference files, 0 error(s)", out)
+
+    def test_routing_through_the_archive_is_still_caught_without_it(self):
+        # The half of the archive check that matters on an install is the
+        # routing one: a reference into archive/ is broken exactly where the
+        # directory is gone, so skipping completeness must not skip this.
+        shutil.rmtree(self.root / "archive")
+        self.write(RETRO, self.read(RETRO) + f"\n旧流程见 {ARCHIVE}/references。\n")
+        self.assert_only_error("active SKILL/references must not depend on archived workflow path")
+
 
 # The values the checker is required to hold. Repeated here rather than imported
 # so that an edit to the checker has to be made twice, in two files, with a

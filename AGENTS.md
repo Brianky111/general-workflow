@@ -44,7 +44,11 @@ says where.
 
 `archive/` is a frozen copy of the pre-rewrite workflow. It must stay complete
 and must never be referenced from `SKILL.md` or an active reference; the
-consistency checker fails if the active tree routes through it.
+consistency checker fails if the active tree routes through it. Completeness
+is checked only where `archive/` exists: the README's install step deletes the
+directory, so an installed copy reads as a tree without an archive rather than
+as a broken one, prints a NOTE saying so, and only the routing check runs
+there.
 
 `examples/` holds two filled-in projects. `greenfield/` was built with the
 workflow from scratch: contract, change record and a `docs/workflow/` state
@@ -79,8 +83,10 @@ router, the eleven stages and P0 exist in order, each stage's key gates are
 present *and their sections still have a body*, each single-authority rule is
 still in the file that owns it and in no other, no other section reads as a
 retyped per-stage tier policy, `scripts/workflow_status.py` and `tests/` exist,
-every `scripts/*.py` path mentioned in the docs resolves, and no file exceeds
-its size budget. It warns at 90% of a budget instead of only failing at 100%.
+every `scripts/*.py` path mentioned in the docs resolves, no file exceeds
+its size budget, and the archive, where the tree carries one, is complete and
+never routed through. It warns at 90% of a budget instead of only failing at
+100%.
 It does not read `README.md`, `CHANGELOG.md` or this file. Its `--root`
 defaults to the tree that contains the script; point it at another copy of the
 skill tree to check an installed copy or a fixture:

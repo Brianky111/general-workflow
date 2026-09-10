@@ -589,18 +589,44 @@ def check_mentions(
 
 
 def check_archive(
-    tree: Tree, skill_text: str, texts: dict[str, str], errors: list[str]
+    tree: Tree, skill_text: str, texts: dict[str, str], errors: list[str],
+    notes: list[str],
 ) -> None:
-    required = (
-        tree.archive / "SKILL.md",
-        tree.archive / "README.md",
-        tree.archive / "references",
-        tree.archive / "scripts",
-        tree.root / "archive" / "ARCHIVE-NOTE.md",
-    )
-    for path in required:
-        if not path.exists():
-            errors.append(f"archive is incomplete: {path.relative_to(tree.root)}")
+    """The archive stays whole where it exists; the active tree never routes
+    through it, anywhere.
+
+    Completeness is checked only in a tree that carries archive/ at all. The
+    README's install step deletes the directory on purpose, and the README also
+    says to point --root at the installed copy to confirm it is complete; while
+    the five paths were demanded wherever the checker ran, those two could not
+    both hold, and every documented install failed with five errors that buried
+    the answer. A tree without archive/ is read as an installed copy and says so
+    in a NOTE line, so a reader is not left wondering why the archive went
+    unmentioned.
+
+    The routing check runs regardless: a reference into archive/ is broken
+    exactly where the directory is gone, so it is the half that matters on an
+    install. What this cannot tell apart: the whole directory deleted from the
+    repository itself, which then reads as an install. git shows that deletion;
+    a file missing inside the archive is what the completeness check is for.
+    """
+
+    if (tree.root / "archive").exists():
+        required = (
+            tree.archive / "SKILL.md",
+            tree.archive / "README.md",
+            tree.archive / "references",
+            tree.archive / "scripts",
+            tree.root / "archive" / "ARCHIVE-NOTE.md",
+        )
+        for path in required:
+            if not path.exists():
+                errors.append(f"archive is incomplete: {path.relative_to(tree.root)}")
+    else:
+        notes.append(
+            "archive/ is absent, so its completeness is not checked; this tree reads as an "
+            "installed copy, not as the repository"
+        )
 
     active_text = skill_text + "\n" + "\n".join(
         text for name, text in texts.items() if name != "SKILL.md"
@@ -834,6 +860,7 @@ def main(argv: list[str] | None = None) -> int:
 
     errors: list[str] = []
     warnings: list[str] = []
+    notes: list[str] = []
     actual = {path.name for path in tree.refs.glob("*.md")} if tree.refs.exists() else set()
     unexpected = actual - EXPECTED_REFERENCES
     missing = EXPECTED_REFERENCES - actual
@@ -854,7 +881,7 @@ def main(argv: list[str] | None = None) -> int:
     if skill_text:
         check_reachability(skill_text, texts, actual, map_start, errors)
     check_stage_order(skill_text, texts.get("00-progress-router.md", ""), errors)
-    check_archive(tree, skill_text, texts, errors)
+    check_archive(tree, skill_text, texts, errors, notes)
     check_policy_anchors(texts, errors)
     check_single_authority(texts, errors)
     check_restated_tier_policy(texts, errors)
@@ -866,6 +893,8 @@ def main(argv: list[str] | None = None) -> int:
         if name != "SKILL.md" and not text.strip():
             errors.append(f"active reference is empty: {name}")
 
+    for note in notes:
+        print(f"NOTE  {note}")
     for warning in warnings:
         print(f"WARN  {warning}")
     for error in errors:

@@ -469,7 +469,8 @@ python -X utf8 -B -m unittest discover -s tests -p "test_*.py"
 且顺序正确；各阶段关键门禁存在，且**门禁小节还有正文**（anchor 在自己的小节内检查，留标题
 清空正文不算通过）；**一条规则只有一处权威**，两道守卫，下面单说；`scripts/workflow_status.py`
 和 `tests/` 存在，文档里出现的每个 `scripts/*.py` 路径可解析；常驻入口和单份 reference 没有
-超出体积预算（用到 90% 给 WARN）；旧版归档存在且没有被当前主线引用为必需阶段。它只读
+超出体积预算（用到 90% 给 WARN）；仓库里的旧版归档完整，且当前主线不引用它——装好的副本按安装步骤删掉了 `archive/`，
+那份不查完整性，打一行 NOTE，只查主线没有引用它。它只读
 `SKILL.md` 和 `references/` 的正文，另外确认 `scripts/` 和 `tests/` 存在；`README.md`、
 `AGENTS.md` 和 `CHANGELOG.md` 都不在它的检查范围内。
 
