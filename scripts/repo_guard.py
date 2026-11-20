@@ -115,6 +115,63 @@ JS_SIDE_EFFECT_IMPORT = re.compile(r"^\s*import\s+['\"]([^'\"]+)['\"]")
 JS_REQUIRE = re.compile(r"\brequire\(\s*['\"]([^'\"]+)['\"]\s*\)")
 RUST_USE = re.compile(r"^\s*(?:pub\s+)?use\s+([\w:]+)")
 
+ANTI_PATTERN_CATEGORIES = (
+    "silent-catch",
+    "blind-wait",
+    "hardcoded-path",
+    "hardcoded-localhost",
+    "hardcoded-secret",
+)
+DEFAULT_ALWAYS_ON_ANTI_PATTERNS = (
+    "silent-catch",
+    "blind-wait",
+    "hardcoded-path",
+    "hardcoded-secret",
+)
+ANTI_PATTERN_REMEDIATION = {
+    "silent-catch": "silent-catch: avoid swallowing exceptions or returning fake defaults inside internal code; fail fast or map at the boundary",
+    "blind-wait": "blind-wait: replace fixed millisecond delays or sleep loops with real readiness/state signals",
+    "hardcoded-path": "hardcoded-path: move machine-local user paths into config/env inputs at the boundary",
+    "hardcoded-localhost": "hardcoded-localhost: move local host URLs into boundary configuration with an explicit fallback",
+    "hardcoded-secret": "hardcoded-secret: remove credential literals from source and inject secrets via environment or secret store",
+}
+
+PY_EXTENSIONS = {".py", ".pyw"}
+JS_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
+PY_SILENT_EXCEPT_SINGLE = re.compile(
+    r"^\s*except\b[^:]*:\s*(?:pass|\.\.\.|return(?:\s+(?:None|\[\]|\{\}|\"\"|''))?)\s*$"
+)
+PY_EXCEPT_HEADER = re.compile(r"^(\s*)except\b[^:]*:\s*$")
+PY_SILENT_BODY = re.compile(
+    r"^\s*(?:pass|\.\.\.|return(?:\s+(?:None|\[\]|\{\}|\"\"|''))?)\s*$"
+)
+JS_CATCH_OPEN = re.compile(r"\bcatch\s*(?:\([^)]*\))?\s*\{")
+JS_SILENT_BODY = re.compile(
+    r"^return(?:\s+(?:null|undefined|\[\]|\{\}|\"\"|''))?\s*;?$"
+)
+BLIND_WAIT_ALWAYS = (
+    re.compile(r"\bwait_for_timeout\s*\("),
+    re.compile(r"\bwaitForTimeout\s*\("),
+    re.compile(r"\bnew\s+Promise\s*\([^)]*\bsetTimeout\s*\("),
+)
+BLIND_WAIT_PROMISE_START = re.compile(r"\bnew\s+Promise\s*\(")
+BLIND_WAIT_PROMISE_MULTI = re.compile(r"\bnew\s+Promise\s*\([^;]{0,160}\bsetTimeout\s*\(")
+BLIND_WAIT_CONFIGURED = (
+    re.compile(r"\b(?:time|asyncio)\.sleep\s*\("),
+    re.compile(r"\b(?:window\.|globalThis\.)?setTimeout\s*\([^,\n]+,\s*[1-9]\d*(?:_\d+)*\b"),
+)
+HARDCODED_PATH_PATTERNS = (
+    re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[/\\]{1,2}Users[/\\]{1,2}[^\s'\"`\\)]+"),
+    re.compile(r"(?<![A-Za-z0-9_./])/(?:Users|home)/[A-Za-z0-9._-]+/"),
+)
+HARDCODED_LOCALHOST = re.compile(r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?\b", re.I)
+HARDCODED_SECRET_PATTERNS = (
+    re.compile(r"\bsk-(?:proj-|live-|test-)?[A-Za-z0-9_-]{20,}\b"),
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+)
+
 
 @dataclass
 class ForbiddenPrimitive:
@@ -134,6 +191,16 @@ class BoundaryRule:
 
 
 @dataclass
+class AntiPatternsConfig:
+    configured: bool
+    max_allowed: int
+    enabled: list[str]
+    allow_paths: list[Path]
+    allow_by_category: dict[str, list[Path]]
+    extra_rules: list[ForbiddenPrimitive] = field(default_factory=list)
+
+
+@dataclass
 class GuardConfig:
     trust_level: str
     trust_level_valid: bool
@@ -147,6 +214,7 @@ class GuardConfig:
     prose_max_bytes: int
     require_fresh_head: bool
     max_escape_hatches: int
+    anti_patterns: AntiPatternsConfig
     extra_escape_patterns: list[tuple[str, re.Pattern[str]]] = field(default_factory=list)
     forbidden_primitives: list[ForbiddenPrimitive] = field(default_factory=list)
     boundary_rules: list[BoundaryRule] = field(default_factory=list)
@@ -314,6 +382,178 @@ def is_int_strict(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def parse_pattern_rules(
+    root: Path, raw_rules: object, field_name: str, errors: list[str]
+) -> list[ForbiddenPrimitive]:
+    """Parse forbidden_primitives or anti_patterns.extra_rules entries with shared validation."""
+    rules: list[ForbiddenPrimitive] = []
+    if not isinstance(raw_rules, list):
+        errors.append(f".guardrails/config.json: {field_name} must be an array")
+        return rules
+    for idx, item in enumerate(raw_rules):
+        if not isinstance(item, dict):
+            errors.append(f".guardrails/config.json: {field_name}[{idx}] must be object")
+            continue
+        rid = str(item.get("id", "")).strip()
+        pat_str = item.get("pattern", "")
+        globs = item.get("globs", [])
+        allow_raw = item.get("allow_paths", [])
+        msg = str(item.get("message", "")).strip()
+        if not rid or is_placeholder(rid):
+            errors.append(f".guardrails/config.json: {field_name}[{idx}] missing id")
+            continue
+        if not isinstance(pat_str, str) or not pat_str:
+            errors.append(f".guardrails/config.json: {field_name} '{rid}' missing pattern")
+            continue
+        try:
+            compiled = re.compile(pat_str)
+        except re.error as exc:
+            errors.append(
+                f".guardrails/config.json: {field_name} '{rid}' invalid regex: {exc}"
+            )
+            continue
+        if not isinstance(globs, list) or not globs or any(
+            not isinstance(g, str) or not g.strip() for g in globs
+        ):
+            errors.append(
+                f".guardrails/config.json: {field_name} '{rid}' requires non-empty globs"
+            )
+            continue
+        if not isinstance(allow_raw, list) or any(not isinstance(a, str) for a in allow_raw):
+            errors.append(
+                f".guardrails/config.json: {field_name} '{rid}' allow_paths must be strings"
+            )
+            continue
+        allow_paths: list[Path] = []
+        valid_allow = True
+        for a in allow_raw:
+            try:
+                allow_paths.append(normalize_rel_path(root, a))
+            except ValueError as exc:
+                errors.append(
+                    f".guardrails/config.json: {field_name} '{rid}' invalid allow_path '{a}': {exc}"
+                )
+                valid_allow = False
+        if not valid_allow:
+            continue
+        if is_placeholder(msg) or len(msg) < MIN_RULE_MESSAGE_CHARS:
+            errors.append(
+                f".guardrails/config.json: {field_name} '{rid}' requires an actionable "
+                f"root-cause message (>= {MIN_RULE_MESSAGE_CHARS} chars)"
+            )
+            continue
+        rules.append(
+            ForbiddenPrimitive(rid, compiled, [g.strip() for g in globs], allow_paths, msg)
+        )
+    return rules
+
+
+def parse_anti_patterns_config(
+    root: Path, raw_ap: object, trust_level_valid: str, errors: list[str]
+) -> AntiPatternsConfig:
+    if raw_ap is None:
+        return AntiPatternsConfig(
+            configured=False,
+            max_allowed=0,
+            enabled=list(DEFAULT_ALWAYS_ON_ANTI_PATTERNS),
+            allow_paths=[],
+            allow_by_category={},
+            extra_rules=[],
+        )
+    if not isinstance(raw_ap, dict):
+        errors.append(".guardrails/config.json: anti_patterns must be an object")
+        return AntiPatternsConfig(
+            configured=True,
+            max_allowed=0,
+            enabled=list(DEFAULT_ALWAYS_ON_ANTI_PATTERNS),
+            allow_paths=[],
+            allow_by_category={},
+            extra_rules=[],
+        )
+
+    max_allowed = 0
+    max_val = raw_ap.get("max_allowed", 0)
+    if not is_int_strict(max_val) or max_val < 0:
+        errors.append(
+            ".guardrails/config.json: anti_patterns.max_allowed must be a non-negative integer"
+        )
+    else:
+        max_allowed = max_val
+        if trust_level_valid in {"L2", "L3"} and max_allowed > 0:
+            errors.append(
+                f".guardrails/config.json: {trust_level_valid} requires "
+                "anti_patterns.max_allowed == 0; clean up anti-patterns before "
+                "enabling outer-loop automation"
+            )
+
+    enabled_raw = raw_ap.get("enabled", list(ANTI_PATTERN_CATEGORIES))
+    enabled: list[str] = []
+    if not isinstance(enabled_raw, list) or any(not isinstance(c, str) for c in enabled_raw):
+        errors.append(".guardrails/config.json: anti_patterns.enabled must be an array of categories")
+        enabled = list(ANTI_PATTERN_CATEGORIES)
+    else:
+        for cat in enabled_raw:
+            if cat not in ANTI_PATTERN_CATEGORIES:
+                errors.append(
+                    f".guardrails/config.json: unknown anti_patterns category '{cat}' "
+                    f"(expected one of {', '.join(ANTI_PATTERN_CATEGORIES)})"
+                )
+            elif cat not in enabled:
+                enabled.append(cat)
+
+    allow_paths: list[Path] = []
+    allow_raw = raw_ap.get("allow_paths", [])
+    if not isinstance(allow_raw, list) or any(not isinstance(a, str) for a in allow_raw):
+        errors.append(".guardrails/config.json: anti_patterns.allow_paths must be an array of paths")
+    else:
+        for a in allow_raw:
+            try:
+                allow_paths.append(normalize_rel_path(root, a))
+            except ValueError as exc:
+                errors.append(
+                    f".guardrails/config.json: anti_patterns invalid allow_path '{a}': {exc}"
+                )
+
+    allow_by_category: dict[str, list[Path]] = {}
+    by_cat_raw = raw_ap.get("allow_by_category", {})
+    if not isinstance(by_cat_raw, dict):
+        errors.append(".guardrails/config.json: anti_patterns.allow_by_category must be an object")
+    else:
+        for cat, paths_raw in by_cat_raw.items():
+            if cat not in ANTI_PATTERN_CATEGORIES:
+                errors.append(
+                    f".guardrails/config.json: unknown category '{cat}' in allow_by_category"
+                )
+                continue
+            if not isinstance(paths_raw, list) or any(not isinstance(a, str) for a in paths_raw):
+                errors.append(
+                    f".guardrails/config.json: anti_patterns.allow_by_category['{cat}'] must be strings"
+                )
+                continue
+            resolved_list: list[Path] = []
+            for a in paths_raw:
+                try:
+                    resolved_list.append(normalize_rel_path(root, a))
+                except ValueError as exc:
+                    errors.append(
+                        f".guardrails/config.json: anti_patterns.allow_by_category['{cat}'] "
+                        f"invalid path '{a}': {exc}"
+                    )
+            allow_by_category[cat] = resolved_list
+
+    extra_rules = parse_pattern_rules(
+        root, raw_ap.get("extra_rules", []), "anti_patterns.extra_rules", errors
+    )
+    return AntiPatternsConfig(
+        configured=True,
+        max_allowed=max_allowed,
+        enabled=enabled,
+        allow_paths=allow_paths,
+        allow_by_category=allow_by_category,
+        extra_rules=extra_rules,
+    )
+
+
 def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | None:
     try:
         data = json.loads(raw_text)
@@ -460,66 +700,11 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
                         f".guardrails/config.json: invalid regex in extra_patterns '{pat_str}': {exc}"
                     )
 
-    forbidden_primitives: list[ForbiddenPrimitive] = []
-    raw_fp = data.get("forbidden_primitives", [])
-    if not isinstance(raw_fp, list):
-        errors.append(".guardrails/config.json: forbidden_primitives must be an array")
-    else:
-        for idx, item in enumerate(raw_fp):
-            if not isinstance(item, dict):
-                errors.append(f".guardrails/config.json: forbidden_primitives[{idx}] must be object")
-                continue
-            rid = str(item.get("id", "")).strip()
-            pat_str = item.get("pattern", "")
-            globs = item.get("globs", [])
-            allow_raw = item.get("allow_paths", [])
-            msg = str(item.get("message", "")).strip()
-            if not rid or is_placeholder(rid):
-                errors.append(f".guardrails/config.json: forbidden_primitives[{idx}] missing id")
-                continue
-            if not isinstance(pat_str, str) or not pat_str:
-                errors.append(f".guardrails/config.json: forbidden_primitives '{rid}' missing pattern")
-                continue
-            try:
-                compiled = re.compile(pat_str)
-            except re.error as exc:
-                errors.append(
-                    f".guardrails/config.json: forbidden_primitives '{rid}' invalid regex: {exc}"
-                )
-                continue
-            if not isinstance(globs, list) or not globs or any(
-                not isinstance(g, str) or not g.strip() for g in globs
-            ):
-                errors.append(
-                    f".guardrails/config.json: forbidden_primitives '{rid}' requires non-empty globs"
-                )
-                continue
-            if not isinstance(allow_raw, list) or any(not isinstance(a, str) for a in allow_raw):
-                errors.append(
-                    f".guardrails/config.json: forbidden_primitives '{rid}' allow_paths must be strings"
-                )
-                continue
-            allow_paths: list[Path] = []
-            valid_allow = True
-            for a in allow_raw:
-                try:
-                    allow_paths.append(normalize_rel_path(root, a))
-                except ValueError as exc:
-                    errors.append(
-                        f".guardrails/config.json: forbidden_primitives '{rid}' invalid allow_path '{a}': {exc}"
-                    )
-                    valid_allow = False
-            if not valid_allow:
-                continue
-            if is_placeholder(msg) or len(msg) < MIN_RULE_MESSAGE_CHARS:
-                errors.append(
-                    f".guardrails/config.json: forbidden_primitives '{rid}' requires an actionable "
-                    f"root-cause message (>= {MIN_RULE_MESSAGE_CHARS} chars)"
-                )
-                continue
-            forbidden_primitives.append(
-                ForbiddenPrimitive(rid, compiled, [g.strip() for g in globs], allow_paths, msg)
-            )
+    forbidden_primitives = parse_pattern_rules(
+        root, data.get("forbidden_primitives", []), "forbidden_primitives", errors
+    )
+    raw_ap = data["anti_patterns"] if "anti_patterns" in data else None
+    anti_patterns = parse_anti_patterns_config(root, raw_ap, trust_level_valid, errors)
 
     boundary_rules: list[BoundaryRule] = []
     raw_br = data.get("boundary_rules", [])
@@ -574,6 +759,7 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
         prose_max_bytes=prose_max_bytes,
         require_fresh_head=require_fresh_head,
         max_escape_hatches=max_escape_hatches,
+        anti_patterns=anti_patterns,
         extra_escape_patterns=extra_patterns,
         forbidden_primitives=forbidden_primitives,
         boundary_rules=boundary_rules,
@@ -647,17 +833,170 @@ def normalize_import_target(target: str) -> str:
     return cleaned.strip("/")
 
 
+def is_anti_pattern_allowed(fpath: Path, category: str, ap: AntiPatternsConfig) -> bool:
+    if any(path_is_within(fpath, allow) for allow in ap.allow_paths):
+        return True
+    return any(path_is_within(fpath, allow) for allow in ap.allow_by_category.get(category, ()))
+
+
+def match_pattern_rules(
+    fpath: Path,
+    rel_posix: str,
+    stripped_lines: list[str],
+    rules: list[ForbiddenPrimitive],
+    compiled_globs: dict[str, list[re.Pattern[str]]],
+    label: str,
+    errors: list[str],
+) -> int:
+    hits = 0
+    for rule in rules:
+        if any(path_is_within(fpath, allow) for allow in rule.allow_paths):
+            continue
+        if not any(g.match(rel_posix) for g in compiled_globs[rule.id]):
+            continue
+        for idx, code in enumerate(stripped_lines, start=1):
+            if code and rule.pattern.search(code):
+                hits += 1
+                errors.append(f"{label} '{rule.id}' at {rel_posix}:{idx}: {rule.message}")
+    return hits
+
+
+def scan_anti_patterns_in_file(
+    fpath: Path,
+    rel_posix: str,
+    stripped_lines: list[str],
+    ap: AntiPatternsConfig,
+) -> list[tuple[str, int, str]]:
+    hits: list[tuple[str, int, str]] = []
+    suffix = fpath.suffix.lower()
+    enabled = set(ap.enabled)
+
+    if "silent-catch" in enabled and not is_anti_pattern_allowed(fpath, "silent-catch", ap):
+        if suffix in PY_EXTENSIONS:
+            for i, code in enumerate(stripped_lines):
+                if not code.strip():
+                    continue
+                if PY_SILENT_EXCEPT_SINGLE.match(code):
+                    hits.append((rel_posix, i + 1, "silent-catch"))
+                    continue
+                m = PY_EXCEPT_HEADER.match(code)
+                if not m:
+                    continue
+                base_indent = len(m[1].expandtabs(4))
+                first_j = next(
+                    (j for j in range(i + 1, len(stripped_lines)) if stripped_lines[j].strip()),
+                    None,
+                )
+                if first_j is None:
+                    continue
+                code_j = stripped_lines[first_j]
+                indent_j = len(code_j[:len(code_j) - len(code_j.lstrip())].expandtabs(4))
+                if indent_j <= base_indent or not PY_SILENT_BODY.match(code_j):
+                    continue
+                next_k = next(
+                    (k for k in range(first_j + 1, len(stripped_lines)) if stripped_lines[k].strip()),
+                    None,
+                )
+                if next_k is None:
+                    hits.append((rel_posix, i + 1, "silent-catch"))
+                    continue
+                code_k = stripped_lines[next_k]
+                indent_k = len(code_k[:len(code_k) - len(code_k.lstrip())].expandtabs(4))
+                if indent_k <= base_indent:
+                    hits.append((rel_posix, i + 1, "silent-catch"))
+        elif suffix in JS_EXTENSIONS:
+            for i, code in enumerate(stripped_lines):
+                if not code.strip():
+                    continue
+                m = JS_CATCH_OPEN.search(code)
+                if not m:
+                    continue
+                body_chars: list[str] = []
+                depth = 1
+                closed = False
+                for idx_line in range(i, min(len(stripped_lines), i + 6)):
+                    seg = stripped_lines[idx_line]
+                    if idx_line == i:
+                        seg = seg[m.end():]
+                    for ch in seg:
+                        if ch == "{":
+                            depth += 1
+                            body_chars.append(ch)
+                        elif ch == "}":
+                            depth -= 1
+                            if depth == 0:
+                                closed = True
+                                break
+                            body_chars.append(ch)
+                        else:
+                            body_chars.append(ch)
+                    if closed:
+                        break
+                    body_chars.append(" ")
+                if closed:
+                    body = " ".join("".join(body_chars).split())
+                    if body == "" or JS_SILENT_BODY.match(body):
+                        hits.append((rel_posix, i + 1, "silent-catch"))
+
+    if "blind-wait" in enabled and not is_anti_pattern_allowed(fpath, "blind-wait", ap):
+        blind_patterns = list(BLIND_WAIT_ALWAYS)
+        if ap.configured:
+            blind_patterns.extend(BLIND_WAIT_CONFIGURED)
+        skip_lines: set[int] = set()
+        for i, code in enumerate(stripped_lines):
+            if not code.strip() or i in skip_lines:
+                continue
+            if any(pat.search(code) for pat in blind_patterns):
+                hits.append((rel_posix, i + 1, "blind-wait"))
+                continue
+            if BLIND_WAIT_PROMISE_START.search(code):
+                window_parts = [code]
+                for offset in (1, 2):
+                    if i + offset < len(stripped_lines):
+                        window_parts.append(stripped_lines[i + offset])
+                if BLIND_WAIT_PROMISE_MULTI.search(" ".join(window_parts)):
+                    hits.append((rel_posix, i + 1, "blind-wait"))
+                    skip_lines.update({i + 1, i + 2})
+
+    if "hardcoded-path" in enabled and not is_anti_pattern_allowed(fpath, "hardcoded-path", ap):
+        for i, code in enumerate(stripped_lines):
+            if code and any(pat.search(code) for pat in HARDCODED_PATH_PATTERNS):
+                hits.append((rel_posix, i + 1, "hardcoded-path"))
+
+    if (
+        ap.configured
+        and "hardcoded-localhost" in enabled
+        and not is_anti_pattern_allowed(fpath, "hardcoded-localhost", ap)
+    ):
+        for i, code in enumerate(stripped_lines):
+            if code and HARDCODED_LOCALHOST.search(code):
+                hits.append((rel_posix, i + 1, "hardcoded-localhost"))
+
+    if "hardcoded-secret" in enabled and not is_anti_pattern_allowed(fpath, "hardcoded-secret", ap):
+        for i, code in enumerate(stripped_lines):
+            if code and any(pat.search(code) for pat in HARDCODED_SECRET_PATTERNS):
+                hits.append((rel_posix, i + 1, "hardcoded-secret"))
+
+    return hits
+
+
 def scan_sources(
     root: Path, cfg: GuardConfig, errors: list[str], warnings: list[str]
 ) -> dict[str, int]:
     files = collect_source_files(root, cfg)
     escape_violations: list[tuple[str, int, str]] = []
+    ap_hits: list[tuple[str, int, str]] = []
     primitive_violations = 0
+    extra_ap_violations = 0
     boundary_violations = 0
 
     compiled_globs = {
         rule.id: [glob_to_regex(g) for g in rule.globs]
         for rule in cfg.forbidden_primitives
+    }
+    ap_compiled_globs = {
+        rule.id: [glob_to_regex(g) for g in rule.globs]
+        for rule in cfg.anti_patterns.extra_rules
     }
     boundary_patterns = {
         rule.id: re.compile(rf"(?:^|/){re.escape(rule.forbid_import)}(?:/|$)")
@@ -670,6 +1009,7 @@ def scan_sources(
             continue
         rel_posix = fpath.relative_to(root).as_posix()
         lines = text.split(LF)
+        stripped_lines = [strip_code_comments(line) for line in lines]
 
         # 1. Escape hatches & workaround comments
         all_escape_patterns = list(DEFAULT_ESCAPE_PATTERNS) + cfg.extra_escape_patterns
@@ -686,27 +1026,35 @@ def scan_sources(
             if matched_tag is not None:
                 escape_violations.append((rel_posix, idx, matched_tag))
 
-        # 2. Forbidden primitives
-        for rule in cfg.forbidden_primitives:
-            if any(path_is_within(fpath, allow) for allow in rule.allow_paths):
-                continue
-            if not any(g.match(rel_posix) for g in compiled_globs[rule.id]):
-                continue
-            for idx, line in enumerate(lines, start=1):
-                code = strip_code_comments(line)
-                if code and rule.pattern.search(code):
-                    primitive_violations += 1
-                    errors.append(
-                        f"forbidden_primitive '{rule.id}' at {rel_posix}:{idx}: {rule.message}"
-                    )
+        # 2. Forbidden primitives & anti_patterns.extra_rules
+        primitive_violations += match_pattern_rules(
+            fpath,
+            rel_posix,
+            stripped_lines,
+            cfg.forbidden_primitives,
+            compiled_globs,
+            "forbidden_primitive",
+            errors,
+        )
+        extra_ap_violations += match_pattern_rules(
+            fpath,
+            rel_posix,
+            stripped_lines,
+            cfg.anti_patterns.extra_rules,
+            ap_compiled_globs,
+            "anti_pattern_rule",
+            errors,
+        )
 
-        # 3. Boundary rules
+        # 3. Built-in anti-patterns
+        ap_hits.extend(scan_anti_patterns_in_file(fpath, rel_posix, stripped_lines, cfg.anti_patterns))
+
+        # 4. Boundary rules
         for rule in cfg.boundary_rules:
             if not path_is_within(fpath, rule.from_dir):
                 continue
             pat = boundary_patterns[rule.id]
-            for idx, line in enumerate(lines, start=1):
-                code = strip_code_comments(line)
+            for idx, code in enumerate(stripped_lines, start=1):
                 if not code:
                     continue
                 for target in extract_imports(code):
@@ -733,9 +1081,28 @@ def scan_sources(
             f"lower escape_hatches.max_allowed to {found_escapes} in .guardrails/config.json"
         )
 
+    found_ap = len(ap_hits)
+    ap_max = cfg.anti_patterns.max_allowed
+    if found_ap > ap_max:
+        sample = ", ".join(f"{p}:{ln}[{cat}]" for p, ln, cat in ap_hits[:8])
+        more = f" (+{found_ap - 8} more)" if found_ap > 8 else ""
+        seen_cats = list(dict.fromkeys(cat for _p, _ln, cat in ap_hits))
+        hints = "; ".join(ANTI_PATTERN_REMEDIATION[c] for c in seen_cats)
+        errors.append(
+            f"anti-patterns found ({found_ap}) exceed ratchet max_allowed ({ap_max}): "
+            f"{sample}{more}; {hints}"
+        )
+    elif cfg.anti_patterns.configured and found_ap < ap_max:
+        warnings.append(
+            f"anti-patterns dropped to {found_ap} under ratchet {ap_max}; "
+            f"lower anti_patterns.max_allowed to {found_ap} in .guardrails/config.json"
+        )
+
     return {
         "files_scanned": len(files),
         "escape_hatches": found_escapes,
+        "anti_patterns": found_ap,
+        "anti_pattern_rule_violations": extra_ap_violations,
         "primitive_violations": primitive_violations,
         "boundary_violations": boundary_violations,
     }
@@ -1292,6 +1659,15 @@ def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) 
         "trust_level": cfg.trust_level if cfg else "",
         "require_fresh_head": cfg.require_fresh_head if cfg else False,
         "max_escape_hatches": cfg.max_escape_hatches if cfg else None,
+        "anti_patterns_config": (
+            {
+                "configured": cfg.anti_patterns.configured,
+                "max_allowed": cfg.anti_patterns.max_allowed,
+                "enabled": cfg.anti_patterns.enabled,
+            }
+            if cfg
+            else None
+        ),
         "legacy_paths": legacy_found,
         "scan": scan_stats,
         "prose": prose_stats,
@@ -1329,6 +1705,13 @@ def format_human(report: dict) -> str:
             f"primitive_violations={scan.get('primitive_violations', 0)} "
             f"boundary_violations={scan.get('boundary_violations', 0)}"
         )
+        ap_cfg = report.get("anti_patterns_config") or {}
+        ap_found = scan.get("anti_patterns", 0)
+        if ap_cfg.get("configured") or ap_found > 0:
+            lines.append(
+                f"  anti_patterns: hits={ap_found}/{ap_cfg.get('max_allowed', 0)} "
+                f"(enabled={len(ap_cfg.get('enabled') or [])})"
+            )
     if ver:
         lines.append(
             f"  features: total={ver.get('features_total', 0)} "

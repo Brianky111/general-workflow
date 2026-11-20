@@ -10,10 +10,10 @@ This repository **is** the skill package. `SKILL.md` at the root is the entry po
 ├── agents/openai.yaml                   # Codex entry metadata
 ├── references/                          # 7 stage/topic docs, loaded one at a time
 │   ├── 00-router.md                     # resident: intent vs action, repo_guard CLI, routing, pstack dispatch, stop rules
-│   ├── 01-intent-and-invariants.md      # 1-page intent + invariants, 3-step brownfield onboarding
-│   ├── 02-codebase-guardrails.md        # directory context, banned primitives, root-cause lint, escape hatches
+│   ├── 01-intent-and-invariants.md      # 1-page intent + configurable_params, vertical slices (WIP=1), onboarding
+│   ├── 02-codebase-guardrails.md        # directory context, anti-overengineering/silent-catch/hardcoding, lint, escape hatches
 │   ├── 03-verification-and-artifacts.md # Feature Map / verify_skill, verify CLI, artifacts & freshness, PBT/TLA+/Lean
-│   ├── 04-correction-and-gardening.md   # inverse pyramid correction ladder, /correct falsification, weeding, AGENTS diet
+│   ├── 04-correction-and-gardening.md   # inverse pyramid correction, /correct falsification, anti-rabbit-hole stop-loss, AGENTS diet
 │   ├── 05-outer-loop-factory.md         # L0-L3 maturity ladder, irreversible gates, fuzzing & KPIs
 │   └── 06-repo-guard-contract.md        # .guardrails/ schema, verify_skill rules, repo_guard.py CLI, v1 migration
 ├── scripts/

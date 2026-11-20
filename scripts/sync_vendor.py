@@ -13,6 +13,7 @@ import json
 import re
 import shutil
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -175,14 +176,25 @@ def fetch_vendor(root: Path, commit_override: str | None = None) -> tuple[int, l
         declared_paths.add(rel_posix)
         url = f"https://raw.githubusercontent.com/{slug}/{commit}/{subpath}/{rel_posix}"
         req = urllib.request.Request(url, headers={"User-Agent": "general-workflow-sync-vendor"})
-        try:
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                raw = resp.read()
-        except urllib.error.HTTPError as exc:
-            errors.append(f"HTTP {exc.code} fetching {url}")
-            continue
-        except urllib.error.URLError as exc:
-            errors.append(f"network error fetching {url}: {exc.reason}")
+        raw: bytes | None = None
+        last_err = ""
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    raw = resp.read()
+                last_err = ""
+                break
+            except urllib.error.HTTPError as exc:
+                last_err = f"HTTP {exc.code} fetching {url}"
+                if exc.code < 500:
+                    break
+            except (urllib.error.URLError, OSError) as exc:
+                reason = getattr(exc, "reason", exc)
+                last_err = f"network error fetching {url}: {reason}"
+            if attempt < 2:
+                time.sleep(0.4 * (attempt + 1))
+        if raw is None:
+            errors.append(last_err)
             continue
         normalized = normalize_lf_bytes(raw)
         dest.parent.mkdir(parents=True, exist_ok=True)

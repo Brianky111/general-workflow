@@ -92,6 +92,7 @@ python -X utf8 scripts/repo_guard.py --root examples/verify-skill-app --run-chec
 ```text
 trust_level L1 | guard_status ready | fresh_head false
   scan: files=1 escape_hatches=0/0 primitive_violations=0 boundary_violations=0
+  anti_patterns: hits=0/0 (enabled=5)
   features: total=2 core=2 verified=2
   verify_skill: .agents/skills/verify-orders (name=verify-orders, features=2)
   prose: AGENTS.md bytes=393 prohibitions=0

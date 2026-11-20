@@ -12,6 +12,13 @@
     "max_allowed": 0,
     "extra_patterns": []
   },
+  "anti_patterns": {
+    "max_allowed": 0,
+    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret"],
+    "allow_paths": [],
+    "allow_by_category": {},
+    "extra_rules": []
+  },
   "forbidden_primitives": [],
   "boundary_rules": []
 }

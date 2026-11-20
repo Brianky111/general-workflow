@@ -1,7 +1,7 @@
 interface:
   display_name: "Codebase-First Agent Workflow"
-  short_description: "Trust-pyramid codebase guardrails, pstack /correct & /no-comments integration, and sharded verify_skill workflow"
-  default_prompt: "Check the target repository with scripts/repo_guard.py first, prioritize Layer 1-2 architecture, types, and native lints with past-mistake falsification (/correct) and comment cleanup (/no-comments), scale verification with either .guardrails/feature-map.md or a sharded verify_skill plus fresh behavioral artifacts (and PBT/TLA+/Lean via vendor/pstack/ where warranted), and only enable outer-loop fuzzing or automerge once inner-loop trust gates hold."
+  short_description: "Vibe-coding anti-drift/anti-rabbit-hole guardrails, anti_patterns checks, pstack integration, and sharded verify_skill"
+  default_prompt: "Check the target repository with scripts/repo_guard.py first, lock thin intent plus configurable_params, deliver 1 verifiable end-to-end vertical slice at a time (WIP=1, parking non-blocking side issues, stopping single-module rabbit holes after 2 rounds), prevent single-caller over-engineering, silent catch swallowing, hardcoded paths/secrets/localhost/blind waits, and verify core features via fresh behavioral artifacts before enabling outer-loop automation."
 
 policy:
   allow_implicit_invocation: true

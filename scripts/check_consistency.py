@@ -103,6 +103,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "01-intent-and-invariants.md": (
         "## 为什么只留一页意图合同",
         "## 意图与不变量模板",
+        "configurable_params",
+        "## 垂直可演示切片与决策分工",
         "## 接手已有仓库（Brownfield 起步）",
         "max_allowed",
         "## 意图门禁",
@@ -110,6 +112,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "02-codebase-guardrails.md": (
         "## 目录即上下文",
         "## 业务层禁用高分寸感原语",
+        "## 反过度工程、反防御性吞错与反硬编码",
         "## 根因导向的自定义 Lint",
         "## 注释与逃生舱策略",
         "## 护栏门禁",
@@ -125,6 +128,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "04-correction-and-gardening.md": (
         "## 倒金字塔纠错阶梯",
         "## 历史错误聚类与旧错例证伪（/correct 闭环）",
+        "## 反深潜熔断与停放区（Anti-Rabbit-Hole）",
         "## 主动除草与棘轮协议",
         "## AGENTS.md 瘦身规则",
         "## 除草门禁",
@@ -140,6 +144,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## .guardrails/ 目录布局",
         "## config.json 契约",
         "verify_skill",
+        "anti_patterns",
         "## feature-map.md 与 verification.md 格式",
         "## 运行 scripts/repo_guard.py",
         "## 从 v1.x 状态目录迁移",

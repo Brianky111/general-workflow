@@ -130,6 +130,8 @@ class VerifySkillAppExampleTests(ExampleChecks, unittest.TestCase):
         self.assertEqual(vs["path"], ".agents/skills/verify-orders")
         self.assertEqual(vs["name"], "verify-orders")
         self.assertEqual(vs["features"], 2)
+        self.assertEqual(self.report["scan"]["anti_patterns"], 0)
+        self.assertTrue(self.report["anti_patterns_config"]["configured"])
 
 
 if __name__ == "__main__":

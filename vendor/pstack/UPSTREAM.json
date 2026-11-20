@@ -25,7 +25,9 @@
       "principle-type-system-discipline",
       "principle-migrate-callers-then-delete-legacy-apis",
       "principle-test-behavior-not-implementation",
-      "principle-prove-it-works"
+      "principle-prove-it-works",
+      "principle-subtract-before-you-add",
+      "principle-sequence-verifiable-units"
     ]
   },
   "agents": [
@@ -53,6 +55,8 @@
     "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
     "skills/principle-prove-it-works/SKILL.md": "3d6c482e341974cfcb8d19ebf66fb1d4274d8673af35e36d3c231a6aa9e03f25",
     "skills/principle-redesign-from-first-principles/SKILL.md": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
+    "skills/principle-sequence-verifiable-units/SKILL.md": "ab0cc331cf317c07bb0ed6dd13ee9f618338b36e4e851521977bc5c4a8d429e1",
+    "skills/principle-subtract-before-you-add/SKILL.md": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
     "skills/principle-test-behavior-not-implementation/SKILL.md": "42afc1a2c7176363b6410cfde06a9fd3e96f5022ba86bdb8de4838ad65c2442d",
     "skills/principle-type-system-discipline/SKILL.md": "9cd1ce345bc9d666c73c64c89c89164217b659aa4c4dde5600cbbe6f6e775461",
     "skills/statechart/SKILL.md": "ca7b3e43b1ddc4fb2425a33960f9390357323a869e1d921b6e2aff4f3004d55e",

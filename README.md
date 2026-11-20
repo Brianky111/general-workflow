@@ -57,7 +57,7 @@ flowchart TD
 │       ├── LICENSE
 │       ├── UPSTREAM.json                # 锁定上游提交、技能清单与 LF SHA-256 校验和
 │       ├── agents/comment-sicko.md
-│       └── skills/                      # 9 个核心执行技能 + 8 个工程原则技能
+│       └── skills/                      # 9 个核心执行技能 + 10 个工程原则技能
 ├── examples/                            # 三个可直接跑通的目标项目示例
 │   ├── clean-app/                       # L1 内循环：零逃生舱、边界规则、验证 CLI 与产物
 │   ├── weeding-brownfield/              # L0 旧仓起步：棘轮锁定 1 条历史 HACK 等待除草
@@ -77,7 +77,7 @@ flowchart TD
 本仓库依据 MIT 协议在 [`vendor/pstack/`](vendor/pstack/UPSTREAM.json) 原样内置了 Lauren Tan（`@poteto`）[`cursor/plugins` 的 `pstack`](https://github.com/cursor/plugins/tree/main/pstack)（`v0.15.46`，锁定提交 `aaeb0ea`），由 [`00-router.md`](references/00-router.md) 按需调度，并在安装时可选一并展开为独立同级 Skill：
 
 - **9 个核心执行技能（默认安装 `--vendor-mode core`）**：`correct`（历史错例聚类与旧错例证伪）、`no-comments`（借口注释猎杀）、`architect`（写前两方案对比）、`why`（提交与 PR 追溯）、`create-verification-skill` / `maintain-verification-skill`（生成与巡检分片 `verify-<app>`）、`create-formal-verification-skill` / `maintain-formal-verification-skill`（形式化验证与同步）、`statechart`（TLA+ 检测与 Mermaid 状态图生成）。
-- **8 个原则参考技能（`--vendor-mode all` 一并安装）**：`principle-encode-lessons-in-structure`、`principle-fix-root-causes`、`principle-redesign-from-first-principles`、`principle-boundary-discipline`、`principle-type-system-discipline`、`principle-migrate-callers-then-delete-legacy-apis`、`principle-test-behavior-not-implementation`、`principle-prove-it-works`。
+- **10 个原则参考技能（`--vendor-mode all` 一并安装）**：`principle-encode-lessons-in-structure`、`principle-fix-root-causes`、`principle-redesign-from-first-principles`、`principle-boundary-discipline`、`principle-type-system-discipline`、`principle-migrate-callers-then-delete-legacy-apis`、`principle-test-behavior-not-implementation`、`principle-prove-it-works`、`principle-subtract-before-you-add`、`principle-sequence-verifiable-units`。
 - **独立审查 Agent**：`agents/comment-sicko.md`（安装到 Claude/Cursor 的 `agents/` 目录；在 Codex 等无命名子 Agent 的环境中作为子 Agent 提示词使用）。
 
 ## 目标项目里会出现什么
@@ -173,7 +173,7 @@ python -X utf8 "$HOME\.claude\skills\general-workflow\scripts\repo_guard.py" --r
 三个脚本分别面向本仓库、vendor 快照与目标项目：
 
 ```powershell
-# 1. 离线校验 vendor/pstack/ 54 份上游文件校验和与结构
+# 1. 离线校验 vendor/pstack/ 56 份上游文件校验和与结构
 python -X utf8 scripts/sync_vendor.py --verify
 
 # 2. 校验本 skill 仓库自身的契约、预算、vendor 引用与全套单测

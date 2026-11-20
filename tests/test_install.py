@@ -134,7 +134,7 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
             errors="replace",
         )
         self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
-        self.assertIn("54 file(s) verified, 0 error(s)", ok.stdout)
+        self.assertIn("56 file(s) verified, 0 error(s)", ok.stdout)
 
         copy_root = Path(self.temp.name) / "repo-copy"
         shutil.copytree(ROOT / "vendor", copy_root / "vendor")

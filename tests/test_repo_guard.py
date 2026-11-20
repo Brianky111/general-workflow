@@ -577,6 +577,115 @@ class RepoGuardTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertTrue(any("missing .guardrails/verification.md" in e for e in report["errors"]))
 
+    def test_anti_patterns_default_always_on_catches_silent_catch_blind_wait_paths_secrets(self):
+        self.write_minimal_guardrails(trust_level="L1")
+        self.write(
+            "src/bad.py",
+            "def f():\n"
+            "    try:\n"
+            "        work()\n"
+            "    except Exception: pass\n\n"
+            "def g():\n"
+            "    try:\n"
+            "        work()\n"
+            "    except KeyError:\n"
+            "        return []\n\n"
+            "def ok_catch():\n"
+            "    try:\n"
+            "        work()\n"
+            "    except ValueError as err:\n"
+            "        log(err)\n"
+            "        return None\n\n"
+            "# C:\\Users\\comment_only\\ignored\n"
+            "LOCAL = r'C:\\Users\\alice\\data.db'\n"
+            "UNIX_HOME = '/Users/bob/app.sqlite'\n"
+            "TOKEN = 'sk-proj-1234567890abcdefghijklmno'\n"
+            "async def drive(page):\n"
+            "    await page.wait_for_timeout(1500)\n",
+        )
+        self.write(
+            "src/view.ts",
+            "export async function load() {\n"
+            "  try { await fetchIt(); } catch (e) {}\n"
+            "  try { await fetchIt(); } catch {\n"
+            "    return null;\n"
+            "  }\n"
+            "  try { await fetchIt(); } catch (err) { log(err); return null; }\n"
+            "  await new Promise(resolve => setTimeout(resolve, 1500));\n"
+            "}\n",
+        )
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertFalse(report["anti_patterns_config"]["configured"])
+        # bad.py: 2 silent-catch + 2 hardcoded-path + 1 hardcoded-secret + 1 blind-wait = 6
+        # view.ts: 2 silent-catch + 1 blind-wait = 3 (total = 9; ok_catch and logged catch not flagged)
+        self.assertEqual(report["scan"]["anti_patterns"], 9, report["errors"])
+        err_blob = "\n".join(report["errors"])
+        self.assertIn("anti-patterns found (9) exceed ratchet max_allowed (0)", err_blob)
+        self.assertIn("silent-catch", err_blob)
+        self.assertIn("blind-wait", err_blob)
+        self.assertIn("hardcoded-path", err_blob)
+        self.assertIn("hardcoded-secret", err_blob)
+
+    def test_anti_patterns_explicit_config_ratchet_whitelists_and_extra_rules(self):
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["anti_patterns"] = {
+            "max_allowed": 2,
+            "enabled": [
+                "silent-catch",
+                "blind-wait",
+                "hardcoded-path",
+                "hardcoded-localhost",
+                "hardcoded-secret",
+            ],
+            "allow_paths": ["src/allowed"],
+            "allow_by_category": {"hardcoded-localhost": ["src/config"]},
+            "extra_rules": [
+                {
+                    "id": "no-hardcoded-inception",
+                    "pattern": r"2026-06-14",
+                    "globs": ["src/**/*.py"],
+                    "allow_paths": ["src/config"],
+                    "message": "起算日必须从配置中心读取，禁止在业务代码中写死业务日期常量。",
+                }
+            ],
+        }
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        self.write("src/allowed/helper.py", "import time\ntime.sleep(1.5)\n")
+        self.write("src/config/defaults.py", "API = 'http://localhost:8000'\nINCEPTION = '2026-06-14'\n")
+        self.write("src/ui/page.ts", "setTimeout(() => show(), 0);\nsetTimeout(() => show(), 1500);\n")
+        self.write("src/service.py", "import asyncio\nURL = 'http://127.0.0.1:9000'\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 0, report["errors"])
+        # page.ts line 2 (1500ms) + service.py 127.0.0.1 = 2; allowed & config whitelisted; setTimeout(..., 0) ignored
+        self.assertEqual(report["scan"]["anti_patterns"], 2)
+
+        # Drop hits below max_allowed -> ratchet-down warning
+        self.write("src/ui/page.ts", "setTimeout(() => show(), 0);\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 0, report["errors"])
+        self.assertTrue(any("lower anti_patterns.max_allowed to 1" in w for w in report["warnings"]))
+
+        # Hit extra_rule & exceed ratchet at L2
+        self.write("src/service.py", "DATE = '2026-06-14'\n")
+        cfg["trust_level"] = "L2"
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        err_blob = "\n".join(report["errors"])
+        self.assertIn("L2 requires anti_patterns.max_allowed == 0", err_blob)
+        self.assertIn("anti_pattern_rule 'no-hardcoded-inception' at src/service.py:1", err_blob)
+
+    def test_anti_patterns_invalid_category_rejected(self):
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["anti_patterns"] = {"enabled": ["bogus-category"]}
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertTrue(any("unknown anti_patterns category 'bogus-category'" in e for e in report["errors"]))
+
 
 if __name__ == "__main__":
     unittest.main()

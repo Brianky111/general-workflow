@@ -31,6 +31,15 @@
     "max_allowed": 0,
     "extra_patterns": []
   },
+  "anti_patterns": {
+    "max_allowed": 0,
+    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret"],
+    "allow_paths": ["tests"],
+    "allow_by_category": {
+      "blind-wait": ["src/runtime"]
+    },
+    "extra_rules": []
+  },
   "forbidden_primitives": [
     {
       "id": "no-raw-sleep",
@@ -57,6 +66,9 @@
 - `check_command` 不能为空或占位词；高于起步层时，`verify_cli` 或 `verify_skill` 二者至少提供一个非占位入口。
 - `verify_skill`（可选）：项目内分片验证 Skill 目录路径（见下节）；配置后优先作为功能地图单一事实源。
 - `escape_hatches.max_allowed` 为非负整数；进入外循环层级前必须已清为 `0`（不带旧债进外循环）。
+- `anti_patterns`（可选）：内置 5 类高置信度反模式静态扫描，带棘轮上限与白名单：
+  - 类别枚举：`silent-catch`（空/静默返回兜底的 Python `except` 或 JS/TS `catch`）、`blind-wait`（`wait_for_timeout` / `waitForTimeout`、`new Promise(...setTimeout)`，显式开启时含 `time.sleep`/`asyncio.sleep` 与非零 `setTimeout`）、`hardcoded-path`（`C:\Users\...`、`/Users/...`、`/home/...`）、`hardcoded-localhost`（业务层散落的 `http(s)://localhost|127.0.0.1`，显式开启时生效）、`hardcoded-secret`（常见密钥字面量）。
+  - 缺省不写 `anti_patterns` 时默认开启零误报子集（`silent-catch`、`hardcoded-path`、`hardcoded-secret` 与 Playwright/Promise 盲等）且上限为 `0`；显式配置后默认 5 类全开，支持 `allow_paths`、`allow_by_category` 与自定义 `extra_rules`，进入外循环层级前 `anti_patterns.max_allowed` 同样须降为 `0`。
 - `require_fresh_head` 为布尔值；进入最高自治层级时必须为 `true`。
 - 每条 `forbidden_primitives` 与 `boundary_rules` 的 `message` 不得为空或过短占位（至少 15 字符），必须写出根因与替代方案。
 
@@ -114,7 +126,7 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 
 必须清楚这套零依赖脚本能拦住什么、拦不住什么：
 
-- **模式匹配不是完整 AST**：`forbidden_primitives` 和 `boundary_rules` 使用通用正则与导入路径匹配，零依赖覆盖多语言，但分辨不出复杂路径别名、动态反射或重导出；语言成熟后应把真实检查接入 `ESLint`/`Ruff`/`dependency-cruiser`/`import-linter` 并挂进 `check_command`。
+- **模式匹配不是完整 AST**：`forbidden_primitives`、`anti_patterns` 和 `boundary_rules` 使用通用语法/正则与导入路径匹配，零依赖拦截高置信度坏模式（如静默 `catch`/`except: pass`、盲等延时、本机路径与散落 `localhost`），但分辨不出复杂路径别名或语义层过度工程/假数据数组（后两者结合人工审查产物、`no-comments` 与 `check_command` 原生 Linter/AST 工具覆盖）。
 - **逃生舱与注释检查靠规则词表**：能拦常见禁用指令与显式 `HACK`/`WORKAROUND` 标记，读不出换个委婉写法写的辩解注释；需要语义级猎杀与历史错例分析时，结合 `vendor/pstack/skills/no-comments/SKILL.md` 与 `vendor/pstack/skills/correct/SKILL.md` 执行。
 - **产物与新鲜度只证明“在当前版本跑出过非空证据”**：磁盘文件存在且非空不代表视频画面让用户满意，测试命令退出 0 不代表测试断言理解对了需求——产品意图与体验好坏仍靠人审产物把关。
 

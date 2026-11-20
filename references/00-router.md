@@ -54,20 +54,19 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 
 ## 内置 pstack 专项技能调度
 
-仓库内置 `vendor/pstack/`（Lauren Tan 的核心 `pstack` 技能集）；除本文件与 `SKILL.md` 外，按当前任务按需加载对应技能文件：
+仓库内置 `vendor/pstack/`（Lauren Tan 核心 `pstack` 技能集）；按当前任务按需加载，不常驻上下文：
 
-| 专项任务 | 读取内置技能文件 | 说明 |
+| 专项任务 | 读取内置技能文件 | 核心用途 |
 | --- | --- | --- |
-| 历史错例聚类与结构化根治 | `vendor/pstack/skills/correct/SKILL.md` | 翻 commits/reverts/注释，按倒金字塔落架构/类型/Lint 并做旧错例证伪 |
-| 清理借口注释与抑制指令 | `vendor/pstack/skills/no-comments/SKILL.md` | 配合 `vendor/pstack/agents/comment-sicko.md` 猎杀冗余注释并修根因 |
-| 写前架构对比（2 种方案） | `vendor/pstack/skills/architect/SKILL.md` | 对比类型、签名与边界，选出单状态所有者与唯一做法 |
-| 追溯历史设计原因 | `vendor/pstack/skills/why/SKILL.md` | 读提交记录与 PR 讨论，区分已证实事实与推断 |
-| 生成项目本地验证 Skill | `vendor/pstack/skills/create-verification-skill/SKILL.md` | 生成带 `features/*.md` 的 `verify-<app>` 并当场试跑 |
-| 巡检维护验证 Skill | `vendor/pstack/skills/maintain-verification-skill/SKILL.md` | 并行源读 + 串行实跑全部功能，区分文档漂移与产品回归 |
-| 生成与维护形式化验证 Skill | `vendor/pstack/skills/create-formal-verification-skill/SKILL.md` | 配合 `vendor/pstack/skills/maintain-formal-verification-skill/SKILL.md` |
-| 跑 TLA+ 状态图与反例路径 | `vendor/pstack/skills/statechart/SKILL.md` | 运行 `vendor/pstack/skills/statechart/scripts/statechart.ts` 输出 Mermaid 图 |
+| 错例聚类与证伪 | `vendor/pstack/skills/correct/SKILL.md` | 查提交/注释，改架构/类型/Lint 并做旧错例证伪 |
+| 借口注释清理 | `vendor/pstack/skills/no-comments/SKILL.md` | 配合 `vendor/pstack/agents/comment-sicko.md` 删借口改根因 |
+| 写前架构对比 | `vendor/pstack/skills/architect/SKILL.md` | 对比两方案，选单状态所有者与唯一做法 |
+| 追溯设计历史 | `vendor/pstack/skills/why/SKILL.md` | 查提交与讨论，区分证据与推断 |
+| 生成/维护验证 Skill | `vendor/pstack/skills/create-verification-skill/SKILL.md` | 建 `verify-<app>`；维护用 `vendor/pstack/skills/maintain-verification-skill/SKILL.md` |
+| 生成/维护形式化验证 | `vendor/pstack/skills/create-formal-verification-skill/SKILL.md` | 建形式化检查；维护用 `vendor/pstack/skills/maintain-formal-verification-skill/SKILL.md` |
+| TLA+ 状态图检查 | `vendor/pstack/skills/statechart/SKILL.md` | 跑 `vendor/pstack/skills/statechart/scripts/statechart.ts` 输出状态图 |
 
-跨工具适配（Claude Code / Codex / OpenCode / T3 Code）：生成项目本地验证 Skill 时使用中立目录（如 `.agents/skills/verify-<app>`）并在 `.guardrails/config.json` 的 `verify_skill` 登记；若当前宿主没有命名 `comment-sicko` 子 Agent，直接把 `vendor/pstack/agents/comment-sicko.md` 作为只审注释的子 Agent 提示词传入。
+跨工具适配：项目本地验证 Skill 放 `.agents/skills/verify-<app>` 并配入 `config.json` `verify_skill`；无命名 `comment-sicko` 子 Agent 的宿主，直接传入 `vendor/pstack/agents/comment-sicko.md` 作提示词。
 
 ## 全局停止条件
 
@@ -76,7 +75,9 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 - **意图或核心不变量歧义**：同一句话有两种会改变用户可见结果或数据正确性的解释；
 - **不可逆边界**：改动涉及资金/账务、隐私合规、鉴权放宽、不可逆数据迁移/删库或破坏性公共 API；
 - **校验环境损坏**：基础构建、测试或依赖无法安装运行，需要外部凭据或修改环境前提；
-- **试图抬高旧债上限**：当前改动唯一能过 `repo_guard.py` 的方式是调大 `escape_hatches.max_allowed` 或关掉既有检查（永远不允许静默抬限）。
+- **试图抬高旧债上限**：当前改动唯一能过 `repo_guard.py` 的方式是调大 `escape_hatches.max_allowed`、`anti_patterns.max_allowed` 或关掉既有检查（永远不允许静默抬限）；
+- **单模块深潜止损**：同一内部模块连改 2 轮仍无用户可见进展，或试图自发开启多轮纯内部重构而主流程尚未跑通；
+- **顺手发现进停放区**：途中发现的非阻塞旧债或边缘问题只记一行（见 `04-correction-and-gardening.md`），严禁当场顺藤摸瓜深挖；内部技术选型由 Agent 选最简可逆方案拍板，只把产品行为/业务口径/不可逆决策以每次最多 1–2 个通俗选择题问用户。
 
 向用户提问只用以下四行，不问“请确认全部细节”：
 

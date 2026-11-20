@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.1.0 - 2026-11-20
+
+Added Vibe-Coding anti-drift, anti-rabbit-hole, anti-overengineering,
+anti-defensive-swallowing, and anti-hardcoding/anti-blind-wait guardrails across
+docs, vendored `pstack` principles, and `scripts/repo_guard.py`.
+
+- Added `principle-subtract-before-you-add` and
+  `principle-sequence-verifiable-units` to `vendor/pstack/` (now 19 vendored
+  skills, 56 upstream files at commit `aaeb0ea`) and added transient retry
+  handling to `scripts/sync_vendor.py --fetch`.
+- Added deterministic `anti_patterns` enforcement and ratchets to
+  `scripts/repo_guard.py` covering `silent-catch` (Python `except: pass` / empty
+  returns and empty/null-returning JS/TS `catch`), `blind-wait`
+  (`wait_for_timeout` / `waitForTimeout` / `new Promise(setTimeout)`, plus
+  `time.sleep` / `asyncio.sleep` / positive numeric `setTimeout` when explicitly
+  configured), `hardcoded-path`, `hardcoded-localhost`, `hardcoded-secret`, and
+  custom `extra_rules`, with `allow_paths` / `allow_by_category` whitelists and
+  `L2`/`L3` zero-debt enforcement.
+- Updated `SKILL.md` and `references/00`-`06` with `configurable_params` in the
+  one-page intent contract, vertical verifiable slices (`WIP = 1`),
+  "human reviews demos, agent owns internal mechanics" decision boundaries, the
+  Anti-Rabbit-Hole stop-loss & Parking Lot protocol (2-round single-module
+  cap), single-caller abstraction restraint, fail-fast boundary discipline, and
+  four hardcoding red lines (including artificial loading delays like fixed
+  1.5s waits after data readiness).
+- Enabled explicit `anti_patterns` checks on `examples/verify-skill-app/` and
+  expanded unit tests in `tests/test_repo_guard.py`, `tests/test_examples.py`,
+  and `tests/test_install.py`.
+
 ## 2.0.0 - 2026-11-20
 
 Complete paradigm redesign around Lauren Tan's Codebase-First / Inverse Trust
