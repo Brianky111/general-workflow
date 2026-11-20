@@ -1,7 +1,8 @@
 # Archived workflow material
 
-`archive/general-workflow-v0.12.0/` is a read-only reference snapshot of the workflow that was active before the Greenfield rewrite on 2026-09-04.
+`archive/general-workflow-v0.12.0/` and `archive/general-workflow-v1.10.1/` are read-only reference snapshots of previous workflow generations.
 
-It contains the former `SKILL.md`, references, metadata, consistency checker, diagrams, changelog, README, and the v3.8 source document. It is not part of the active skill package and must not be used as the current router or treated as a required document set.
+- `archive/general-workflow-v0.12.0/`: the former feature/change-round workflow active before the Greenfield rewrite on 2026-09-04.
+- `archive/general-workflow-v1.10.1/`: the 11-stage Greenfield + sharded-ledger (`docs/workflow/` + `workflow_status.py`) workflow active before the 2026-11-20 Codebase-First v2.0 rewrite.
 
-The active workflow is the root `SKILL.md` plus the root `references/` directory. The archive exists so later work can compare or selectively recover ideas without silently restoring the former feature/change-round process.
+Neither snapshot is part of the active skill package, and active `SKILL.md` or `references/` must never route through `archive/`. They exist so later work can compare or inspect prior designs without silently restoring them.

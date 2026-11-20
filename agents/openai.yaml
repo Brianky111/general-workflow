@@ -1,7 +1,7 @@
 interface:
-  display_name: "Project Development Workflow"
-  short_description: "Greenfield architecture-to-release workflow with refactor and takeover paths"
-  default_prompt: "Guide this new project from its profile and requirements through architecture decisions, technology and repository scaffolding, a first vertical slice, TDD implementation, testing, CI/CD, release operations, and retrospective. Resume from the workflow state file when one exists, take the LEAN fast path when the profile allows it, run an authorized refactor as a refactor slice under the refactor path, bring a repository the workflow did not build in through the takeover entry -- run it, survey every entrypoint and module, derive a requirements document for the user to review, then baseline what they keep -- and load only the reference for the current stage."
+  display_name: "Codebase-First Agent Workflow"
+  short_description: "Trust-pyramid codebase guardrails, pstack /correct & /no-comments integration, and sharded verify_skill workflow"
+  default_prompt: "Check the target repository with scripts/repo_guard.py first, prioritize Layer 1-2 architecture, types, and native lints with past-mistake falsification (/correct) and comment cleanup (/no-comments), scale verification with either .guardrails/feature-map.md or a sharded verify_skill plus fresh behavioral artifacts (and PBT/TLA+/Lean via vendor/pstack/ where warranted), and only enable outer-loop fuzzing or automerge once inner-loop trust gates hold."
 
 policy:
   allow_implicit_invocation: true

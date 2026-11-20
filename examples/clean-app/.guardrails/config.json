@@ -1,0 +1,32 @@
+{
+  "guardrails_version": 2,
+  "trust_level": "L1",
+  "check_command": "python -X utf8 -B -m unittest discover -s tests -p \"test_*.py\"",
+  "verify_cli": "python -X utf8 tools/verify.py",
+  "source_roots": ["src"],
+  "exclude_dirs": [".git", "__pycache__", "node_modules", ".venv", ".guardrails"],
+  "prose_files": ["AGENTS.md"],
+  "prose_max_bytes": 6000,
+  "require_fresh_head": false,
+  "escape_hatches": {
+    "max_allowed": 0,
+    "extra_patterns": []
+  },
+  "forbidden_primitives": [
+    {
+      "id": "no-raw-sleep",
+      "pattern": "\\btime\\.sleep\\s*\\(",
+      "globs": ["src/**/*.py"],
+      "allow_paths": ["src/runtime"],
+      "message": "业务逻辑不要直接调用 time.sleep；请改用 src/runtime/clock.py 的 pause_briefly。"
+    }
+  ],
+  "boundary_rules": [
+    {
+      "id": "ui-no-direct-storage",
+      "from_dir": "src/ui",
+      "forbid_import": "core/storage",
+      "message": "src/ui 不得直接导入 core/storage；请通过 src/core/api.py 的 OrderService 调用用例。"
+    }
+  ]
+}

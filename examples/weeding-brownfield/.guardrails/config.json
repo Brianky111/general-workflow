@@ -1,0 +1,17 @@
+{
+  "guardrails_version": 2,
+  "trust_level": "L0",
+  "check_command": "python -X utf8 -B -m unittest discover -s tests -p \"test_*.py\"",
+  "verify_cli": "python -X utf8 -m src.app",
+  "source_roots": ["src"],
+  "exclude_dirs": [".git", "__pycache__", "node_modules", ".venv", ".guardrails"],
+  "prose_files": ["AGENTS.md"],
+  "prose_max_bytes": 6000,
+  "require_fresh_head": false,
+  "escape_hatches": {
+    "max_allowed": 1,
+    "extra_patterns": []
+  },
+  "forbidden_primitives": [],
+  "boundary_rules": []
+}

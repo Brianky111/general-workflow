@@ -1,0 +1,3 @@
+first={"record": {"order_id": "ORD-101", "item": "keyboard", "status": "open"}, "created": true}
+replay={"record": {"item": "keyboard", "order_id": "ORD-101", "status": "open"}, "created": false}
+show={"record": {"item": "keyboard", "order_id": "ORD-101", "status": "open"}}

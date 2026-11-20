@@ -1,0 +1,54 @@
+# 意图、不变量与起步入口
+
+高吞吐的代码生成如果没有清晰的目标和不变量，只会用更高的速度造出方向错误的产品。本文件保留工作流里最薄的一层意图锚点，并给出从零建项与接手旧仓的起步路径。
+
+## 为什么只留一页意图合同
+
+v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量精力花在 R-ID / A-ID / Q-ID / K-ID / H-ID 交叉台账与切片锁上，反而和快速迭代冲突。v2 保留**只此一页**的意图与不变量合同，砍掉繁琐编号矩阵，理由有三点：
+
+1. **防方向跑偏**：Agent 在写第一行代码前，必须知道给谁用、从哪个真实入口进去、做完后用户能观察到什么；
+2. **直接喂给验证层**：写清“哪些不变量必须永远成立、哪些副作用绝对禁止”，这些句子能直接翻译成属性测试（PBT）、TLA+ 模型或自定义 Lint；
+3. **划出永久人工边界**：把“不可逆操作”在起步时挑出来，后续即使自动化升到最高档，这些边界仍由人把关。
+
+文档只写一页，写完立即进 `02-codebase-guardrails.md` 搭好目录边界和可执行检查，不在文档里反复推演实现细节。
+
+## 意图与不变量模板
+
+建议写在项目根目录 `docs/intent.md` 或 `.guardrails/intent.md`（也可并入项目 README 的核心章节），内容精简到一屏能读完：
+
+```markdown
+# Intent & Invariants
+- problem: <谁在什么情境下遇到什么问题，现有做法哪里不够>
+- primary_users: <直接用户、管理员或外部调用方>
+- entrypoints: <真实入口：Web 路由 / 桌面窗口 / CLI 命令 / 后台任务>
+- user_outcomes:
+  - <可观察结果 1：用户做了什么后，看见或拿到什么>
+  - <可观察结果 2：关键失败或无权限时的可见表现>
+- invariants:
+  - <必须始终成立的不变量，例如：重复提交同一请求不产生第二条扣款/第二行数据>
+  - <禁止效果，例如：渲染进程不得读取本地密钥或阻塞主循环>
+- non_goals:
+  - <本阶段明确不做的一到三件事>
+- irreversible_boundaries:
+  - <不可逆操作清单：资金、权限放开、破坏性迁移、对外公共契约>
+```
+
+检验标准很简单：对照每一条 `user_outcomes` 和 `invariants`，看一眼就知道在 `03-verification-and-artifacts.md` 该测什么、该截什么产物；如果写着“系统更加稳定、体验流畅”这类空话，立刻重写成可观察结果。
+
+## 接手已有仓库（Brownfield 起步）
+
+面对一个不是本工作流建起来的旧仓库，不要停下来全仓反推十几页需求书再动工。按以下三步在一个会话内把护栏和基线立起来：
+
+1. **跑通现有一套校验与测试**：确认构建、单测或启动命令能在干净命令行跑通，把它写进 `.guardrails/config.json` 的 `check_command`；同时可按 `vendor/pstack/skills/correct/SKILL.md` 快速扫一遍最近 commits、reverts 与 workaround 注释，挑出已重复出现至少两次的错误类作为首批护栏目标；若现在就跑不通，先记为阻塞或修通可运行环境。
+2. **扫描旧债并锁定 `max_allowed` 棘轮**：运行一次 `repo_guard.py`，统计仓库里现有的 `eslint-disable`、`@ts-ignore`、`# noqa`、`# type: ignore`、`HACK/WORKAROUND` 等逃生舱数量，把这个数字写进 `.guardrails/config.json` 的 `escape_hatches.max_allowed` 作为**天花板棘轮**。以后只许往下清、不许往上涨；如何逐步清零见 `04-correction-and-gardening.md`。`L0` 起步期不强求立即补齐 `.guardrails/verification.md`（先让护栏和棘轮运转起来，升入 `L1` 前补全）。
+3. **按真实入口写出第一版 Feature Map**：从组合根或路由表列出核心用户功能——小型项目可直接填入 `.guardrails/feature-map.md`；中大型或交互复杂的应用建议直接用 `vendor/pstack/skills/create-verification-skill/SKILL.md` 生成按功能域拆分的项目本地 `verify-<app>` skill，并在 `config.json` 配置 `verify_skill` 路径。`trust_level` 从 `L0` 起步，若已有完整自动化检查和核心功能验证产物也可直接设为 `L1`。
+
+对于暂时没有接入测试的旧模块，不用停下全仓重测；哪天要改它或往那条边界加护栏，再按 `03-verification-and-artifacts.md` 先补行为验证与对比基线。
+
+## 意图门禁
+
+离开本文件进入 `02-codebase-guardrails.md` 或写业务代码前，必须确认：
+
+1. 新项目已写出一页可观察的用户结果、核心不变量、至少一条明确的非目标和不可逆边界；
+2. 已有仓库已完成三步起步：有可跑的 `check_command`、已锁定 `escape_hatches.max_allowed` 初始棘轮值、已列出 `.guardrails/feature-map.md` 的首批核心入口；
+3. 会改变核心结果或不可逆边界的歧义已经向用户确认，而不是靠猜测向下推进。

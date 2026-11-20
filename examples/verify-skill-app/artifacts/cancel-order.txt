@@ -1,0 +1,3 @@
+cancel={"record": {"item": "mouse", "order_id": "ORD-102", "status": "cancelled"}, "changed": true}
+replay={"record": {"item": "mouse", "order_id": "ORD-102", "status": "cancelled"}, "changed": false}
+show={"record": {"item": "mouse", "order_id": "ORD-102", "status": "cancelled"}}

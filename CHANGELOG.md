@@ -1,5 +1,56 @@
 # Changelog
 
+## 2.0.0 - 2026-11-20
+
+Complete paradigm redesign around Lauren Tan's Codebase-First / Inverse Trust
+Pyramid methodology. Replaces the 11-stage process waterfall and sharded slice
+ledgers (`docs/workflow/` + `workflow_status.py`, now archived intact under
+`archive/general-workflow-v1.10.1/`) with deterministic codebase guardrails,
+active weeding ratchets, behavioral artifact verification, and an L0-L3 outer-loop
+maturity ladder.
+
+- Archived `v1.10.1` into `archive/general-workflow-v1.10.1/` and updated
+  `archive/ARCHIVE-NOTE.md` to cover both frozen snapshots (`v0.12.0` and
+  `v1.10.1`).
+- Replaced `SKILL.md` and the 18 v1 references with `SKILL.md` plus seven focused,
+  budgeted references (`00-router.md` through `06-repo-guard-contract.md`):
+  - `01-intent-and-invariants.md`: thin one-page intent, user outcomes,
+    invariants, irreversible boundaries, and 3-step brownfield onboarding.
+  - `02-codebase-guardrails.md`: directory-as-context boundaries, banning
+    high-nuance primitives in product code, root-cause lint error design, and
+    the single-authority policy banning workaround/escape-hatch comments.
+  - `03-verification-and-artifacts.md`: user-perspective Feature Map, reusable
+    verify CLI / debug channels, immutable-commit artifact freshness gates, and
+    triggers for PBT / UI PBT / TLA+ / Lean verification.
+  - `04-correction-and-gardening.md`: the 5-step inverse-pyramid correction
+    ladder (API -> lint -> weeding -> verification -> thin AGENTS.md),
+    safe weeding vs behavioral change, ratchet protocol, and AGENTS.md diet.
+  - `05-outer-loop-factory.md`: single-authority L0-L3 maturity ladder,
+    post-release exploration fuzzing, permanent human gates for irreversible
+    boundaries, and revert-rate / user-felt KPI tracking.
+  - `06-repo-guard-contract.md`: `.guardrails/` schema, `repo_guard.py` CLI
+    flags and checks, migration from `v1.x` `docs/workflow/` (`legacy_v1`),
+    and explicit script ceilings.
+- Replaced `scripts/workflow_status.py` with `scripts/repo_guard.py` (pure
+  Python stdlib): validates `.guardrails/` config, scans `source_roots` for
+  escape hatches against `max_allowed` ratchets, enforces `forbidden_primitives`
+  and cross-directory `boundary_rules` with root-cause messages, enforces
+  LF-normalized `AGENTS.md` byte budgets and prohibition-count warnings, checks
+  Feature Map coverage and non-empty disk/HTTPS artifacts anchored to immutable
+  commits, optionally runs `check_command` (`--run-check`) and verifies git
+  `HEAD` freshness with clean `source_roots` (`--check-head`), and detects v1
+  state as `legacy_v1` without overwriting it.
+- Replaced `examples/greenfield/` and `examples/takeover/` with two runnable
+  examples: `examples/clean-app/` (L1 with zero escape hatches, boundary and
+  primitive rules, and `tools/verify.py`) and `examples/weeding-brownfield/`
+  (L0 brownfield ratchet).
+- Integrated Lauren Tan's `cursor/plugins/pstack` (`v0.15.46` @ `aaeb0ea3a0584995aa8f55ce44c6c5259414b896`, MIT) verbatim under `vendor/pstack/` (9 core skills, 8 principle skills, `comment-sicko` agent, and the TypeScript `statechart` tool excluding upstream test corpora), managed by `scripts/sync_vendor.py` and `scripts/install.py` (`--target claude|cursor|codex|agents|all`, `--vendor-mode core|all|bundled`, `--dry-run`, `--uninstall`).
+- Deepened Layer 1-2 workflow guidance across `SKILL.md` and `references/00`-`06`: `/correct` mistake clustering (`>= 2` occurrences) + mandatory past-mistake falsification replay, `/no-comments` semantic comment hunting via `comment-sicko`, `/architect` two-shape design comparison, `Rule | Enforcer` tracking in `AGENTS.md`, and scaled sharded `verify-<app>` skills.
+- Extended `scripts/repo_guard.py` with `verify_skill` validation (frontmatter, `Launch`/`Doctor`/`Drive`/`Evidence`/`Cleanup` sections, `features/README.md` index hygiene, 4-H2 feature entry contracts, and slug alias matching in `verification.md`) and optional `verification.md` at `L0`; added runnable `examples/verify-skill-app/` and `tests/test_install.py`.
+- Updated `scripts/check_consistency.py` and rewrote `tests/test_repo_guard.py`,
+  `tests/test_check_consistency.py`, and `tests/test_examples.py` (with
+  pinned budgets: `SKILL.md` 6,500, `00-router.md` 7,500, references 12,000).
+
 ## 1.10.1 - 2026-09-11
 
 - The consistency checker no longer reports an installed copy as a broken
