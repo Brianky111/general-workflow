@@ -18,7 +18,7 @@ This repository **is** the skill package. `SKILL.md` at the root is the entry po
 │   └── 06-repo-guard-contract.md        # .guardrails/ schema, verify_skill rules, repo_guard.py CLI, v1 migration
 ├── scripts/
 │   ├── check_consistency.py             # validates this repository and vendor/pstack/
-│   ├── repo_guard.py                    # ships with skill, runs against target repos
+│   ├── repo_guard.py                    # ships with skill, runs --scan/--init, anti_patterns, file_limits on target repos
 │   ├── install.py                       # cross-tool installer for general-workflow + vendored pstack skills
 │   └── sync_vendor.py                   # offline verifier (--verify) and pinned raw fetcher (--fetch)
 ├── vendor/pstack/                       # pinned MIT snapshot (v0.15.46 @ aaeb0ea) of cursor/plugins/pstack

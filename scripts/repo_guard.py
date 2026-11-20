@@ -9,6 +9,7 @@ Use from the installed skill against a target project:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -34,11 +35,44 @@ DEFAULT_EXCLUDE_DIRS = {
     ".git",
     "__pycache__",
     ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+    ".tox",
+    ".nox",
     "node_modules",
+    ".pnpm-store",
     ".venv",
     "venv",
     ".guardrails",
+    ".next",
+    ".nuxt",
+    ".svelte-kit",
+    ".turbo",
 }
+ROOT_ARTIFACT_DIRS = {
+    "dist",
+    "build",
+    "coverage",
+    "htmlcov",
+    "test-results",
+    "playwright-report",
+    "vendor",
+    "target",
+}
+SKIPPED_FILENAMES = {
+    ".api-token",
+    ".gitkeep",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock",
+    "bun.lockb",
+    "Cargo.lock",
+    "uv.lock",
+    "poetry.lock",
+    "Pipfile.lock",
+}
+SKIPPED_SUFFIXES = {".log", ".lock", ".sqlite", ".sqlite3", ".db", ".map"}
 DEFAULT_PROSE_FILES = ["AGENTS.md"]
 DEFAULT_PROSE_MAX_BYTES = 6000
 MIN_RULE_MESSAGE_CHARS = 15
@@ -121,55 +155,151 @@ ANTI_PATTERN_CATEGORIES = (
     "hardcoded-path",
     "hardcoded-localhost",
     "hardcoded-secret",
+    "mock-in-prod",
 )
 DEFAULT_ALWAYS_ON_ANTI_PATTERNS = (
     "silent-catch",
     "blind-wait",
     "hardcoded-path",
     "hardcoded-secret",
+    "mock-in-prod",
 )
 ANTI_PATTERN_REMEDIATION = {
-    "silent-catch": "silent-catch: avoid swallowing exceptions or returning fake defaults inside internal code; fail fast or map at the boundary",
-    "blind-wait": "blind-wait: replace fixed millisecond delays or sleep loops with real readiness/state signals",
-    "hardcoded-path": "hardcoded-path: move machine-local user paths into config/env inputs at the boundary",
-    "hardcoded-localhost": "hardcoded-localhost: move local host URLs into boundary configuration with an explicit fallback",
+    "silent-catch": "silent-catch: avoid swallowing exceptions/rejections or returning fake defaults inside internal code; fail fast or map at the boundary",
+    "blind-wait": "blind-wait: replace fixed millisecond delays or artificial minLoadingMs waits with readiness signals; encapsulate legitimate retry backoff in a single runtime helper whitelisted via allow_by_category",
+    "hardcoded-path": "hardcoded-path: move machine-local/WSL user paths into config/env inputs at the boundary",
+    "hardcoded-localhost": "hardcoded-localhost: move local/LAN URLs and DB/WS endpoints into boundary configuration with an explicit fallback",
     "hardcoded-secret": "hardcoded-secret: remove credential literals from source and inject secrets via environment or secret store",
+    "mock-in-prod": "mock-in-prod: remove MOCK_/FAKE_ data or mock fallbacks from production code; isolate demo/test data in seeds or fixtures",
 }
 
+DEFAULT_MAX_FILE_LINES = 600
+STACK_DETECT_EXCLUDES = set(DEFAULT_EXCLUDE_DIRS)
+DIRECT_SOURCE_ROOTS = ("src", "app", "lib", "cmd", "internal")
+WORKSPACE_PARENT_DIRS = ("apps", "packages")
+CONTAINER_DIRS = ("backend", "server", "api", "frontend", "client", "web")
+NESTED_CODE_SUBDIRS = ("src", "app", "lib", "cmd", "internal")
+
 PY_EXTENSIONS = {".py", ".pyw"}
-JS_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
+JS_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts"}
+CODE_EXTENSIONS = (
+    PY_EXTENSIONS
+    | JS_EXTENSIONS
+    | {
+        ".vue", ".svelte", ".astro",
+        ".rs", ".go", ".java", ".kt", ".kts",
+        ".c", ".cc", ".cpp", ".cxx", ".h", ".hpp",
+        ".cs", ".rb", ".php", ".swift", ".scala",
+        ".ex", ".exs", ".lua", ".sh", ".bash", ".ps1",
+    }
+)
 PY_SILENT_EXCEPT_SINGLE = re.compile(
     r"^\s*except\b[^:]*:\s*(?:pass|\.\.\.|return(?:\s+(?:None|\[\]|\{\}|\"\"|''))?)\s*$"
+)
+PY_BROAD_SUPPRESS = re.compile(
+    r"\b(?:contextlib\.)?suppress\s*\([^)]*\b(?:BaseException|Exception)\b"
 )
 PY_EXCEPT_HEADER = re.compile(r"^(\s*)except\b[^:]*:\s*$")
 PY_SILENT_BODY = re.compile(
     r"^\s*(?:pass|\.\.\.|return(?:\s+(?:None|\[\]|\{\}|\"\"|''))?)\s*$"
 )
 JS_CATCH_OPEN = re.compile(r"\bcatch\s*(?:\([^)]*\))?\s*\{")
+JS_PROMISE_CATCH_BLOCK_OPEN = re.compile(
+    r"\.\s*catch\s*\(\s*(?:(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>|(?:async\s+)?function\s*(?:\([^)]*\))?)\s*\{"
+)
+JS_PROMISE_CATCH_CONCISE = re.compile(
+    r"\.\s*catch\s*\(\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*"
+    r"(?:null|undefined|\[\]|\(\s*\{\s*\}\s*\)|\"\"|''|``|void\s+0)\s*\)"
+)
+JS_THEN_REJECT_BLOCK_OPEN = re.compile(
+    r"\.\s*then\s*\([^,\n]+,\s*(?:(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>|(?:async\s+)?function\s*(?:\([^)]*\))?)\s*\{"
+)
+JS_THEN_REJECT_CONCISE = re.compile(
+    r"\.\s*then\s*\([^,\n]+,\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*"
+    r"(?:null|undefined|\[\]|\(\s*\{\s*\}\s*\)|\"\"|''|``|void\s+0)\s*\)"
+)
 JS_SILENT_BODY = re.compile(
-    r"^return(?:\s+(?:null|undefined|\[\]|\{\}|\"\"|''))?\s*;?$"
+    r"^return(?:\s+(?:null|undefined|\[\]|\{\}|\"\"|''|``|void\s+0))?\s*;?$"
 )
 BLIND_WAIT_ALWAYS = (
     re.compile(r"\bwait_for_timeout\s*\("),
     re.compile(r"\bwaitForTimeout\s*\("),
     re.compile(r"\bnew\s+Promise\s*\([^)]*\bsetTimeout\s*\("),
+    re.compile(
+        r"\bawait\s+(?:sleep|delay|waitMs|artificialDelay|fakeDelay)\s*\(\s*"
+        r"(?:[1-9]\d*(?:_\d+)*(?:\.\d+)?|0\.\d*[1-9])"
+    ),
+    re.compile(
+        r"\b(?:min_?loading_?(?:ms|time|duration)|min_?skeleton_?(?:ms|time|duration)|"
+        r"artificial_?delay|fake_?(?:delay|loading)|"
+        r"after_(?:sync|load|reset|init)_refresh_ms|"
+        r"(?:loading|render|display|page)_delay_(?:ms|sec|seconds))\s*"
+        r"(?::[^=;\n]+)?(?:=\s*(?!0+(?:\.0+)?(?![.\d]))\S+|:\s*(?!0+(?:\.0+)?(?![.\d]))[1-9])",
+        re.I,
+    ),
 )
 BLIND_WAIT_PROMISE_START = re.compile(r"\bnew\s+Promise\s*\(")
 BLIND_WAIT_PROMISE_MULTI = re.compile(r"\bnew\s+Promise\s*\([^;]{0,160}\bsetTimeout\s*\(")
 BLIND_WAIT_CONFIGURED = (
-    re.compile(r"\b(?:time|asyncio)\.sleep\s*\("),
+    re.compile(r"\b(?:time|asyncio)\.sleep\s*\((?!\s*0+(?:\.0+)?\s*[,)])"),
     re.compile(r"\b(?:window\.|globalThis\.)?setTimeout\s*\([^,\n]+,\s*[1-9]\d*(?:_\d+)*\b"),
+    re.compile(
+        r"(?<![.\w$])(?:sleep|delay|waitMs|artificialDelay|fakeDelay)\s*\(\s*"
+        r"(?:[1-9]\d*(?:_\d+)*(?:\.\d+)?|0\.\d*[1-9])\s*\)"
+    ),
 )
 HARDCODED_PATH_PATTERNS = (
     re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[/\\]{1,2}Users[/\\]{1,2}[^\s'\"`\\)]+"),
-    re.compile(r"(?<![A-Za-z0-9_./])/(?:Users|home)/[A-Za-z0-9._-]+/"),
+    re.compile(r"(?<![A-Za-z0-9_./])/Users/[A-Za-z0-9._-]+/"),
+    re.compile(
+        r"(?<![A-Za-z0-9_./])/home/[A-Za-z0-9._-]+/"
+        r"(?:\.[A-Za-z0-9._-]+|(?:Desktop|Documents|Downloads|projects?|workspace|repos?|code|src|app|data|config|bin|venv|tmp)(?:/|$)|[^\s'\"`\\)]*\.[A-Za-z0-9]{1,8}\b)"
+    ),
+    re.compile(r"(?<![A-Za-z0-9_./])/mnt/[a-zA-Z]/Users/[^\s'\"`\\)]+"),
+    re.compile(r"(?<![A-Za-z0-9_./])/root/[A-Za-z0-9._-]+"),
+    re.compile(r"file:///(?:[A-Za-z]:/Users/|Users/|home/|root/)", re.I),
 )
-HARDCODED_LOCALHOST = re.compile(r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?\b", re.I)
+HARDCODED_LOCALHOST = re.compile(
+    r"(?:https?|wss?|postgres(?:ql)?|mysql|redis|mongodb(?:\+srv)?)://"
+    r"(?:[^/\s'\"`@]+@)?"
+    r"(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|"
+    r"192\.168\.\d{1,3}\.\d{1,3}|"
+    r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+    r"172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d+)?(?=[/?#'\"`\s),;]|$)",
+    re.I,
+)
 HARDCODED_SECRET_PATTERNS = (
     re.compile(r"\bsk-(?:proj-|live-|test-)?[A-Za-z0-9_-]{20,}\b"),
     re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
+    re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{20,}\b"),
+)
+TEST_FIXTURE_DIRS = {
+    "tests", "test", "__tests__", "__mocks__", "mocks",
+    "fixtures", "fixture", "seeds", "seed", "stories", "testdata",
+}
+TEST_FIXTURE_FILE = re.compile(
+    r"(?:^|[._-])(?:test|tests|spec|specs|mock|mocks|fixture|fixtures|seed|seeds|stories)\.[a-z0-9]+$",
+    re.I,
+)
+MOCK_DATA_DECL = re.compile(
+    r"\b(?:(?:const|let|var)\s+)?(?:"
+    r"(?!MOCK_(?:MODE|ENABLED|FLAG)\b)(?:MOCK|FAKE|DUMMY)_[A-Z0-9_]{2,}|"
+    r"(?:mock|fake|dummy)(?:[A-Z]\w*)?(?:Data|List|Items|Users|Orders|Records|Response|Rows|Result|Results|Payload|Store)|"
+    r"(?:mock|fake|dummy)_(?:data|list|items|users|orders|records|response|rows|result|results|payload|store)"
+    r")\s*(?::[^=\n]+)?=\s*(?:\[|\{)"
+)
+MOCK_FALLBACK_EXPR = re.compile(
+    r"(?:\|\||\?\?|\bor\b)\s*(?:"
+    r"(?!MOCK_(?:MODE|ENABLED|FLAG)\b)(?:MOCK|FAKE|DUMMY)_[A-Z0-9_]{2,}|"
+    r"(?:mock|fake|dummy)(?:[A-Z]\w*)?(?:Data|List|Items|Users|Orders|Records|Response|Rows|Result|Results|Payload|Store)|"
+    r"(?:mock|fake|dummy)_(?:data|list|items|users|orders|records|response|rows|result|results|payload|store)"
+    r")\b"
+)
+MOCK_IMPORT_DIR = re.compile(
+    r"(?:^|/)(?:__mocks__|mocks|fixtures|testdata|seeds?)(?:/|$)", re.I
 )
 
 
@@ -201,6 +331,16 @@ class AntiPatternsConfig:
 
 
 @dataclass
+class FileLimitsConfig:
+    configured: bool
+    max_lines: int
+    max_allowed: int
+    allow_paths: list[Path]
+    baseline_files: dict[str, int] = field(default_factory=dict)
+    baseline_files_configured: bool = False
+
+
+@dataclass
 class GuardConfig:
     trust_level: str
     trust_level_valid: bool
@@ -215,6 +355,7 @@ class GuardConfig:
     require_fresh_head: bool
     max_escape_hatches: int
     anti_patterns: AntiPatternsConfig
+    file_limits: FileLimitsConfig
     extra_escape_patterns: list[tuple[str, re.Pattern[str]]] = field(default_factory=list)
     forbidden_primitives: list[ForbiddenPrimitive] = field(default_factory=list)
     boundary_rules: list[BoundaryRule] = field(default_factory=list)
@@ -554,6 +695,108 @@ def parse_anti_patterns_config(
     )
 
 
+def parse_file_limits_config(
+    root: Path, raw_fl: object, trust_level_valid: str, errors: list[str]
+) -> FileLimitsConfig:
+    if raw_fl is None:
+        return FileLimitsConfig(
+            configured=False,
+            max_lines=DEFAULT_MAX_FILE_LINES,
+            max_allowed=0,
+            allow_paths=[],
+            baseline_files={},
+            baseline_files_configured=False,
+        )
+    if not isinstance(raw_fl, dict):
+        errors.append(".guardrails/config.json: file_limits must be an object")
+        return FileLimitsConfig(
+            configured=True,
+            max_lines=DEFAULT_MAX_FILE_LINES,
+            max_allowed=0,
+            allow_paths=[],
+            baseline_files={},
+            baseline_files_configured=False,
+        )
+
+    max_lines = raw_fl.get("max_lines", DEFAULT_MAX_FILE_LINES)
+    if not is_int_strict(max_lines) or max_lines < 1:
+        errors.append(".guardrails/config.json: file_limits.max_lines must be a positive integer")
+        max_lines = DEFAULT_MAX_FILE_LINES
+
+    max_allowed = 0
+    max_val = raw_fl.get("max_allowed", 0)
+    if not is_int_strict(max_val) or max_val < 0:
+        errors.append(
+            ".guardrails/config.json: file_limits.max_allowed must be a non-negative integer"
+        )
+    else:
+        max_allowed = max_val
+        if trust_level_valid in {"L2", "L3"} and max_allowed > 0:
+            errors.append(
+                f".guardrails/config.json: {trust_level_valid} requires "
+                "file_limits.max_allowed == 0; split oversize monolith files before "
+                "enabling outer-loop automation"
+            )
+
+    allow_paths: list[Path] = []
+    allow_raw = raw_fl.get("allow_paths", [])
+    if not isinstance(allow_raw, list) or any(not isinstance(a, str) for a in allow_raw):
+        errors.append(".guardrails/config.json: file_limits.allow_paths must be an array of paths")
+    else:
+        for a in allow_raw:
+            try:
+                allow_paths.append(normalize_rel_path(root, a))
+            except ValueError as exc:
+                errors.append(
+                    f".guardrails/config.json: file_limits invalid allow_path '{a}': {exc}"
+                )
+
+    baseline_files: dict[str, int] = {}
+    baseline_files_configured = "baseline_files" in raw_fl and raw_fl.get("baseline_files") is not None
+    if baseline_files_configured:
+        raw_bf = raw_fl.get("baseline_files")
+        if not isinstance(raw_bf, dict):
+            errors.append(
+                ".guardrails/config.json: file_limits.baseline_files must be an object mapping paths to line counts"
+            )
+        else:
+            root_resolved = root.resolve()
+            for raw_k, raw_v in raw_bf.items():
+                if not isinstance(raw_k, str):
+                    errors.append(
+                        ".guardrails/config.json: file_limits.baseline_files keys must be relative file paths"
+                    )
+                    continue
+                try:
+                    norm_rel = normalize_rel_path(root, raw_k).relative_to(root_resolved).as_posix()
+                except ValueError as exc:
+                    errors.append(
+                        f".guardrails/config.json: file_limits invalid baseline_files path '{raw_k}': {exc}"
+                    )
+                    continue
+                if not is_int_strict(raw_v) or raw_v < 1:
+                    errors.append(
+                        f".guardrails/config.json: file_limits.baseline_files['{raw_k}'] must be a positive integer"
+                    )
+                    continue
+                baseline_files[norm_rel] = raw_v
+            if trust_level_valid in {"L2", "L3"} and baseline_files:
+                errors.append(
+                    f".guardrails/config.json: {trust_level_valid} requires "
+                    "file_limits.baseline_files to be empty; split oversize monolith files before "
+                    "enabling outer-loop automation"
+                )
+
+    return FileLimitsConfig(
+        configured=True,
+        max_lines=max_lines,
+        max_allowed=max_allowed,
+        allow_paths=allow_paths,
+        baseline_files=baseline_files,
+        baseline_files_configured=baseline_files_configured,
+    )
+
+
 def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | None:
     try:
         data = json.loads(raw_text)
@@ -705,6 +948,8 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
     )
     raw_ap = data["anti_patterns"] if "anti_patterns" in data else None
     anti_patterns = parse_anti_patterns_config(root, raw_ap, trust_level_valid, errors)
+    raw_fl = data["file_limits"] if "file_limits" in data else None
+    file_limits = parse_file_limits_config(root, raw_fl, trust_level_valid, errors)
 
     boundary_rules: list[BoundaryRule] = []
     raw_br = data.get("boundary_rules", [])
@@ -760,30 +1005,63 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
         require_fresh_head=require_fresh_head,
         max_escape_hatches=max_escape_hatches,
         anti_patterns=anti_patterns,
+        file_limits=file_limits,
         extra_escape_patterns=extra_patterns,
         forbidden_primitives=forbidden_primitives,
         boundary_rules=boundary_rules,
     )
 
 
+def _should_skip_source_file(fpath: Path) -> bool:
+    fname = fpath.name
+    if fname == ".env" or fname.startswith(".env.") or fname in SKIPPED_FILENAMES:
+        return True
+    lower_name = fname.lower()
+    if lower_name.endswith(".min.js") or lower_name.endswith(".min.css"):
+        return True
+    return fpath.suffix.lower() in SKIPPED_SUFFIXES
+
+
+def _is_package_level_dir(root: Path, dir_path: Path) -> bool:
+    try:
+        parts = dir_path.relative_to(root).parts
+    except ValueError:
+        return False
+    if not parts:
+        return True
+    if len(parts) == 1 and (parts[0] in CONTAINER_DIRS or parts[0] in WORKSPACE_PARENT_DIRS):
+        return True
+    return len(parts) == 2 and parts[0] in WORKSPACE_PARENT_DIRS
+
+
 def collect_source_files(root: Path, cfg: GuardConfig) -> list[Path]:
+    root = root.resolve()
     seen: set[str] = set()
     files: list[Path] = []
     for src_root in cfg.source_roots:
         if not src_root.exists():
             continue
         if src_root.is_file():
+            if _should_skip_source_file(src_root):
+                continue
             key = norm_key(src_root)
             if key not in seen:
                 seen.add(key)
                 files.append(src_root)
             continue
         for dirpath, dirnames, filenames in os.walk(src_root):
+            pkg_level = _is_package_level_dir(root, Path(dirpath))
             dirnames[:] = sorted(
-                d for d in dirnames if d not in cfg.exclude_dirs and not d.startswith(".git")
+                d
+                for d in dirnames
+                if d not in cfg.exclude_dirs
+                and not d.startswith(".git")
+                and not (pkg_level and d in ROOT_ARTIFACT_DIRS)
             )
             for fname in sorted(filenames):
                 fpath = Path(dirpath) / fname
+                if _should_skip_source_file(fpath):
+                    continue
                 key = norm_key(fpath)
                 if key not in seen:
                     seen.add(key)
@@ -861,84 +1139,327 @@ def match_pattern_rules(
     return hits
 
 
+def _is_silent_return_expr(expr: ast.expr | None) -> bool:
+    if expr is None:
+        return True
+    if isinstance(expr, ast.Constant):
+        return expr.value is None or expr.value == ""
+    if isinstance(expr, (ast.List, ast.Tuple)):
+        return len(expr.elts) == 0
+    if isinstance(expr, ast.Dict):
+        return len(expr.keys) == 0
+    return False
+
+
+def _is_broad_suppress_arg(arg: ast.expr) -> bool:
+    if isinstance(arg, ast.Name) and arg.id in {"Exception", "BaseException"}:
+        return True
+    if isinstance(arg, ast.Tuple):
+        return any(_is_broad_suppress_arg(elt) for elt in arg.elts)
+    return False
+
+
+def _scan_python_silent_catch(
+    text: str, stripped_lines: list[str], rel_posix: str
+) -> list[tuple[str, int, str]]:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        hits: list[tuple[str, int, str]] = []
+        for i, code in enumerate(stripped_lines):
+            if not code.strip():
+                continue
+            if PY_SILENT_EXCEPT_SINGLE.match(code) or PY_BROAD_SUPPRESS.search(code):
+                hits.append((rel_posix, i + 1, "silent-catch"))
+                continue
+            m = PY_EXCEPT_HEADER.match(code)
+            if not m:
+                continue
+            base_indent = len(m[1].expandtabs(4))
+            first_j = next(
+                (j for j in range(i + 1, len(stripped_lines)) if stripped_lines[j].strip()),
+                None,
+            )
+            if first_j is None:
+                continue
+            code_j = stripped_lines[first_j]
+            indent_j = len(code_j[:len(code_j) - len(code_j.lstrip())].expandtabs(4))
+            if indent_j <= base_indent or not PY_SILENT_BODY.match(code_j):
+                continue
+            next_k = next(
+                (k for k in range(first_j + 1, len(stripped_lines)) if stripped_lines[k].strip()),
+                None,
+            )
+            if next_k is None:
+                hits.append((rel_posix, i + 1, "silent-catch"))
+                continue
+            code_k = stripped_lines[next_k]
+            indent_k = len(code_k[:len(code_k) - len(code_k.lstrip())].expandtabs(4))
+            if indent_k <= base_indent:
+                hits.append((rel_posix, i + 1, "silent-catch"))
+        return hits
+
+    suppress_names: set[str] = {"suppress"}
+    contextlib_aliases: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "contextlib":
+                    contextlib_aliases.add(alias.asname or "contextlib")
+        elif isinstance(node, ast.ImportFrom) and node.module == "contextlib":
+            for alias in node.names:
+                if alias.name == "suppress":
+                    suppress_names.add(alias.asname or "suppress")
+
+    hit_lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ExceptHandler):
+            if len(node.body) == 1:
+                stmt = node.body[0]
+                is_silent = (
+                    isinstance(stmt, ast.Pass)
+                    or (
+                        isinstance(stmt, ast.Expr)
+                        and isinstance(stmt.value, ast.Constant)
+                        and stmt.value.value is Ellipsis
+                    )
+                    or (isinstance(stmt, ast.Return) and _is_silent_return_expr(stmt.value))
+                )
+                if is_silent:
+                    hit_lines.add(node.lineno)
+        elif isinstance(node, (ast.With, ast.AsyncWith)):
+            for item in node.items:
+                expr = item.context_expr
+                if not isinstance(expr, ast.Call):
+                    continue
+                func = expr.func
+                is_suppress_call = (
+                    (isinstance(func, ast.Name) and func.id in suppress_names)
+                    or (
+                        isinstance(func, ast.Attribute)
+                        and func.attr == "suppress"
+                        and isinstance(func.value, ast.Name)
+                        and func.value.id in contextlib_aliases
+                    )
+                )
+                if is_suppress_call and any(_is_broad_suppress_arg(arg) for arg in expr.args):
+                    hit_lines.add(node.lineno)
+
+    return [(rel_posix, ln, "silent-catch") for ln in sorted(hit_lines)]
+
+
+def _scrub_js_non_code(text: str) -> list[str]:
+    """Blank out JS/TS comment text and string/template contents while preserving line numbers."""
+    out: list[str] = []
+    n = len(text)
+    i = 0
+    state = "normal"
+    tmpl_brace_stack: list[int] = []
+
+    while i < n:
+        ch = text[i]
+        nxt = text[i + 1] if i + 1 < n else ""
+
+        if state == "line_comment":
+            if ch == "\n":
+                out.append("\n")
+                state = "normal"
+            else:
+                out.append(" ")
+            i += 1
+            continue
+
+        if state == "block_comment":
+            if ch == "*" and nxt == "/":
+                out.append("  ")
+                i += 2
+                state = "normal"
+            elif ch == "\n":
+                out.append("\n")
+                i += 1
+            else:
+                out.append(" ")
+                i += 1
+            continue
+
+        if state in ("single", "double"):
+            q = "'" if state == "single" else '"'
+            if ch == "\\":
+                if nxt == "\n":
+                    out.append(" \n")
+                    i += 2
+                elif nxt:
+                    out.append("  ")
+                    i += 2
+                else:
+                    out.append(" ")
+                    i += 1
+            elif ch == q:
+                out.append(ch)
+                i += 1
+                state = "normal"
+            elif ch == "\n":
+                out.append("\n")
+                i += 1
+                state = "normal"
+            else:
+                out.append(" ")
+                i += 1
+            continue
+
+        if state == "template":
+            if ch == "\\":
+                if nxt == "\n":
+                    out.append(" \n")
+                    i += 2
+                elif nxt:
+                    out.append("  ")
+                    i += 2
+                else:
+                    out.append(" ")
+                    i += 1
+            elif ch == "`":
+                out.append(ch)
+                i += 1
+                state = "normal"
+            elif ch == "$" and nxt == "{":
+                out.append("  ")
+                i += 2
+                tmpl_brace_stack.append(1)
+                state = "normal"
+            elif ch == "\n":
+                out.append("\n")
+                i += 1
+            else:
+                out.append(" ")
+                i += 1
+            continue
+
+        if ch == "/" and nxt == "/":
+            out.append("  ")
+            i += 2
+            state = "line_comment"
+        elif ch == "/" and nxt == "*":
+            out.append("  ")
+            i += 2
+            state = "block_comment"
+        elif ch == "'":
+            out.append(ch)
+            i += 1
+            state = "single"
+        elif ch == '"':
+            out.append(ch)
+            i += 1
+            state = "double"
+        elif ch == "`":
+            out.append(ch)
+            i += 1
+            state = "template"
+        elif ch == "{" and tmpl_brace_stack:
+            tmpl_brace_stack[-1] += 1
+            out.append(ch)
+            i += 1
+        elif ch == "}" and tmpl_brace_stack:
+            tmpl_brace_stack[-1] -= 1
+            if tmpl_brace_stack[-1] == 0:
+                tmpl_brace_stack.pop()
+                out.append(" ")
+                state = "template"
+            else:
+                out.append(ch)
+            i += 1
+        else:
+            out.append(ch)
+            i += 1
+
+    return "".join(out).split(LF)
+
+
+def _extract_js_brace_body(
+    stripped_lines: list[str], start_line: int, open_end_col: int
+) -> str | None:
+    """Return whitespace-normalized body after '{' across up to 6 lines, or None if unclosed."""
+    body_chars: list[str] = []
+    depth = 1
+    for idx_line in range(start_line, min(len(stripped_lines), start_line + 6)):
+        seg = stripped_lines[idx_line]
+        if idx_line == start_line:
+            seg = seg[open_end_col:]
+        for ch in seg:
+            if ch == "{":
+                depth += 1
+                body_chars.append(ch)
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return " ".join("".join(body_chars).split())
+                body_chars.append(ch)
+            else:
+                body_chars.append(ch)
+        body_chars.append(" ")
+    return None
+
+
+def is_test_or_fixture_path(rel_posix: str) -> bool:
+    parts = [p for p in rel_posix.split("/") if p]
+    if any(part.lower() in TEST_FIXTURE_DIRS for part in parts[:-1]):
+        return True
+    fname = parts[-1].lower() if parts else ""
+    is_py_test_prefix = fname.startswith("test_") and Path(fname).suffix in PY_EXTENSIONS
+    return (
+        is_py_test_prefix
+        or fname == "conftest.py"
+        or bool(TEST_FIXTURE_FILE.search(fname))
+    )
+
+
 def scan_anti_patterns_in_file(
     fpath: Path,
     rel_posix: str,
+    text: str,
     stripped_lines: list[str],
     ap: AntiPatternsConfig,
 ) -> list[tuple[str, int, str]]:
-    hits: list[tuple[str, int, str]] = []
     suffix = fpath.suffix.lower()
+    if suffix not in CODE_EXTENSIONS:
+        return []
+
+    is_test_file = is_test_or_fixture_path(rel_posix)
+    hits: list[tuple[str, int, str]] = []
     enabled = set(ap.enabled)
 
-    if "silent-catch" in enabled and not is_anti_pattern_allowed(fpath, "silent-catch", ap):
+    if (
+        not is_test_file
+        and "silent-catch" in enabled
+        and not is_anti_pattern_allowed(fpath, "silent-catch", ap)
+    ):
         if suffix in PY_EXTENSIONS:
-            for i, code in enumerate(stripped_lines):
-                if not code.strip():
-                    continue
-                if PY_SILENT_EXCEPT_SINGLE.match(code):
-                    hits.append((rel_posix, i + 1, "silent-catch"))
-                    continue
-                m = PY_EXCEPT_HEADER.match(code)
-                if not m:
-                    continue
-                base_indent = len(m[1].expandtabs(4))
-                first_j = next(
-                    (j for j in range(i + 1, len(stripped_lines)) if stripped_lines[j].strip()),
-                    None,
-                )
-                if first_j is None:
-                    continue
-                code_j = stripped_lines[first_j]
-                indent_j = len(code_j[:len(code_j) - len(code_j.lstrip())].expandtabs(4))
-                if indent_j <= base_indent or not PY_SILENT_BODY.match(code_j):
-                    continue
-                next_k = next(
-                    (k for k in range(first_j + 1, len(stripped_lines)) if stripped_lines[k].strip()),
-                    None,
-                )
-                if next_k is None:
-                    hits.append((rel_posix, i + 1, "silent-catch"))
-                    continue
-                code_k = stripped_lines[next_k]
-                indent_k = len(code_k[:len(code_k) - len(code_k.lstrip())].expandtabs(4))
-                if indent_k <= base_indent:
-                    hits.append((rel_posix, i + 1, "silent-catch"))
+            hits.extend(_scan_python_silent_catch(text, stripped_lines, rel_posix))
         elif suffix in JS_EXTENSIONS:
-            for i, code in enumerate(stripped_lines):
+            js_lines = _scrub_js_non_code(text)
+            for i, code in enumerate(js_lines):
                 if not code.strip():
                     continue
-                m = JS_CATCH_OPEN.search(code)
-                if not m:
-                    continue
-                body_chars: list[str] = []
-                depth = 1
-                closed = False
-                for idx_line in range(i, min(len(stripped_lines), i + 6)):
-                    seg = stripped_lines[idx_line]
-                    if idx_line == i:
-                        seg = seg[m.end():]
-                    for ch in seg:
-                        if ch == "{":
-                            depth += 1
-                            body_chars.append(ch)
-                        elif ch == "}":
-                            depth -= 1
-                            if depth == 0:
-                                closed = True
+                found_silent = bool(
+                    JS_PROMISE_CATCH_CONCISE.search(code) or JS_THEN_REJECT_CONCISE.search(code)
+                )
+                if not found_silent:
+                    for pat in (JS_CATCH_OPEN, JS_PROMISE_CATCH_BLOCK_OPEN, JS_THEN_REJECT_BLOCK_OPEN):
+                        for m in pat.finditer(code):
+                            body = _extract_js_brace_body(js_lines, i, m.end())
+                            if body is not None and (body == "" or JS_SILENT_BODY.match(body)):
+                                found_silent = True
                                 break
-                            body_chars.append(ch)
-                        else:
-                            body_chars.append(ch)
-                    if closed:
-                        break
-                    body_chars.append(" ")
-                if closed:
-                    body = " ".join("".join(body_chars).split())
-                    if body == "" or JS_SILENT_BODY.match(body):
-                        hits.append((rel_posix, i + 1, "silent-catch"))
+                        if found_silent:
+                            break
+                if found_silent:
+                    hits.append((rel_posix, i + 1, "silent-catch"))
 
-    if "blind-wait" in enabled and not is_anti_pattern_allowed(fpath, "blind-wait", ap):
+    if (
+        not is_test_file
+        and "blind-wait" in enabled
+        and not is_anti_pattern_allowed(fpath, "blind-wait", ap)
+    ):
         blind_patterns = list(BLIND_WAIT_ALWAYS)
         if ap.configured:
             blind_patterns.extend(BLIND_WAIT_CONFIGURED)
@@ -958,13 +1479,18 @@ def scan_anti_patterns_in_file(
                     hits.append((rel_posix, i + 1, "blind-wait"))
                     skip_lines.update({i + 1, i + 2})
 
-    if "hardcoded-path" in enabled and not is_anti_pattern_allowed(fpath, "hardcoded-path", ap):
+    if (
+        not is_test_file
+        and "hardcoded-path" in enabled
+        and not is_anti_pattern_allowed(fpath, "hardcoded-path", ap)
+    ):
         for i, code in enumerate(stripped_lines):
             if code and any(pat.search(code) for pat in HARDCODED_PATH_PATTERNS):
                 hits.append((rel_posix, i + 1, "hardcoded-path"))
 
     if (
-        ap.configured
+        not is_test_file
+        and ap.configured
         and "hardcoded-localhost" in enabled
         and not is_anti_pattern_allowed(fpath, "hardcoded-localhost", ap)
     ):
@@ -977,18 +1503,36 @@ def scan_anti_patterns_in_file(
             if code and any(pat.search(code) for pat in HARDCODED_SECRET_PATTERNS):
                 hits.append((rel_posix, i + 1, "hardcoded-secret"))
 
+    if (
+        not is_test_file
+        and "mock-in-prod" in enabled
+        and not is_anti_pattern_allowed(fpath, "mock-in-prod", ap)
+    ):
+        for i, code in enumerate(stripped_lines):
+            if not code.strip():
+                continue
+            matched = bool(MOCK_DATA_DECL.search(code) or MOCK_FALLBACK_EXPR.search(code))
+            if not matched:
+                for target in extract_imports(code):
+                    if MOCK_IMPORT_DIR.search(normalize_import_target(target)):
+                        matched = True
+                        break
+            if matched:
+                hits.append((rel_posix, i + 1, "mock-in-prod"))
+
     return hits
 
 
-def scan_sources(
-    root: Path, cfg: GuardConfig, errors: list[str], warnings: list[str]
-) -> dict[str, int]:
+def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
+    root = root.resolve()
     files = collect_source_files(root, cfg)
     escape_violations: list[tuple[str, int, str]] = []
     ap_hits: list[tuple[str, int, str]] = []
-    primitive_violations = 0
-    extra_ap_violations = 0
-    boundary_violations = 0
+    oversize_violations: list[tuple[str, int]] = []
+    seen_line_counts: dict[str, int] = {}
+    primitive_errors: list[str] = []
+    extra_ap_errors: list[str] = []
+    boundary_errors: list[str] = []
 
     compiled_globs = {
         rule.id: [glob_to_regex(g) for g in rule.globs]
@@ -1002,17 +1546,19 @@ def scan_sources(
         rule.id: re.compile(rf"(?:^|/){re.escape(rule.forbid_import)}(?:/|$)")
         for rule in cfg.boundary_rules
     }
+    all_escape_patterns = list(DEFAULT_ESCAPE_PATTERNS) + cfg.extra_escape_patterns
 
+    decoded_files = 0
     for fpath in files:
         text = read_source_text(fpath)
         if text is None:
             continue
+        decoded_files += 1
         rel_posix = fpath.relative_to(root).as_posix()
         lines = text.split(LF)
         stripped_lines = [strip_code_comments(line) for line in lines]
 
         # 1. Escape hatches & workaround comments
-        all_escape_patterns = list(DEFAULT_ESCAPE_PATTERNS) + cfg.extra_escape_patterns
         for idx, line in enumerate(lines, start=1):
             matched_tag = None
             for tag, pat in all_escape_patterns:
@@ -1027,29 +1573,43 @@ def scan_sources(
                 escape_violations.append((rel_posix, idx, matched_tag))
 
         # 2. Forbidden primitives & anti_patterns.extra_rules
-        primitive_violations += match_pattern_rules(
+        match_pattern_rules(
             fpath,
             rel_posix,
             stripped_lines,
             cfg.forbidden_primitives,
             compiled_globs,
             "forbidden_primitive",
-            errors,
+            primitive_errors,
         )
-        extra_ap_violations += match_pattern_rules(
+        match_pattern_rules(
             fpath,
             rel_posix,
             stripped_lines,
             cfg.anti_patterns.extra_rules,
             ap_compiled_globs,
             "anti_pattern_rule",
-            errors,
+            extra_ap_errors,
         )
 
         # 3. Built-in anti-patterns
-        ap_hits.extend(scan_anti_patterns_in_file(fpath, rel_posix, stripped_lines, cfg.anti_patterns))
+        ap_hits.extend(
+            scan_anti_patterns_in_file(fpath, rel_posix, text, stripped_lines, cfg.anti_patterns)
+        )
 
-        # 4. Boundary rules
+        # 4. File line limits
+        if (
+            cfg.file_limits.configured
+            and fpath.suffix.lower() in CODE_EXTENSIONS
+            and not is_test_or_fixture_path(rel_posix)
+            and not any(path_is_within(fpath, allow) for allow in cfg.file_limits.allow_paths)
+        ):
+            line_count = len(text.splitlines())
+            seen_line_counts[rel_posix] = line_count
+            if line_count > cfg.file_limits.max_lines:
+                oversize_violations.append((rel_posix, line_count))
+
+        # 5. Boundary rules
         for rule in cfg.boundary_rules:
             if not path_is_within(fpath, rule.from_dir):
                 continue
@@ -1060,11 +1620,51 @@ def scan_sources(
                 for target in extract_imports(code):
                     norm_target = normalize_import_target(target)
                     if pat.search(norm_target):
-                        boundary_violations += 1
-                        errors.append(
+                        boundary_errors.append(
                             f"boundary_rule '{rule.id}' at {rel_posix}:{idx} imports "
                             f"'{target}': {rule.message}"
                         )
+
+    return {
+        "files_scanned": decoded_files,
+        "escape_violations": escape_violations,
+        "ap_hits": ap_hits,
+        "oversize_violations": oversize_violations,
+        "seen_line_counts": seen_line_counts,
+        "primitive_errors": primitive_errors,
+        "extra_ap_errors": extra_ap_errors,
+        "boundary_errors": boundary_errors,
+    }
+
+
+def scan_sources(
+    root: Path, cfg: GuardConfig, errors: list[str], warnings: list[str]
+) -> dict[str, int]:
+    findings = _collect_code_findings(root, cfg)
+    root_resolved = root.resolve()
+    missing_roots = [
+        sr.relative_to(root_resolved).as_posix()
+        for sr in cfg.source_roots
+        if not sr.exists()
+    ]
+    if missing_roots:
+        errors.append(
+            ".guardrails/config.json: configured source_root does not exist: "
+            + ", ".join(missing_roots)
+        )
+    elif findings["files_scanned"] == 0:
+        errors.append(
+            ".guardrails/config.json: source_roots matched 0 source files; "
+            "check source_roots and exclude_dirs"
+        )
+
+    escape_violations = findings["escape_violations"]
+    ap_hits = findings["ap_hits"]
+    oversize_violations = findings["oversize_violations"]
+
+    errors.extend(findings["primitive_errors"])
+    errors.extend(findings["extra_ap_errors"])
+    errors.extend(findings["boundary_errors"])
 
     found_escapes = len(escape_violations)
     if found_escapes > cfg.max_escape_hatches:
@@ -1098,13 +1698,59 @@ def scan_sources(
             f"lower anti_patterns.max_allowed to {found_ap} in .guardrails/config.json"
         )
 
+    found_oversize = len(oversize_violations)
+    if cfg.file_limits.configured:
+        fl_max = cfg.file_limits.max_allowed
+        if cfg.file_limits.baseline_files_configured:
+            bf = cfg.file_limits.baseline_files
+            seen_counts = findings["seen_line_counts"]
+            for rel_posix, ln_count in oversize_violations:
+                if rel_posix in bf:
+                    if ln_count > bf[rel_posix]:
+                        errors.append(
+                            f"oversize file '{rel_posix}' grew from {bf[rel_posix]} to {ln_count} lines; "
+                            "split domain logic instead of growing a monolith"
+                        )
+                else:
+                    errors.append(
+                        f"new oversize file '{rel_posix}' is {ln_count} lines (> {cfg.file_limits.max_lines}); "
+                        "keep modules under file_limits.max_lines instead of adding a new monolith"
+                    )
+            for rel_p, _ceiling in sorted(bf.items()):
+                if not (root_resolved / rel_p).is_file():
+                    warnings.append(
+                        f"baselined oversize file '{rel_p}' no longer exists; "
+                        "remove it from file_limits.baseline_files and lower max_allowed"
+                    )
+                elif rel_p in seen_counts and seen_counts[rel_p] <= cfg.file_limits.max_lines:
+                    warnings.append(
+                        f"oversize file '{rel_p}' shrunk to {seen_counts[rel_p]} lines "
+                        f"(<= {cfg.file_limits.max_lines}); remove it from file_limits.baseline_files and lower max_allowed"
+                    )
+        if found_oversize > fl_max:
+            sample = ", ".join(
+                f"{p}:{ln} (>{cfg.file_limits.max_lines})" for p, ln in oversize_violations[:8]
+            )
+            more = f" (+{found_oversize - 8} more)" if found_oversize > 8 else ""
+            errors.append(
+                f"oversize files found ({found_oversize}) exceed file_limits.max_allowed "
+                f"({fl_max}): {sample}{more}; split domain logic from UI/IO adapters "
+                "instead of growing monolith files or raising max_allowed"
+            )
+        elif found_oversize < fl_max:
+            warnings.append(
+                f"oversize files dropped to {found_oversize} under ratchet {fl_max}; "
+                f"lower file_limits.max_allowed to {found_oversize} in .guardrails/config.json"
+            )
+
     return {
-        "files_scanned": len(files),
+        "files_scanned": findings["files_scanned"],
         "escape_hatches": found_escapes,
         "anti_patterns": found_ap,
-        "anti_pattern_rule_violations": extra_ap_violations,
-        "primitive_violations": primitive_violations,
-        "boundary_violations": boundary_violations,
+        "anti_pattern_rule_violations": len(findings["extra_ap_errors"]),
+        "oversize_files": found_oversize,
+        "primitive_violations": len(findings["primitive_errors"]),
+        "boundary_violations": len(findings["boundary_errors"]),
     }
 
 
@@ -1369,10 +2015,16 @@ def check_features_and_verification(
         fm_text = read_utf8_lf(feature_map_file)
         fm_rows = rows_in(visible_lines(fm_text), "Feature")
         if not fm_rows:
-            errors.append(
-                ".guardrails/feature-map.md: missing non-empty Feature table "
-                "('| Feature | Entrypoint | Verify CLI | Artifact | Priority |')"
-            )
+            if cfg.trust_level_valid and cfg.trust_level == "L0":
+                warnings.append(
+                    ".guardrails/feature-map.md has no feature rows yet "
+                    "(optional at L0; populate core entrypoints before L1)"
+                )
+            else:
+                errors.append(
+                    ".guardrails/feature-map.md: missing non-empty Feature table "
+                    "('| Feature | Entrypoint | Verify CLI | Artifact | Priority |')"
+                )
         for row in fm_rows:
             if len(row) < 5:
                 errors.append(f".guardrails/feature-map.md: row has fewer than 5 columns: {row}")
@@ -1578,6 +2230,538 @@ def run_check_command(root: Path, command: str, errors: list[str]) -> dict:
     }
 
 
+def _pm_run(pm: str, rel_dir: str, script: str) -> str:
+    if not rel_dir:
+        return f"{pm} run {script}"
+    if pm == "pnpm":
+        return f"pnpm --dir {rel_dir} run {script}"
+    if pm == "npm":
+        return f"npm --prefix {rel_dir} run {script}"
+    if pm == "bun":
+        return f"bun run --cwd {rel_dir} {script}"
+    return f"{pm} --cwd {rel_dir} run {script}"
+
+
+def _pm_vitest_run(pm: str, rel_dir: str) -> str:
+    if not rel_dir:
+        return {
+            "npm": "npx vitest run",
+            "pnpm": "pnpm exec vitest run",
+            "yarn": "yarn vitest run",
+            "bun": "bunx vitest run",
+        }.get(pm, "npx vitest run")
+    if pm == "npm":
+        return f"npm --prefix {rel_dir} run test -- --run"
+    if pm == "pnpm":
+        return f"pnpm --dir {rel_dir} exec vitest run"
+    if pm == "bun":
+        return f"bun run --cwd {rel_dir} vitest run"
+    return f"{pm} --cwd {rel_dir} vitest run"
+
+
+def _has_stack_manifest(dir_path: Path) -> bool:
+    for fname in ("package.json", "pyproject.toml", "pytest.ini", "setup.py", "Cargo.toml", "go.mod"):
+        if (dir_path / fname).is_file():
+            return True
+    tests_dir = dir_path / "tests"
+    return tests_dir.is_dir() and any(tests_dir.glob("*.py"))
+
+
+def _detect_dir_stack_and_check(dir_path: Path, rel_dir: str, root: Path) -> tuple[list[str], str, str]:
+    stacks: list[str] = []
+    pkg_manager = ""
+    dir_cmds: list[str] = []
+
+    pkg_path = dir_path / "package.json"
+    if pkg_path.is_file():
+        node_cmd = ""
+        stacks.append("node")
+        if (dir_path / "tsconfig.json").is_file():
+            stacks.append("typescript")
+        search_bases = [dir_path, root] if rel_dir else [dir_path]
+        for base in search_bases:
+            if (base / "pnpm-lock.yaml").is_file():
+                pkg_manager = "pnpm"
+                break
+            if (base / "package-lock.json").is_file() or (base / "npm-shrinkwrap.json").is_file():
+                pkg_manager = "npm"
+                break
+            if (base / "yarn.lock").is_file():
+                pkg_manager = "yarn"
+                break
+            if (base / "bun.lockb").is_file() or (base / "bun.lock").is_file():
+                pkg_manager = "bun"
+                break
+        if not pkg_manager:
+            pkg_manager = "npm"
+        try:
+            pkg_data = json.loads(read_utf8_lf(pkg_path))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pkg_data = {}
+        scripts = pkg_data.get("scripts") if isinstance(pkg_data, dict) else None
+        if isinstance(scripts, dict):
+            check_script = scripts.get("check")
+            if isinstance(check_script, str) and check_script.strip():
+                node_cmd = _pm_run(pkg_manager, rel_dir, "check")
+            else:
+                parts: list[str] = []
+                for key in ("lint", "typecheck", "test"):
+                    raw = scripts.get(key)
+                    if not isinstance(raw, str) or not raw.strip():
+                        continue
+                    if key == "test":
+                        if "no test specified" in raw.casefold():
+                            continue
+                        if raw.strip() == "vitest":
+                            parts.append(_pm_vitest_run(pkg_manager, rel_dir))
+                            continue
+                    parts.append(_pm_run(pkg_manager, rel_dir, key))
+                if parts:
+                    node_cmd = " && ".join(parts)
+                elif isinstance(scripts.get("build"), str) and scripts["build"].strip():
+                    node_cmd = _pm_run(pkg_manager, rel_dir, "build")
+        if not node_cmd and (dir_path / "tsconfig.json").is_file():
+            if not rel_dir:
+                node_cmd = (
+                    "bunx tsc --noEmit"
+                    if pkg_manager == "bun"
+                    else ("pnpm exec tsc --noEmit" if pkg_manager == "pnpm" else "npx tsc --noEmit")
+                )
+            elif pkg_manager == "pnpm":
+                node_cmd = f"pnpm --dir {rel_dir} exec tsc --noEmit"
+            elif pkg_manager == "bun":
+                node_cmd = f"bun run --cwd {rel_dir} tsc --noEmit"
+            elif pkg_manager == "yarn":
+                node_cmd = f"yarn --cwd {rel_dir} tsc --noEmit"
+            else:
+                node_cmd = f"npm --prefix {rel_dir} exec --no -- tsc -p {rel_dir}/tsconfig.json --noEmit"
+        if node_cmd:
+            dir_cmds.append(node_cmd)
+
+    py_has_tests = (dir_path / "tests").is_dir() and any((dir_path / "tests").glob("*.py"))
+    pyproject_path = dir_path / "pyproject.toml"
+    if (
+        pyproject_path.is_file()
+        or (dir_path / "pytest.ini").is_file()
+        or (dir_path / "setup.py").is_file()
+        or py_has_tests
+    ):
+        stacks.append("python")
+        has_pytest = (dir_path / "pytest.ini").is_file()
+        if not has_pytest and pyproject_path.is_file():
+            try:
+                has_pytest = "pytest" in read_utf8_lf(pyproject_path).casefold()
+            except UnicodeDecodeError:
+                has_pytest = False
+        py_cmd = ""
+        if not rel_dir:
+            if (dir_path / "uv.lock").is_file() and has_pytest:
+                py_cmd = "uv run pytest"
+            elif has_pytest:
+                py_cmd = "python -X utf8 -m pytest"
+            elif (dir_path / "tests").is_dir():
+                py_cmd = 'python -X utf8 -B -m unittest discover -s tests -p "test_*.py"'
+            elif not dir_cmds:
+                py_cmd = "python -X utf8 -m unittest"
+        else:
+            if (dir_path / "uv.lock").is_file() and has_pytest:
+                py_cmd = f"uv --directory {rel_dir} run pytest"
+            elif (root / "uv.lock").is_file() and has_pytest:
+                py_cmd = f"uv run pytest {rel_dir}"
+            elif has_pytest:
+                py_cmd = f"python -X utf8 -m pytest {rel_dir}"
+            elif (dir_path / "tests").is_dir():
+                py_cmd = f'python -X utf8 -B -m unittest discover -s {rel_dir}/tests -p "test_*.py"'
+            else:
+                py_cmd = f"python -X utf8 -m unittest discover -s {rel_dir}"
+        if py_cmd:
+            dir_cmds.append(py_cmd)
+
+    if (dir_path / "Cargo.toml").is_file():
+        stacks.append("rust")
+        dir_cmds.append("cargo test" if not rel_dir else f"cargo test --manifest-path {rel_dir}/Cargo.toml")
+
+    if (dir_path / "go.mod").is_file():
+        stacks.append("go")
+        dir_cmds.append("go test ./..." if not rel_dir else f"go -C {rel_dir} test ./...")
+
+    return stacks, pkg_manager, " && ".join(dir_cmds)
+
+
+def _manifest_referenced_script_dirs(root: Path) -> list[str]:
+    refs: list[str] = []
+    pkg_path = root / "package.json"
+    if pkg_path.is_file():
+        try:
+            pkg_data = json.loads(read_utf8_lf(pkg_path))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pkg_data = {}
+        if isinstance(pkg_data, dict):
+            for key in ("scripts", "bin"):
+                val = pkg_data.get(key)
+                if isinstance(val, str):
+                    refs.append(val)
+                elif isinstance(val, dict):
+                    refs.extend(str(v) for v in val.values() if isinstance(v, str))
+    pyproj_path = root / "pyproject.toml"
+    if pyproj_path.is_file():
+        try:
+            refs.append(read_utf8_lf(pyproj_path))
+        except UnicodeDecodeError:
+            pass
+    blob = "\n".join(refs).replace("\\", "/")
+    found: list[str] = []
+    for candidate in ("scripts", "bin"):
+        if (root / candidate).is_dir() and f"{candidate}/" in blob:
+            found.append(candidate)
+    return found
+
+
+def detect_project_stack(root: Path, override_check_cmd: str = "") -> dict:
+    source_roots = [d for d in DIRECT_SOURCE_ROOTS if (root / d).is_dir()]
+    manifest_targets: list[tuple[str, Path]] = []
+
+    for wp in WORKSPACE_PARENT_DIRS:
+        wp_dir = root / wp
+        if not wp_dir.is_dir():
+            continue
+        matched_any = False
+        children = sorted(
+            (
+                p
+                for p in wp_dir.iterdir()
+                if p.is_dir()
+                and p.name not in DEFAULT_EXCLUDE_DIRS
+                and p.name not in ROOT_ARTIFACT_DIRS
+                and not p.name.startswith(".git")
+            ),
+            key=lambda p: p.name,
+        )
+        for ch in children:
+            rel_c = f"{wp}/{ch.name}"
+            nested = [f"{rel_c}/{sub}" for sub in NESTED_CODE_SUBDIRS if (ch / sub).is_dir()]
+            if _has_stack_manifest(ch):
+                source_roots.extend(nested if nested else [rel_c])
+                manifest_targets.append((rel_c, ch))
+                matched_any = True
+            elif _dir_has_code_files(ch):
+                source_roots.extend(nested if nested else [rel_c])
+                matched_any = True
+        if not matched_any and _dir_has_code_files(wp_dir):
+            source_roots.append(wp)
+
+    for container in CONTAINER_DIRS:
+        c_dir = root / container
+        if not c_dir.is_dir():
+            continue
+        nested = [f"{container}/{sub}" for sub in NESTED_CODE_SUBDIRS if (c_dir / sub).is_dir()]
+        source_roots.extend(nested if nested else [container])
+        if _has_stack_manifest(c_dir):
+            manifest_targets.append((container, c_dir))
+
+    for ref_dir in _manifest_referenced_script_dirs(root):
+        if ref_dir not in source_roots:
+            source_roots.append(ref_dir)
+
+    source_roots = list(dict.fromkeys(source_roots))
+    allow_paths: list[str] = []
+    if not source_roots:
+        source_roots = ["."]
+
+    root_stacks, pkg_manager, root_cmd = _detect_dir_stack_and_check(root, "", root)
+    stacks = list(root_stacks)
+    sub_results: list[tuple[str, list[str], str]] = []
+    for rel_dir, c_dir in manifest_targets:
+        s_stacks, s_pm, s_cmd = _detect_dir_stack_and_check(c_dir, rel_dir, root)
+        for st in s_stacks:
+            if st not in stacks:
+                stacks.append(st)
+        if not pkg_manager and s_pm:
+            pkg_manager = s_pm
+        sub_results.append((rel_dir, s_stacks, s_cmd))
+
+    cmds: list[str] = []
+    if root_cmd and not (
+        manifest_targets
+        and root_cmd == "python -X utf8 -m unittest"
+        and not (root / "tests").is_dir()
+    ):
+        cmds.append(root_cmd)
+    for rel_dir, _s_stacks, s_cmd in sub_results:
+        if not s_cmd or s_cmd in cmds:
+            continue
+        if not cmds or not root_cmd:
+            cmds.append(s_cmd)
+            continue
+        if rel_dir in root_cmd:
+            continue
+        cmds.append(s_cmd)
+
+    detected_check_cmd = " && ".join(cmds)
+    final_cmd = override_check_cmd.strip() or detected_check_cmd
+    return {
+        "stacks": stacks,
+        "package_manager": pkg_manager,
+        "source_roots": source_roots,
+        "allow_paths": allow_paths,
+        "check_command": final_cmd,
+    }
+
+
+def _dir_has_code_files(base: Path) -> bool:
+    for _dirpath, dirnames, filenames in os.walk(base):
+        dirnames[:] = [d for d in dirnames if d not in DEFAULT_EXCLUDE_DIRS and not d.startswith(".git")]
+        for fname in filenames:
+            if Path(fname).suffix.lower() in CODE_EXTENSIONS:
+                return True
+    return False
+
+
+def scan_baseline(
+    root: Path,
+    max_lines: int = DEFAULT_MAX_FILE_LINES,
+    override_check_cmd: str = "",
+) -> dict:
+    root = root.resolve()
+    if not root.is_dir():
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": [f"target root does not exist or is not a directory: {root}"],
+            "warnings": [],
+        }
+    if not is_int_strict(max_lines) or max_lines < 1:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": ["--max-lines must be a positive integer"],
+            "warnings": [],
+        }
+
+    detected = detect_project_stack(root, override_check_cmd)
+    cfg = GuardConfig(
+        trust_level="L0",
+        trust_level_valid=True,
+        check_command=detected["check_command"] or "TODO",
+        verify_cli="",
+        verify_skill=None,
+        verify_skill_configured=False,
+        source_roots=[normalize_rel_path(root, sr) for sr in detected["source_roots"]],
+        exclude_dirs=set(STACK_DETECT_EXCLUDES),
+        prose_files=[root / "AGENTS.md"],
+        prose_max_bytes=DEFAULT_PROSE_MAX_BYTES,
+        require_fresh_head=False,
+        max_escape_hatches=0,
+        anti_patterns=AntiPatternsConfig(
+            configured=True,
+            max_allowed=0,
+            enabled=list(ANTI_PATTERN_CATEGORIES),
+            allow_paths=[normalize_rel_path(root, a) for a in detected["allow_paths"]],
+            allow_by_category={},
+            extra_rules=[],
+        ),
+        file_limits=FileLimitsConfig(
+            configured=True,
+            max_lines=max_lines,
+            max_allowed=0,
+            allow_paths=[],
+            baseline_files={},
+            baseline_files_configured=False,
+        ),
+    )
+    findings = _collect_code_findings(root, cfg)
+    escape_violations = findings["escape_violations"]
+    ap_hits = findings["ap_hits"]
+    oversize_violations = findings["oversize_violations"]
+    by_cat: dict[str, int] = {cat: 0 for cat in ANTI_PATTERN_CATEGORIES}
+    for _p, _ln, cat in ap_hits:
+        by_cat[cat] = by_cat.get(cat, 0) + 1
+
+    warnings: list[str] = []
+    if not detected["check_command"]:
+        warnings.append(
+            "no check_command auto-detected; pass --check-command \"<cmd>\" before --init"
+        )
+    if (
+        detected["source_roots"] != ["."]
+        and (root / "scripts").is_dir()
+        and "scripts" not in detected["source_roots"]
+        and _dir_has_code_files(root / "scripts")
+    ):
+        warnings.append(
+            "unscanned code directory 'scripts' found; add 'scripts' to source_roots if it ships operational code"
+        )
+
+    legacy_found = [p.as_posix() for p in LEGACY_V1_PATHS if (root / p).exists()]
+    return {
+        "root": str(root),
+        "guard_status": "baseline_scan",
+        "existing_guardrails": (root / GUARD_DIR).exists(),
+        "legacy_paths": legacy_found,
+        "detected": detected,
+        "baseline": {
+            "files_scanned": findings["files_scanned"],
+            "escape_hatches": len(escape_violations),
+            "escape_hatch_samples": [f"{p}:{ln}[{tag}]" for p, ln, tag in escape_violations[:8]],
+            "anti_patterns": len(ap_hits),
+            "anti_pattern_by_category": by_cat,
+            "anti_pattern_samples": [f"{p}:{ln}[{cat}]" for p, ln, cat in ap_hits[:8]],
+            "oversize_files": len(oversize_violations),
+            "oversize_map": {p: ln for p, ln in oversize_violations},
+            "oversize_samples": [f"{p}:{ln}" for p, ln in oversize_violations[:8]],
+            "max_lines": max_lines,
+        },
+        "errors": [],
+        "warnings": warnings,
+    }
+
+
+def init_guardrails(
+    root: Path,
+    max_lines: int = DEFAULT_MAX_FILE_LINES,
+    override_check_cmd: str = "",
+    run_check: bool = False,
+) -> dict:
+    root = root.resolve()
+    if not root.is_dir():
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": [f"target root does not exist or is not a directory: {root}"],
+            "warnings": [],
+        }
+    if not is_int_strict(max_lines) or max_lines < 1:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": ["--max-lines must be a positive integer"],
+            "warnings": [],
+        }
+    guard_dir = root / GUARD_DIR
+    if guard_dir.exists():
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": [
+                "cannot --init: .guardrails/ already exists; edit .guardrails/config.json directly"
+            ],
+            "warnings": [],
+        }
+    legacy_found = [p.as_posix() for p in LEGACY_V1_PATHS if (root / p).exists()]
+    if legacy_found:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "legacy_paths": legacy_found,
+            "errors": [
+                f"cannot --init: legacy v1 state detected ({', '.join(legacy_found)}); "
+                "migrate per references/06-repo-guard-contract.md"
+            ],
+            "warnings": [],
+        }
+
+    scan = scan_baseline(root, max_lines=max_lines, override_check_cmd=override_check_cmd)
+    if scan.get("errors"):
+        return scan
+    detected = scan["detected"]
+    baseline = scan["baseline"]
+    scan_warnings = list(scan.get("warnings", []))
+    if baseline["files_scanned"] == 0:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "detected": detected,
+            "baseline": baseline,
+            "errors": [
+                "cannot --init: source_roots matched 0 readable source files; "
+                "add code or check source_roots"
+            ],
+            "warnings": scan_warnings,
+        }
+    cmd_candidate = detected.get("check_command", "")
+    if not cmd_candidate or is_placeholder(cmd_candidate):
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "detected": detected,
+            "baseline": baseline,
+            "errors": [
+                'cannot --init without a runnable check_command; re-run with --check-command "<cmd>"'
+            ],
+            "warnings": scan_warnings,
+        }
+
+    cfg_obj = {
+        "guardrails_version": GUARDRAILS_VERSION,
+        "trust_level": "L0",
+        "check_command": cmd_candidate,
+        "verify_cli": "",
+        "source_roots": detected["source_roots"],
+        "exclude_dirs": sorted(STACK_DETECT_EXCLUDES),
+        "prose_files": ["AGENTS.md"],
+        "prose_max_bytes": DEFAULT_PROSE_MAX_BYTES,
+        "require_fresh_head": False,
+        "escape_hatches": {
+            "max_allowed": baseline["escape_hatches"],
+            "extra_patterns": [],
+        },
+        "anti_patterns": {
+            "max_allowed": baseline["anti_patterns"],
+            "enabled": list(ANTI_PATTERN_CATEGORIES),
+            "allow_paths": detected["allow_paths"],
+            "allow_by_category": {},
+            "extra_rules": [],
+        },
+        "file_limits": {
+            "max_lines": max_lines,
+            "max_allowed": baseline["oversize_files"],
+            "allow_paths": [],
+            "baseline_files": dict(baseline["oversize_map"]),
+        },
+        "forbidden_primitives": [],
+        "boundary_rules": [],
+    }
+    feature_map_text = LF.join([
+        "# Feature Map",
+        "",
+        "| Feature | Entrypoint | Verify CLI | Artifact | Priority |",
+        "| --- | --- | --- | --- | --- |",
+        "",
+        "~~~markdown",
+        "<!-- Example row (replace with real core features before upgrading to L1):",
+        "| 核心功能名 | `python -m src.app` | `python tools/verify.py core` | `artifacts/core.txt` | core |",
+        "-->",
+        "~~~",
+        "",
+    ])
+
+    try:
+        guard_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "errors": [
+                "cannot --init: .guardrails/ already exists; edit .guardrails/config.json directly"
+            ],
+            "warnings": [],
+        }
+    with (guard_dir / "config.json").open("w", encoding="utf-8", newline="") as handle:
+        handle.write(json.dumps(cfg_obj, ensure_ascii=False, indent=2) + LF)
+    with (guard_dir / "feature-map.md").open("w", encoding="utf-8", newline="") as handle:
+        handle.write(feature_map_text)
+
+    report = inspect_repo(root, run_check=run_check)
+    for warn in scan_warnings:
+        if "no check_command auto-detected" in warn:
+            continue
+        if warn not in report["warnings"]:
+            report["warnings"].append(warn)
+    report["initialized_files"] = [".guardrails/config.json", ".guardrails/feature-map.md"]
+    report["detected"] = detected
+    return report
+
+
 def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) -> dict:
     root = root.resolve()
     guard_dir = root / GUARD_DIR
@@ -1605,7 +2789,7 @@ def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) 
             "errors": [],
             "warnings": [],
             "message": (
-                "no .guardrails/ found; start from references/01-intent-and-invariants.md"
+                "no .guardrails/ found; run --scan / --init or start from references/01-intent-and-invariants.md"
             ),
         }
 
@@ -1668,6 +2852,15 @@ def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) 
             if cfg
             else None
         ),
+        "file_limits_config": (
+            {
+                "configured": cfg.file_limits.configured,
+                "max_lines": cfg.file_limits.max_lines,
+                "max_allowed": cfg.file_limits.max_allowed,
+            }
+            if cfg
+            else None
+        ),
         "legacy_paths": legacy_found,
         "scan": scan_stats,
         "prose": prose_stats,
@@ -1689,8 +2882,41 @@ def format_human(report: dict) -> str:
             report["message"],
             "0 error(s), 0 warning(s)",
         ])
+    if status == "baseline_scan":
+        det = report.get("detected") or {}
+        base = report.get("baseline") or {}
+        lines = [
+            f"baseline_scan | stacks={','.join(det.get('stacks') or ['unknown'])} | "
+            f"source_roots={','.join(det.get('source_roots') or [])} | "
+            f"check_command={det.get('check_command') or '(none)'}",
+            f"  files_scanned={base.get('files_scanned', 0)} "
+            f"escape_hatches={base.get('escape_hatches', 0)} "
+            f"anti_patterns={base.get('anti_patterns', 0)} "
+            f"oversize_files={base.get('oversize_files', 0)} "
+            f"(max_lines={base.get('max_lines', DEFAULT_MAX_FILE_LINES)})",
+        ]
+        by_cat = base.get("anti_pattern_by_category") or {}
+        non_zero = ", ".join(f"{k}={v}" for k, v in by_cat.items() if v)
+        if non_zero:
+            lines.append(f"  anti_pattern_by_category: {non_zero}")
+        if base.get("escape_hatch_samples"):
+            lines.append(f"  escape_samples: {', '.join(base['escape_hatch_samples'])}")
+        if base.get("anti_pattern_samples"):
+            lines.append(f"  anti_pattern_samples: {', '.join(base['anti_pattern_samples'])}")
+        if base.get("oversize_samples"):
+            lines.append(f"  oversize_samples: {', '.join(base['oversize_samples'])}")
+        for warn in report.get("warnings") or []:
+            lines.append(f"WARN  {warn}")
+        for err in report.get("errors") or []:
+            lines.append(f"ERROR {err}")
+        lines.append(
+            f"{len(report.get('errors') or [])} error(s), {len(report.get('warnings') or [])} warning(s)"
+        )
+        return "\n".join(lines)
 
-    lines: list[str] = []
+    lines = []
+    if report.get("initialized_files"):
+        lines.append(f"initialized: {', '.join(report['initialized_files'])}")
     scan = report.get("scan") or {}
     ver = report.get("verification") or {}
     lines.append(
@@ -1711,6 +2937,13 @@ def format_human(report: dict) -> str:
             lines.append(
                 f"  anti_patterns: hits={ap_found}/{ap_cfg.get('max_allowed', 0)} "
                 f"(enabled={len(ap_cfg.get('enabled') or [])})"
+            )
+        fl_cfg = report.get("file_limits_config") or {}
+        fl_found = scan.get("oversize_files", 0)
+        if fl_cfg.get("configured") or fl_found > 0:
+            lines.append(
+                f"  file_limits: oversize={fl_found}/{fl_cfg.get('max_allowed', 0)} "
+                f"(max_lines={fl_cfg.get('max_lines', DEFAULT_MAX_FILE_LINES)})"
             )
     if ver:
         lines.append(
@@ -1763,13 +2996,52 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="require verification.md commits to match current git HEAD with clean source_roots",
     )
+    parser.add_argument(
+        "--scan",
+        action="store_true",
+        help="scan project stack and debt baseline without creating or modifying .guardrails/",
+    )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="initialize L0 .guardrails/ skeleton locked to current baseline counts",
+    )
+    parser.add_argument(
+        "--max-lines",
+        type=int,
+        default=DEFAULT_MAX_FILE_LINES,
+        help=f"source file line limit threshold for --scan/--init (default: {DEFAULT_MAX_FILE_LINES})",
+    )
+    parser.add_argument(
+        "--check-command",
+        default="",
+        help="explicit check_command override when running --scan or --init",
+    )
     args = parser.parse_args(argv)
-    report = inspect_repo(Path(args.root), run_check=args.run_check, check_head=args.check_head)
+    if args.scan and args.init:
+        parser.error("--scan and --init cannot be used together")
+    if args.scan and (args.run_check or args.check_head):
+        parser.error("--scan is read-only and cannot be combined with --run-check or --check-head")
+    if args.init and args.check_head:
+        parser.error("--init cannot be combined with --check-head; commit .guardrails/ and verification.md first")
+
+    root = Path(args.root)
+    if args.scan:
+        report = scan_baseline(root, max_lines=args.max_lines, override_check_cmd=args.check_command)
+    elif args.init:
+        report = init_guardrails(
+            root,
+            max_lines=args.max_lines,
+            override_check_cmd=args.check_command,
+            run_check=args.run_check,
+        )
+    else:
+        report = inspect_repo(root, run_check=args.run_check, check_head=args.check_head)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         print(format_human(report))
-    return 1 if report["guard_status"] == "invalid" else 0
+    return 1 if (report["guard_status"] == "invalid" or report.get("errors")) else 0
 
 
 if __name__ == "__main__":

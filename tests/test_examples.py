@@ -132,6 +132,8 @@ class VerifySkillAppExampleTests(ExampleChecks, unittest.TestCase):
         self.assertEqual(vs["features"], 2)
         self.assertEqual(self.report["scan"]["anti_patterns"], 0)
         self.assertTrue(self.report["anti_patterns_config"]["configured"])
+        self.assertEqual(self.report["scan"]["oversize_files"], 0)
+        self.assertTrue(self.report["file_limits_config"]["configured"])
 
 
 if __name__ == "__main__":

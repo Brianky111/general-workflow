@@ -49,7 +49,7 @@ flowchart TD
 │   └── 06-repo-guard-contract.md        # .guardrails/ 契约、repo_guard.py 用法、v1 迁移与检查边界
 ├── scripts/
 │   ├── check_consistency.py             # 校验本 skill 仓库、预算与 vendor 校验和
-│   ├── repo_guard.py                    # 随 skill 分发，校验目标项目的护栏、verify_skill 与行为产物
+│   ├── repo_guard.py                    # 随 skill 分发；提供 --scan/--init 冷启动、护栏与产物校验
 │   ├── install.py                       # 跨工具安装脚本：同步 general-workflow 与内置 pstack 技能
 │   └── sync_vendor.py                   # 校验或按固定提交 SHA 同步 vendor/pstack/
 ├── vendor/
@@ -180,7 +180,9 @@ python -X utf8 scripts/sync_vendor.py --verify
 python -X utf8 scripts/check_consistency.py
 python -X utf8 -B -m unittest discover -s tests -p "test_*.py"
 
-# 3. 对目标项目示例运行护栏、verify_skill、逃生舱与行为产物检查
+# 3. 冷启动扫描或初始化目标项目，并对示例运行护栏（含 6 类 anti_patterns 与 file_limits）、verify_skill 与产物检查
+python -X utf8 scripts/repo_guard.py --root "<目标项目绝对路径>" --scan
+python -X utf8 scripts/repo_guard.py --root "<目标项目绝对路径>" --init
 python -X utf8 scripts/repo_guard.py --root examples/clean-app --run-check
 python -X utf8 scripts/repo_guard.py --root examples/weeding-brownfield --run-check
 python -X utf8 scripts/repo_guard.py --root examples/verify-skill-app --run-check

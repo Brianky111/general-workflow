@@ -33,12 +33,18 @@
   },
   "anti_patterns": {
     "max_allowed": 0,
-    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret"],
-    "allow_paths": ["tests"],
+    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret", "mock-in-prod"],
+    "allow_paths": [],
     "allow_by_category": {
       "blind-wait": ["src/runtime"]
     },
     "extra_rules": []
+  },
+  "file_limits": {
+    "max_lines": 600,
+    "max_allowed": 0,
+    "allow_paths": [],
+    "baseline_files": {}
   },
   "forbidden_primitives": [
     {
@@ -66,9 +72,9 @@
 - `check_command` 不能为空或占位词；高于起步层时，`verify_cli` 或 `verify_skill` 二者至少提供一个非占位入口。
 - `verify_skill`（可选）：项目内分片验证 Skill 目录路径（见下节）；配置后优先作为功能地图单一事实源。
 - `escape_hatches.max_allowed` 为非负整数；进入外循环层级前必须已清为 `0`（不带旧债进外循环）。
-- `anti_patterns`（可选）：内置 5 类高置信度反模式静态扫描，带棘轮上限与白名单：
-  - 类别枚举：`silent-catch`（空/静默返回兜底的 Python `except` 或 JS/TS `catch`）、`blind-wait`（`wait_for_timeout` / `waitForTimeout`、`new Promise(...setTimeout)`，显式开启时含 `time.sleep`/`asyncio.sleep` 与非零 `setTimeout`）、`hardcoded-path`（`C:\Users\...`、`/Users/...`、`/home/...`）、`hardcoded-localhost`（业务层散落的 `http(s)://localhost|127.0.0.1`，显式开启时生效）、`hardcoded-secret`（常见密钥字面量）。
-  - 缺省不写 `anti_patterns` 时默认开启零误报子集（`silent-catch`、`hardcoded-path`、`hardcoded-secret` 与 Playwright/Promise 盲等）且上限为 `0`；显式配置后默认 5 类全开，支持 `allow_paths`、`allow_by_category` 与自定义 `extra_rules`，进入外循环层级前 `anti_patterns.max_allowed` 同样须降为 `0`。
+- `anti_patterns`（可选）：内置 6 类反模式扫描与棘轮：`silent-catch`（Python AST 检查 `except`/`suppress(Exception|BaseException)`、JS/TS 空/静默 `catch`、Promise `.catch` 与 `.then(_, 静默)`）、`blind-wait`（`wait_for_timeout`/`waitForTimeout`/`Promise(setTimeout)`、`await sleep/delay` 与正值 `minLoadingMs`/`AFTER_SYNC_REFRESH_MS` 常量，显式开启含裸非零 `sleep`/`setTimeout` 并豁免 `sleep(0)`）、`hardcoded-path`（本机、WSL `/mnt/*/Users/`、`/root/`、`file:///`）、`hardcoded-localhost`（显式开启时拦本地/内网 HTTP/WS/DB 地址与 `[::1]`）、`hardcoded-secret`、`mock-in-prod`（生产源码禁 `MOCK_*`/`FAKE_*`、`|| mockData` 及导入 `__mocks__`/`fixtures`/`seeds`）。前五类数据/语法规则自动豁免真实测试路径（`hardcoded-secret` 在测试内依然生效，`test_*.py` 仅豁免 Python 测试文件），并跳过 `.env*`/`*.log`/lockfiles 及根/包级构建产物目录；底层合法退避应收口单 `runtime` 模块并用 `allow_by_category` 放行。缺省开启除 `hardcoded-localhost` 外的 5 类，进入外循环层级前 `max_allowed` 须为 `0`。
+- `file_limits`（可选）：`max_lines`（默认 `600`，按源码扩展名计且跳过 `.css`/`.json`/测试文件）、`max_allowed` 与按路径 `baseline_files` 行数天花板（旧巨石只许瘦不许再胖、新文件禁破 `max_lines`，进入外循环层级前须清为 `0` / `{}`）及 `allow_paths`。
+- 缺少有效 `source_roots` 或匹配 `0` 个可读源码文件时立即判为 `invalid`，防止空扫假绿灯。
 - `require_fresh_head` 为布尔值；进入最高自治层级时必须为 `true`。
 - 每条 `forbidden_primitives` 与 `boundary_rules` 的 `message` 不得为空或过短占位（至少 15 字符），必须写出根因与替代方案。
 
@@ -89,16 +95,7 @@
 3. 每个功能文件必须有非占位 H1 功能标题，且按顺序包含四个非空 H2：`Sub-features`、`How to get to it`、`Driving it with`、`Gotchas`（可用 `<!-- priority: secondary -->` 标次要功能，默认 `core`）；
 4. `verification.md` 可写功能 H1 标题或文件主干名（如 `create-order`）作为匹配键。
 
-`verification.md` 记录“最近一次真跑过什么、看见了什么、落在哪个不可变提交上”（起步层缺失只报警告，进入更高层级后必填）：
-
-~~~markdown
-# Verification
-| Feature | Command | Observed | Artifact | Commit |
-| --- | --- | --- | --- | --- |
-| 导出订单报表 | `python tools/verify.py export` | 导出 2 条明细且状态转为 exported | `artifacts/export-csv.txt` | a1b2c3d |
-~~~
-
-在高于起步层的阶段，`core` 功能均须在 `verification.md` 有对应记录；产物路径必须是项目内实际存在且大于 0 字节的文件（或有效 `https://` 运行链接）。观察结果写法与锚点限制遵循 `03-verification-and-artifacts.md`（不写“passed/完成”空话，不填移动分支名）。
+起步层若 `feature-map.md` 表尚空或缺失 `verification.md` 只发警告（便于 `--init` 冷启动立即通过）；高于起步层后，`core` 功能均须在二者中补齐，产物路径必须是存在且非空的文件（或 `https://` 链接），观察结果与锚点遵循 `03-verification-and-artifacts.md`。
 
 ## 运行 scripts/repo_guard.py
 
@@ -106,12 +103,14 @@
 
 ```powershell
 python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" [--json] [--run-check] [--check-head]
+python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" [--scan | --init] [--max-lines 600] [--check-command "<cmd>"] [--json]
 ```
 
-- 无参数只做静态护栏、文档体积、逃生舱计数、Feature Map 与产物存在性校验；
-- `--run-check`：在目标根目录真实执行 `config.json` 的 `check_command`，非零退出即失败；
-- `--check-head`（或 `require_fresh_head: true` 时自动触发）：核对 Git `HEAD` 与工作区干净度，确认 `verification.md` 每行 `Commit` 前缀匹配当前 `HEAD` 且 `source_roots` 下无未提交改动，源码改动后自动把旧绿灯判失效；
-- `guard_status` 取四值：`uninitialized`（可起步，退出 0）、`legacy_v1`（发现旧版状态目录，退出 0 并提示迁移）、`invalid`（校验失败，退出 1）、`ready`（全部通过，退出 0）。
+- 无参数只做静态护栏、文档体积、逃生舱、反模式、`file_limits`、Feature Map 与产物校验；
+- `--scan`：只读启发式起草技术栈、`source_roots` 与 `check_command`，盘点逃生舱、6 类反模式与超长文件基线，不改动 `.guardrails/`；
+- `--init`：预检可读源码非空与 `check_command` 有效后写入起步层 `.guardrails/` 草稿并锁初始 `max_allowed` 与 `baseline_files`（不覆盖已有目录或 `legacy_v1`；非标 workspace 须由 Agent 核对修正 `config.json`）；
+- `--run-check`：执行 `config.json` 的 `check_command`；`--check-head`（或 `require_fresh_head: true`）核对 Git `HEAD` 与 `source_roots` 干净度；
+- `guard_status` 取值：`uninitialized`、`baseline_scan`（`--scan`）、`legacy_v1`、`invalid`（退出 1）或 `ready`。
 
 ## 从 v1.x 状态目录迁移
 
@@ -126,7 +125,7 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 
 必须清楚这套零依赖脚本能拦住什么、拦不住什么：
 
-- **模式匹配不是完整 AST**：`forbidden_primitives`、`anti_patterns` 和 `boundary_rules` 使用通用语法/正则与导入路径匹配，零依赖拦截高置信度坏模式（如静默 `catch`/`except: pass`、盲等延时、本机路径与散落 `localhost`），但分辨不出复杂路径别名或语义层过度工程/假数据数组（后两者结合人工审查产物、`no-comments` 与 `check_command` 原生 Linter/AST 工具覆盖）。
+- **轻量启发式与浅层分析边界**：`--scan`/`--init` 拓扑探测及 `forbidden_primitives`、`anti_patterns`、`boundary_rules` 均属轻量启发式（通用正则、Python 缩减版 AST 与 JS 注释/字符串脱敏，非完整词法或构建图解析器）；复杂 monorepo 布局、路径别名与 AST 精确语义须由 Agent 核对 `config.json` 并交目标仓原生 `check_command` 与 `/architect`/人工产物审查接管。
 - **逃生舱与注释检查靠规则词表**：能拦常见禁用指令与显式 `HACK`/`WORKAROUND` 标记，读不出换个委婉写法写的辩解注释；需要语义级猎杀与历史错例分析时，结合 `vendor/pstack/skills/no-comments/SKILL.md` 与 `vendor/pstack/skills/correct/SKILL.md` 执行。
 - **产物与新鲜度只证明“在当前版本跑出过非空证据”**：磁盘文件存在且非空不代表视频画面让用户满意，测试命令退出 0 不代表测试断言理解对了需求——产品意图与体验好坏仍靠人审产物把关。
 
@@ -134,6 +133,6 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 
 完成 `.guardrails/` 配置或迁移后，必须确认：
 
-1. 三份文件均按上述格式落盘且字段完整，没有占位词或空表；
+1. 高于起步层时三份文件均完整、无占位词且核心功能与验证记录齐备；起步层允许暂缺 `verification.md` 或保留空表 `feature-map.md`（仅发警告），不得在缺失可执行 `check_command` 时强留 `"TODO"`；
 2. `python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --run-check` 退出码为 `0`；
 3. 若仓库在 `L3` 或准备合入关键变更，`--check-head` 同样通过且不存在未锚定到当前 `HEAD` 的过时验证行。

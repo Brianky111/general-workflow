@@ -41,15 +41,15 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 面向不亲自写代码、靠体验验收的 Vibe Coding 工作方式，必须同时防住“按技术层拆成永不收口的半成品”与“把用户拉进底层技术评审泥潭”（参见 `vendor/pstack/skills/principle-sequence-verifiable-units/SKILL.md`）：
 
-1. **只切端到端可演示的垂直增量（WIP = 1）**：每轮任务动工前先钉死一句话——“这一轮做完，用户打开哪个页面或跑哪个命令，能亲眼看到什么新变化？”严禁按 `schema / foundation / engine` 横向拆层而不交付可用闭环；当前主线垂直切片未交出可看结果前，不得同时开启多个平行分支或皮肤方案。
-2. **人看演示、Agent 扛技术**：内部函数怎么拆、超时设几秒、局部单测怎么组织，由 Agent 选**最简可逆方案**自己拍板完成；**绝不**抛出几十条待逐行审阅的内部条目消耗用户注意力。只有会改变用户可见行为、业务口径或不可逆边界的问题，才用通俗人话向用户提问（每轮最多 1–2 个选择题）。
+1. **只切端到端可演示的垂直增量（WIP = 1）**：每轮任务动工前先钉死一句话——“这一轮做完，用户打开哪个页面或跑哪个命令，能亲眼看到什么新变化？”严禁按 `schema / foundation / engine` 横向拆层而不交付可用闭环；当前主线垂直切片未交出可看结果前，不得同时开启多个平行分支或皮肤方案，也**严禁**为单一具体切片预建多 Provider/Plugin/Factory 扩展架子。
+2. **人看演示、Agent 扛技术；配置进单源禁硬编码**：内部函数怎么拆、超时设几秒、局部单测怎么组织，由 Agent 选**最简可逆方案**自己拍板完成；**绝不**抛出几十条待逐行审阅的内部条目消耗用户注意力。只有会改变用户可见行为、业务口径或不可逆边界的问题，才用通俗人话向用户提问（每轮最多 1–2 个选择题）。同时从首个切片起，所有 `configurable_params` 统一收口进单一配置模块，严禁业务文件散落直读 `process.env` / `os.environ` 或写死魔法常量。
 
 ## 接手已有仓库（Brownfield 起步）
 
 面对一个不是本工作流建起来的旧仓库，不要停下来全仓反推十几页需求书再动工。按以下三步在一个会话内把护栏和基线立起来：
 
-1. **跑通现有一套校验与测试**：确认构建、单测或启动命令能在干净命令行跑通，把它写进 `.guardrails/config.json` 的 `check_command`；同时可按 `vendor/pstack/skills/correct/SKILL.md` 快速扫一遍最近 commits、reverts 与 workaround 注释，挑出已重复出现至少两次的错误类作为首批护栏目标；若现在就跑不通，先记为阻塞或修通可运行环境。
-2. **扫描旧债并锁定 `max_allowed` 棘轮**：运行一次 `repo_guard.py`，统计仓库里现有的 `eslint-disable`、`@ts-ignore`、`# noqa`、`# type: ignore`、`HACK/WORKAROUND` 等逃生舱数量，把这个数字写进 `.guardrails/config.json` 的 `escape_hatches.max_allowed` 作为**天花板棘轮**。以后只许往下清、不许往上涨；如何逐步清零见 `04-correction-and-gardening.md`。`L0` 起步期不强求立即补齐 `.guardrails/verification.md`（先让护栏和棘轮运转起来，升入 `L1` 前补全）。
+1. **一键冷启动起草与核对基线（`--scan` / `--init`）**：先运行 `repo_guard.py --root "<目标项目绝对路径>" --scan` 启发式识别常规技术栈、`source_roots` 与 `check_command`，盘点现有逃生舱、6 类反模式及超长文件数量；该扫描只产出草稿而非完整构建图求解，**必须**随即阅读目标仓真实构建清单（`package.json`、`pnpm-workspace.yaml`、`pyproject.toml`、CI / Makefile）并在 `--init` 前后明确核对修改 `.guardrails/config.json` 的 `source_roots` 与 `check_command`（补全非标子包或 `scripts/`、避免根聚合脚本与子包重复）。确认无误后执行 `repo_guard.py --root "<目标项目绝对路径>" --init`（按需加 `--check-command` / `--max-lines`）生成起步层 `.guardrails/` 并锁定棘轮，同时按 `vendor/pstack/skills/correct/SKILL.md` 排查最近重复错误作为首批护栏目标。
+2. **锁定三维棘轮上限（`max_allowed`）**：`--init` 会把当前真实的 `escape_hatches.max_allowed`、`anti_patterns.max_allowed` 与 `file_limits.max_allowed` 锁定为**天花板棘轮**。以后只许往下清、不许往上涨；如何逐步清零见 `04-correction-and-gardening.md`。`L0` 起步期 `.guardrails/feature-map.md` 空表与缺失 `.guardrails/verification.md` 仅发警告不阻塞启动，升入 `L1` 前补全。
 3. **按真实入口写出第一版 Feature Map**：从组合根或路由表列出核心用户功能——小型项目可直接填入 `.guardrails/feature-map.md`；中大型或交互复杂的应用建议直接用 `vendor/pstack/skills/create-verification-skill/SKILL.md` 生成按功能域拆分的项目本地 `verify-<app>` skill，并在 `config.json` 配置 `verify_skill` 路径。`trust_level` 从 `L0` 起步，若已有完整自动化检查和核心功能验证产物也可直接设为 `L1`。
 
 对于暂时没有接入测试的旧模块，不用停下全仓重测；哪天要改它或往那条边界加护栏，再按 `03-verification-and-artifacts.md` 先补行为验证与对比基线。

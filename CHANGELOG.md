@@ -1,5 +1,40 @@
 # Changelog
 
+## 2.2.0 - 2026-11-20
+
+Closed anti-pattern blind spots, added file-size guardrails (`file_limits`),
+deepened anti-overengineering and anti-hardcoding workflow guidance, and added
+one-command brownfield/greenfield cold-start scanning and bootstrapping
+(`--scan` / `--init`) to `scripts/repo_guard.py`.
+
+- Extended `anti_patterns` in `scripts/repo_guard.py` with the 6th built-in
+  category `mock-in-prod`, auto-exempted real test/fixture files (excluding
+  `hardcoded-secret`, which stays enforced across test files, and scoping
+  `test_*` prefix exemption to Python files rather than production TS/JS),
+  added stdlib `ast`-based Python `silent-catch` analysis and a JS/TS
+  comment/string scrubber covering `.catch(async/function)` and `.then(_, fn)`,
+  refined `blind-wait` delay-constant / `sleep(0)` / URL boundary matching,
+  and excluded `.env*`/`*.log`/lockfiles plus root/package-level artifact dirs
+  without blinding first-party subdirs like `src/build/`.
+- Added `file_limits` (`max_lines` default `600` scoped to code extensions
+  including `.mts`/`.cts`, `max_allowed` + per-path `baseline_files` line
+  ratchet dropping to `0` / `{}` at `L2`/`L3`, and `allow_paths`) to block both
+  new monoliths and growth of baselined monoliths.
+- Added `repo_guard.py --scan` and `--init` for heuristic cold-start drafting
+  across root, `apps/*`/`packages/*` (manifest and non-manifest siblings),
+  split `backend/`+`frontend/`, and manifest `scripts/`/`bin/`, alongside
+  co-located multi-stack command composition, Bun (`bun run --cwd`) and npm
+  `--prefix` execution fixes, readable-source and `check_command` preflight
+  before `--init` writes `.guardrails/`, and `check_consistency.py` alignment.
+- Deepened `SKILL.md`, `references/00`-`02`/`04`/`06`, `AGENTS.md`, and
+  `agents/openai.yaml` to explicitly forbid single-implementation `IXxx` /
+  `XxxImpl` / Factory ceremony, pure pass-through wrappers, speculative plugin
+  scaffolding, defensive `?? fallback` propagation ("Parse, don't validate"),
+  and scattered `process.env`/`os.environ` reads, while pinning new anchors in
+  `scripts/check_consistency.py`.
+- Updated `examples/verify-skill-app/` (`mock-in-prod` + `file_limits`),
+  `examples/README.md`, `tests/test_examples.py`, and `tests/test_repo_guard.py`.
+
 ## 2.1.0 - 2026-11-20
 
 Added Vibe-Coding anti-drift, anti-rabbit-hole, anti-overengineering,

@@ -7,6 +7,7 @@ and exact actionable error/warning messages.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -685,6 +686,653 @@ class RepoGuardTests(unittest.TestCase):
         code, report, _ = self.run_cli()
         self.assertEqual(code, 1)
         self.assertTrue(any("unknown anti_patterns category 'bogus-category'" in e for e in report["errors"]))
+
+    def test_anti_patterns_v22_blind_spots_and_mock_in_prod(self):
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["source_roots"] = ["src", "tests"]
+        cfg["anti_patterns"] = {
+            "max_allowed": 50,
+            "enabled": [
+                "silent-catch",
+                "blind-wait",
+                "hardcoded-path",
+                "hardcoded-localhost",
+                "hardcoded-secret",
+                "mock-in-prod",
+            ],
+            "allow_paths": [],
+            "allow_by_category": {},
+            "extra_rules": [],
+        }
+        # Re-test at max_allowed=0 after collecting exact violation list.
+        cfg["anti_patterns"]["max_allowed"] = 0
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        self.write(
+            "src/py_blind_spots.py",
+            "from contextlib import suppress as hide\n"
+            "import contextlib\n"
+            "def multi_except():\n"
+            "    try:\n        risky()\n"
+            "    except (\n        KeyError,\n        ValueError,\n    ):\n"
+            "        pass\n"
+            "with contextlib.suppress(Exception):\n    risky()\n"
+            "with hide(BaseException):\n    risky()\n"
+            "with contextlib.suppress(FileNotFoundError):\n    cleanup()\n"
+            "async def spin(proc):\n"
+            "    await sleep(1500)\n"
+            "    await proc.wait(5)\n"
+            "    await sleep(0)\n"
+            "WSL = '/mnt/c/Users/alice/db.sqlite'\n"
+            "ROOT_PATH = '/root/config.json'\n"
+            "FILE_URI = 'file:///C:/Users/alice/config.json'\n"
+            "DB_URL = 'postgresql://user:pw@127.0.0.1:5432/db'\n"
+            "LAN_URL = 'http://192.168.1.50:8080/api'\n"
+            "IPV6_URL = 'http://[::1]:3000/api'\n"
+            "HOST_OK = 'https://localhost.example.test'\n"
+            "GKEY = 'AIza" + "SyD-1234567890abcdefghijklmnopqr123'\n"
+            "SLACK = 'xoxb-" + "1234567890-abcdefghij123456'\n",
+        )
+        self.write(
+            "src/service.ts",
+            "import { items } from '../__mocks__/items';\n"
+            "export const MOCK_USERS = [{ id: 1 }];\n"
+            "const minLoadingMs = 1500;\n"
+            "const safeLoading = 0;\n"
+            "const minLoadingMsZero = 0;\n"
+            "const AFTER_SYNC_REFRESH_MS: number = 1500;\n"
+            "const routePath = '/home/settings/profile';\n"
+            "const mockMode = false;\n"
+            "const flag = safeLoading || mockMode;\n"
+            "const quoted = '.catch(() => {})';\n"
+            "export async function run(p: Promise<any>, rows: any[]) {\n"
+            "  await p.catch(() => {});\n"
+            "  await p.catch(async () => {});\n"
+            "  await p.catch(function() {});\n"
+            "  await p.then(() => 1, () => null);\n"
+            "  try { await p; } catch (e) { /* } */ throw e; }\n"
+            "  await p.catch(err => { log(err); return null; });\n"
+            "  await delay(300);\n"
+            "  delay(1500);\n"
+            "  const ws = 'ws://localhost:3000';\n"
+            "  return rows || mockOrdersData;\n"
+            "}\n",
+        )
+        # First-party dirs named 'test_*' in TS or 'build/' in src/ must NOT be exempted.
+        self.write("src/test_pipeline.ts", "try { work(); } catch (e) {}\n")
+        self.write("src/build/release.py", "def build():\n    try:\n        step()\n    except Exception:\n        pass\n")
+        # Test/fixture files exempt from noise categories, EXCEPT hardcoded-secret remains enforced!
+        self.write(
+            "src/__tests__/service.test.ts",
+            "import { items } from '../__mocks__/items';\n"
+            "export const MOCK_USERS = [{ id: 1 }];\n"
+            "const SAFE_HTTP = 'http://localhost:3000';\n",
+        )
+        self.write(
+            "tests/fixtures.py",
+            "MOCK_ROWS = [{'id': 1}]\n"
+            "LEAKED = 'sk-" + "proj-1234567890abcdefghijklmnop'\n",
+        )
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        err_blob = "\n".join(report["errors"])
+        # Expected hits:
+        # py_blind_spots.py: 1 multi_except + 2 suppress + 1 await sleep + 3 path + 3 localhost + 2 secret = 12
+        # service.ts: 1 import + 1 MOCK_USERS + 1 minLoadingMs + 1 AFTER_SYNC_REFRESH_MS + 4 catch/then + 1 await delay + 1 delay + 1 ws + 1 fallback = 12
+        # test_pipeline.ts: 1, build/release.py: 1, tests/fixtures.py: 1 secret
+        # Total = 27
+        self.assertEqual(report["scan"]["anti_patterns"], 27, err_blob)
+        for token in (
+            "src/build/release.py:4[silent-catch]",
+            "src/py_blind_spots.py:6[silent-catch]",
+            "src/py_blind_spots.py:11[silent-catch]",
+            "src/py_blind_spots.py:13[silent-catch]",
+            "src/py_blind_spots.py:18[blind-wait]",
+            "src/py_blind_spots.py:21[hardcoded-path]",
+            "src/py_blind_spots.py:22[hardcoded-path]",
+            "src/py_blind_spots.py:23[hardcoded-path]",
+        ):
+            self.assertIn(token, err_blob)
+        self.assertNotIn("service.test.ts", err_blob)
+        self.assertNotIn("HOST_OK", err_blob)
+
+        # Verify negative controls alone yield 0 hits, and individual blind spots / edge cases each hit at exact lines.
+        self.write(
+            "src/py_blind_spots.py",
+            "import contextlib\n"
+            "with contextlib.suppress(FileNotFoundError):\n    pass\n"
+            "async def spin(proc):\n    await proc.wait(5)\n    await sleep(0)\n"
+            "HOST_OK = 'https://localhost.example.test'\n",
+        )
+        self.write(
+            "src/service.ts",
+            "const minLoadingMsZero = 0;\n"
+            "const routePath = '/home/settings/profile';\n"
+            "const newsRoute = '/home/news/latest';\n"
+            "const mockMode = false;\n"
+            "const flag = routePath || newsRoute || mockMode;\n"
+            "const quoted = '.catch(() => {})';\n"
+            "export async function run(p: Promise<any>) {\n"
+            "  try { await p; } catch (e) { /* } */ throw e; }\n"
+            "  await p.catch(err => { log(err); return null; });\n"
+            "}\n",
+        )
+        self.write("src/__tests__/service.test.ts", "const SAFE_HTTP = 'http://localhost:3000';\n")
+        self.write("tests/fixtures.py", "MOCK_ROWS = [{'id': 1}]\n")
+        self.write("src/test_pipeline.ts", "export const ok = 1;\n")
+        self.write("src/build/release.py", "ok = 1\n")
+        code_ok, rep_ok, _ = self.run_cli()
+        self.assertEqual(code_ok, 0, rep_ok["errors"])
+        self.assertEqual(rep_ok["scan"]["anti_patterns"], 0)
+
+        # Prove exact per-line detections across Python IPv6 & /home/<user>, TS mockData & catch variants, and exempt-exemptions.
+        for rel_p, bad_src, expected_locs in (
+            (
+                "src/py_blind_spots.py",
+                "IPV6_URL = 'http://[::1]:3000/api'\n"
+                "LIN_HOME = '/home/alice/config.json'\n",
+                (
+                    "src/py_blind_spots.py:1[hardcoded-localhost]",
+                    "src/py_blind_spots.py:2[hardcoded-path]",
+                ),
+            ),
+            (
+                "src/service.ts",
+                "const AFTER_SYNC_REFRESH_MS: number = 1500;\n"
+                "const mockData = [];\n"
+                "async function f(p: Promise<any>, rows: any[]) {\n"
+                "  await p.catch(async () => {});\n"
+                "  await p.catch(function() {});\n"
+                "  await p.then(() => 1, () => null);\n"
+                "  return rows || mockData;\n"
+                "}\n",
+                (
+                    "src/service.ts:1[blind-wait]",
+                    "src/service.ts:2[mock-in-prod]",
+                    "src/service.ts:4[silent-catch]",
+                    "src/service.ts:5[silent-catch]",
+                    "src/service.ts:6[silent-catch]",
+                    "src/service.ts:7[mock-in-prod]",
+                ),
+            ),
+            ("src/test_pipeline.ts", "try { x(); } catch (e) {}\n", ("src/test_pipeline.ts:1[silent-catch]",)),
+            ("src/build/release.py", "try:\n    x()\nexcept Exception:\n    pass\n", ("src/build/release.py:3[silent-catch]",)),
+            ("tests/fixtures.py", "LEAK = 'sk-" + "proj-1234567890abcdefghijklmnop'\n", ("tests/fixtures.py:1[hardcoded-secret]",)),
+        ):
+            self.write(rel_p, bad_src)
+            c, r, _ = self.run_cli()
+            self.assertEqual(c, 1, rel_p)
+            blobs = "\n".join(r["errors"])
+            for loc in expected_locs:
+                self.assertIn(loc, blobs)
+            self.write(rel_p, "ok = 1\n")
+
+    def test_file_limits_guardrail_ratchet_allow_paths_and_outer_loop_block(self):
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["file_limits"] = {"max_lines": 5, "max_allowed": 1, "allow_paths": ["src/generated"]}
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        self.write("src/generated/types.py", "\n".join(f"LINE_{i} = {i}" for i in range(8)) + "\n")
+        self.write("src/legacy_big.py", "\n".join(f"X_{i} = {i}" for i in range(6)) + "\n")
+
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 0, report["errors"])
+        self.assertTrue(report["file_limits_config"]["configured"])
+        self.assertEqual(report["scan"]["oversize_files"], 1)
+
+        # Adding a second oversize file exceeds max_allowed (1).
+        self.write("src/another_big.py", "\n".join(f"Y_{i} = {i}" for i in range(6)) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertIn("oversize files found (2) exceed file_limits.max_allowed (1)", "\n".join(report["errors"]))
+
+        # Splitting files below max_allowed triggers ratchet-down warning.
+        self.write("src/legacy_big.py", "X_0 = 0\n")
+        self.write("src/another_big.py", "Y_0 = 0\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 0, report["errors"])
+        self.assertTrue(any("lower file_limits.max_allowed to 0" in w for w in report["warnings"]))
+
+        # L2/L3 reject file_limits.max_allowed > 0.
+        cfg["trust_level"] = "L2"
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertTrue(any("L2 requires file_limits.max_allowed == 0" in e for e in report["errors"]))
+
+    def test_scan_detects_node_and_python_stacks_without_touching_disk(self):
+        # 1. Node repo with lint + vitest, filtering "no test specified" separately.
+        self.write(
+            "package.json",
+            json.dumps({
+                "name": "demo",
+                "scripts": {"lint": "eslint .", "test": "vitest"},
+            }),
+        )
+        self.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+        self.write("tsconfig.json", "{}\n")
+        self.write("src/index.ts", "export const x = 1; // @ts-ignore\nawait sleep(1500);\n")
+        self.write("src/big.ts", "\n".join(f"export const v{i} = {i};" for i in range(12)) + "\n")
+        code, report, _ = self.run_cli("--scan", "--max-lines", "10")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["guard_status"], "baseline_scan")
+        self.assertFalse((self.repo / ".guardrails").exists())
+        self.assertEqual(report["detected"]["stacks"], ["node", "typescript"])
+        self.assertEqual(report["detected"]["check_command"], "pnpm run lint && pnpm exec vitest run")
+        self.assertEqual(report["baseline"]["escape_hatches"], 1)
+        self.assertEqual(report["baseline"]["anti_patterns"], 1)
+        self.assertEqual(report["baseline"]["oversize_files"], 1)
+
+        # Verify npm default placeholder "no test specified" is ignored.
+        self.setUp()
+        self.write(
+            "package.json",
+            json.dumps({
+                "name": "npm-placeholder",
+                "scripts": {"test": 'echo "Error: no test specified" && exit 1'},
+            }),
+        )
+        self.write("src/app.js", "export const ok = 1;\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0)
+        self.assertEqual(report["detected"]["check_command"], "")
+        self.assertTrue(any("no check_command auto-detected" in w for w in report["warnings"]))
+
+        # 2. Python repo with pyproject pytest.
+        self.setUp()
+        self.write("pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = ['tests']\n")
+        self.write("app/main.py", "def ok():\n    return 1\n")
+        self.write("tests/test_main.py", "def test_ok():\n    assert True\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0)
+        self.assertEqual(report["detected"]["stacks"], ["python"])
+        self.assertEqual(report["detected"]["source_roots"], ["app"])
+        self.assertEqual(report["detected"]["check_command"], "python -X utf8 -m pytest")
+
+    def test_init_bootstraps_l0_and_refuses_existing_or_legacy_state(self):
+        self.write("tests/test_ok.py", "import unittest\nclass T(unittest.TestCase):\n    def test_1(self): pass\n")
+        self.write(
+            "src/legacy.py",
+            "x = 1  # noqa\n"
+            "def f():\n    try:\n        pass\n    except Exception: pass\n",
+        )
+        code, report, _ = self.run_cli("--init", "--max-lines", "500")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["guard_status"], "ready")
+        self.assertEqual(report["trust_level"], "L0")
+        self.assertEqual(report["max_escape_hatches"], 1)
+        self.assertEqual(report["anti_patterns_config"]["max_allowed"], 1)
+        self.assertEqual(report["file_limits_config"]["max_lines"], 500)
+        self.assertTrue((self.repo / ".guardrails" / "config.json").is_file())
+        self.assertTrue((self.repo / ".guardrails" / "feature-map.md").is_file())
+        self.assertTrue(any("has no feature rows yet" in w for w in report["warnings"]))
+
+        # Re-running repo_guard without --init immediately passes at L0.
+        code2, report2, _ = self.run_cli()
+        self.assertEqual(code2, 0, report2["errors"])
+        self.assertEqual(report2["guard_status"], "ready")
+
+        # Refuses --init when .guardrails/ already exists.
+        code3, report3, _ = self.run_cli("--init")
+        self.assertEqual(code3, 1)
+        self.assertTrue(any("cannot --init: .guardrails/ already exists" in e for e in report3["errors"]))
+
+        # Refuses --init when legacy_v1 exists without overwriting.
+        self.setUp()
+        self.write("docs/workflow/project.md", "# v1\n")
+        code4, report4, _ = self.run_cli("--init")
+        self.assertEqual(code4, 1)
+        self.assertTrue(any("legacy v1 state detected" in e for e in report4["errors"]))
+        self.assertFalse((self.repo / ".guardrails").exists())
+
+    def test_fullstack_monorepo_scan_and_noise_exclusions(self):
+        # Backend (Python + uv + pytest) with asyncio.sleep(0) exempt, AFTER_SYNC_REFRESH_MS flagged,
+        # plus .env, debug.log, and .ruff_cache/ excluded INSIDE scanned backend/app/.
+        self.write("backend/pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = ['tests']\n")
+        self.write("backend/uv.lock", "version = 1\n")
+        self.write(
+            "backend/app/main.py",
+            "import asyncio\n"
+            "AFTER_SYNC_REFRESH_MS = 1500\n"
+            "async def spin():\n"
+            "    await asyncio.sleep(0)\n",
+        )
+        self.write("backend/app/.env", "OPENAI_API_KEY=sk-" + "proj-1234567890abcdefghijklmnop\n")
+        self.write("backend/app/debug.log", "listening on http://localhost:8000\n")
+        self.write("backend/app/.ruff_cache/cached.py", "def f():\n    try:\n        pass\n    except Exception: pass\n")
+        self.write("backend/tests/test_api.py", "URL = 'http://127.0.0.1:8000'\n")
+
+        # Frontend (Node + pnpm check) with co-located test exempt, large CSS exempt, monolith TSX flagged.
+        self.write(
+            "frontend/package.json",
+            json.dumps({"name": "web", "scripts": {"check": "pnpm lint && pnpm test"}}),
+        )
+        self.write("frontend/pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+        self.write("frontend/src/App.tsx", "export const App = () => null;\n")
+        self.write(
+            "frontend/src/App.test.tsx",
+            "const URL = 'http://localhost:3000';\n"
+            "setTimeout(() => {}, 50);\n",
+        )
+        self.write("frontend/src/styles.css", "\n".join(f".c{i} {{ color: red; }}" for i in range(20)) + "\n")
+        self.write("frontend/src/GodPage.tsx", "\n".join(f"export const x{i} = {i};" for i in range(15)) + "\n")
+
+        code, report, _ = self.run_cli("--scan", "--max-lines", "10")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["stacks"], ["python", "node"])
+        self.assertEqual(report["detected"]["source_roots"], ["backend/app", "frontend/src"])
+        self.assertEqual(
+            report["detected"]["check_command"],
+            "uv --directory backend run pytest && pnpm --dir frontend run check",
+        )
+        self.assertEqual(report["baseline"]["escape_hatches"], 0)
+        self.assertEqual(report["baseline"]["anti_patterns"], 1, report["baseline"])
+        self.assertEqual(report["baseline"]["oversize_files"], 1, report["baseline"])
+        self.assertEqual(report["baseline"]["oversize_samples"], ["frontend/src/GodPage.tsx:15"])
+
+    def test_package_manager_commands_cwd_and_multistack_non_displacement(self):
+        # 1. Bun: empty scripts + tsconfig -> `bunx tsc --noEmit`; explicit `typecheck` -> `bun run typecheck`;
+        #    nested check -> `bun run --cwd frontend check`; nested vitest -> `bun run --cwd frontend vitest run`.
+        self.write("package.json", json.dumps({"name": "root", "scripts": {}}))
+        self.write("bun.lock", "")
+        self.write("tsconfig.json", "{}\n")
+        self.write("src/index.ts", "export const ok = 1;\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["check_command"], "bunx tsc --noEmit")
+
+        self.write("package.json", json.dumps({"name": "root", "scripts": {"typecheck": "tsc --noEmit"}}))
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["check_command"], "bun run typecheck")
+
+        self.setUp()
+        self.write("frontend/package.json", json.dumps({"name": "web", "scripts": {"check": "vite build"}}))
+        self.write("frontend/bun.lockb", "")
+        self.write("frontend/src/App.tsx", "export const App = 1;\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["check_command"], "bun run --cwd frontend check")
+
+        self.setUp()
+        self.write("frontend/package.json", json.dumps({"name": "web", "scripts": {"test": "vitest"}}))
+        self.write("frontend/bun.lock", "")
+        self.write("frontend/src/App.tsx", "export const App = 1;\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["check_command"], "bun run --cwd frontend vitest run")
+
+        # 2. Nearest lockfile wins: nested apps/web/package-lock.json overrides root pnpm-lock.yaml,
+        #    and root uv.lock applies to root and packages/svc unless packages/svc has its own uv.lock.
+        self.setUp()
+        self.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+        self.write("uv.lock", "version = 1\n")
+        self.write("pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = ['tests']\n")
+        self.write("apps/web/package.json", json.dumps({"name": "web", "scripts": {"test": "vitest"}}))
+        self.write("apps/web/package-lock.json", "{}\n")
+        self.write("apps/web/src/page.tsx", "export const p = 1;\n")
+        self.write("packages/svc/pyproject.toml", "[tool.pytest.ini_options]\n")
+        self.write("packages/svc/app/core.py", "x = 1\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertIn("apps/web/src", report["detected"]["source_roots"])
+        self.assertIn("packages/svc/app", report["detected"]["source_roots"])
+        self.assertEqual(
+            report["detected"]["check_command"],
+            "uv run pytest && npm --prefix apps/web run test -- --run && uv run pytest packages/svc",
+        )
+
+        # 2b. Workspace root pyproject without pytest/tests must NOT invent `python -m unittest`,
+        #     and repo_guard keeps discovered child checks explicit instead of guessing root coverage.
+        self.setUp()
+        self.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+        self.write("package.json", json.dumps({"name": "ws", "scripts": {"check": "pnpm -r run check"}}))
+        self.write("pyproject.toml", "[tool.uv.workspace]\nmembers = ['packages/*']\n")
+        self.write("uv.lock", "version = 1\n")
+        self.write("apps/web/package.json", json.dumps({"name": "web", "scripts": {"check": "tsc --noEmit"}}))
+        self.write("apps/web/src/index.ts", "export const ok = 1;\n")
+        self.write("packages/svc/pyproject.toml", "[tool.pytest.ini_options]\n")
+        self.write("packages/svc/app/core.py", "x = 1\n")
+        ws_code, ws_rep, _ = self.run_cli("--scan")
+        self.assertEqual(ws_code, 0, ws_rep["errors"])
+        self.assertEqual(
+            ws_rep["detected"]["check_command"],
+            "pnpm run check && pnpm --dir apps/web run check && uv run pytest packages/svc",
+        )
+
+        # 2c. Co-located Node + Python manifests in the same directory compose BOTH check commands.
+        self.setUp()
+        self.write("package.json", json.dumps({"name": "co", "scripts": {"check": "node -e \"process.exit(0)\""}}))
+        self.write("src/app.js", "export const ok = 1;\n")
+        self.write("tests/test_py.py", "import unittest\nclass T(unittest.TestCase):\n    def test_f(self): pass\n")
+        co_code, co_rep, _ = self.run_cli("--scan")
+        self.assertEqual(co_code, 0, co_rep["errors"])
+        self.assertEqual(co_rep["detected"]["stacks"], ["node", "python"])
+        self.assertIn("npm run check", co_rep["detected"]["check_command"])
+        self.assertIn("unittest discover", co_rep["detected"]["check_command"])
+
+        # 2d. Manifestless workspace sibling (apps/shared) stays in source_roots beside apps/ui.
+        self.setUp()
+        self.write("apps/ui/package.json", json.dumps({"name": "ui", "scripts": {"check": "vitest run"}}))
+        self.write("apps/ui/src/a.ts", "export const a = 1;\n")
+        self.write("apps/shared/src/tool.ts", "try { x(); } catch (e) {}\n")
+        sh_code, sh_rep, _ = self.run_cli("--scan")
+        self.assertEqual(sh_code, 0, sh_rep["errors"])
+        self.assertIn("apps/ui/src", sh_rep["detected"]["source_roots"])
+        self.assertIn("apps/shared/src", sh_rep["detected"]["source_roots"])
+        self.assertEqual(sh_rep["baseline"]["anti_patterns"], 1)
+        self.assertEqual(sh_rep["baseline"]["anti_pattern_samples"], ["apps/shared/src/tool.ts:1[silent-catch]"])
+
+        # 3. Root check must NOT displace sub-stack checks (Node root + Python backend),
+        #    and --run-check must fail with exact exit status when check command fails.
+        self.setUp()
+        self.write("package.json", json.dumps({"name": "root", "scripts": {"check": "node -e \"process.exit(0)\""}}))
+        self.write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
+        self.write("src/index.js", "export const ok = 1;\n")
+        self.write("backend/pytest.ini", "[pytest]\n")
+        self.write("backend/app/api.py", "def ok():\n    return 1\n")
+        self.write("backend/tests/test_fail.py", "def test_fail():\n    assert False\n")
+        scan_code, scan_rep, _ = self.run_cli("--scan")
+        self.assertEqual(scan_code, 0)
+        self.assertIn("pnpm run check", scan_rep["detected"]["check_command"])
+        self.assertIn("pytest", scan_rep["detected"]["check_command"])
+
+        self.write_minimal_guardrails(
+            trust_level="L1",
+            check_command='python -X utf8 -c "import sys; sys.exit(0)" && python -X utf8 -c "import sys; sys.exit(7)"',
+        )
+        run_code, run_rep, _ = self.run_cli("--run-check")
+        self.assertEqual(run_code, 1)
+        self.assertFalse(run_rep["check_run"]["passed"])
+        self.assertEqual(run_rep["check_run"]["returncode"], 7)
+
+        # 4. Nested tsconfig-only fallback uses package-scoped commands without npx squat/CWD mismatch.
+        for lockfile, expected_tsc in (
+            ("frontend/bun.lock", "bun run --cwd frontend tsc --noEmit"),
+            ("frontend/pnpm-lock.yaml", "pnpm --dir frontend exec tsc --noEmit"),
+            ("frontend/yarn.lock", "yarn --cwd frontend tsc --noEmit"),
+            ("frontend/package-lock.json", "npm --prefix frontend exec --no -- tsc -p frontend/tsconfig.json --noEmit"),
+        ):
+            self.setUp()
+            self.write("frontend/package.json", json.dumps({"name": "web", "scripts": {}}))
+            self.write("frontend/tsconfig.json", "{}\n")
+            self.write(lockfile, "{}\n")
+            self.write("frontend/src/App.tsx", "export const ok = 1;\n")
+            tsc_code, tsc_rep, _ = self.run_cli("--scan")
+            self.assertEqual(tsc_code, 0, tsc_rep["errors"])
+            self.assertEqual(tsc_rep["detected"]["check_command"], expected_tsc, lockfile)
+
+        # 5. Real subprocess verification across installed package managers: failing script cannot false-green,
+        #    and script CWD actually resolves to `frontend`.
+        if shutil.which("node"):
+            for pm, lockfile in (
+                ("npm", "package-lock.json"),
+                ("pnpm", "pnpm-lock.yaml"),
+                ("bun", "bun.lock"),
+            ):
+                if not shutil.which(pm):
+                    continue
+                self.setUp()
+                self.write("frontend/package.json", json.dumps({"name": "web", "scripts": {"check": "node check_cwd.mjs"}}))
+                self.write(f"frontend/{lockfile}", "{}\n")
+                self.write("frontend/src/index.js", "export const ok = 1;\n")
+                self.write("frontend/check_cwd.mjs", "process.exit(7);\n")
+                c_fail, r_fail, _ = self.run_cli("--init", "--run-check")
+                self.assertEqual(c_fail, 1, pm)
+                self.assertFalse(r_fail["check_run"]["passed"], pm)
+
+                self.write(
+                    "frontend/check_cwd.mjs",
+                    'import path from "node:path";\n'
+                    'process.exit(path.basename(process.cwd()) === "frontend" ? 0 : 9);\n',
+                )
+                c_ok, r_ok, _ = self.run_cli("--run-check")
+                self.assertEqual(c_ok, 0, (pm, r_ok["errors"]))
+                self.assertTrue(r_ok["check_run"]["passed"], pm)
+
+    def test_missing_or_empty_source_roots_and_manifest_script_discovery(self):
+        # 1. Nonexistent source_root fails loudly instead of silently passing.
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["source_roots"] = ["src", "missing_dir"]
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertIn("configured source_root does not exist: missing_dir", "\n".join(report["errors"]))
+
+        # 2. Existing empty source_root (or only .gitkeep / NUL binary) fails loudly.
+        (self.repo / "empty_dir").mkdir(parents=True, exist_ok=True)
+        self.write("empty_dir/.gitkeep", "")
+        (self.repo / "empty_dir" / "blob.bin").write_bytes(b"\x00\x01\x02\x03")
+        cfg["source_roots"] = ["empty_dir"]
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        code, report, _ = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertEqual(report["scan"]["files_scanned"], 0)
+        self.assertIn("source_roots matched 0 source files", "\n".join(report["errors"]))
+
+        # 3. Root package.json scripts referencing scripts/ pulls scripts into source_roots.
+        self.setUp()
+        self.write(
+            "package.json",
+            json.dumps({
+                "name": "console",
+                "scripts": {"check": "tsc --noEmit", "backfill": "node scripts/backfill.mjs"},
+            }),
+        )
+        self.write("src/app.ts", "export const ok = 1;\n")
+        self.write("scripts/backfill.mjs", "await new Promise(r => setTimeout(r, 1500));\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["source_roots"], ["src", "scripts"])
+        self.assertEqual(report["baseline"]["anti_patterns"], 1)
+        self.assertEqual(report["baseline"]["anti_pattern_samples"], ["scripts/backfill.mjs:1[blind-wait]"])
+
+        # 4. Unreferenced scripts/ directory emits an explicit unscanned warning.
+        self.setUp()
+        self.write("package.json", json.dumps({"name": "app", "scripts": {"check": "tsc --noEmit"}}))
+        self.write("src/app.ts", "export const ok = 1;\n")
+        self.write("scripts/job.py", "x = 1\n")
+        code, report, _ = self.run_cli("--scan")
+        self.assertEqual(code, 0, report["errors"])
+        self.assertEqual(report["detected"]["source_roots"], ["src"])
+        self.assertTrue(any("unscanned code directory 'scripts' found" in w for w in report["warnings"]))
+
+    def test_init_prevalidates_check_command_atomically(self):
+        # 1. When no check_command can be detected and none is passed, --init fails BEFORE writing .guardrails/.
+        self.write("src/app.js", "export const x = 1;\n")
+        code1, rep1, _ = self.run_cli("--init")
+        self.assertEqual(code1, 1)
+        self.assertIn('cannot --init without a runnable check_command', "\n".join(rep1["errors"]))
+        self.assertFalse((self.repo / ".guardrails").exists())
+
+        # Immediate retry with --check-command succeeds cleanly without leftover .guardrails/.
+        code2, rep2, _ = self.run_cli("--init", "--check-command", 'python -X utf8 -c "print(1)"')
+        self.assertEqual(code2, 0, rep2["errors"])
+        self.assertTrue((self.repo / ".guardrails" / "config.json").is_file())
+
+        # 2. Empty src/ (valid check command but 0 readable files) also fails BEFORE creating .guardrails/.
+        self.setUp()
+        (self.repo / "src").mkdir(parents=True, exist_ok=True)
+        (self.repo / "src" / "bin.dat").write_bytes(b"\x00\x01")
+        c_empty, rep_empty, _ = self.run_cli("--init", "--check-command", 'python -X utf8 -c "print(1)"')
+        self.assertEqual(c_empty, 1)
+        self.assertIn("matched 0 readable source files", "\n".join(rep_empty["errors"]))
+        self.assertFalse((self.repo / ".guardrails").exists())
+
+        # Adding readable code and retrying --init succeeds immediately.
+        self.write("src/app.js", "export const ok = 1;\n")
+        c_retry, rep_retry, _ = self.run_cli("--init", "--check-command", 'python -X utf8 -c "print(1)"')
+        self.assertEqual(c_retry, 0, rep_retry["errors"])
+        self.assertTrue((self.repo / ".guardrails" / "config.json").is_file())
+
+        # 3. Flat repo with tests/ keeps allow_paths=[] so hardcoded-secret in tests/ stays active.
+        self.setUp()
+        self.write("pyproject.toml", "[tool.pytest.ini_options]\ntestpaths = ['tests']\n")
+        self.write("main.py", "x = 1\n")
+        self.write("tests/test_key.py", "KEY = 'sk-" + "proj-1234567890abcdefghijklmnop'\n")
+        c_flat, rep_flat, _ = self.run_cli("--init")
+        self.assertEqual(c_flat, 0, rep_flat["errors"])
+        self.assertEqual(rep_flat["detected"]["allow_paths"], [])
+        self.assertEqual(rep_flat["anti_patterns_config"]["max_allowed"], 1)
+
+        # 4. --init --check-head is rejected upfront by CLI parser.
+        proc = subprocess.run(
+            [sys.executable, "-X", "utf8", str(SCRIPT), "--root", str(self.repo), "--init", "--check-head"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("--init cannot be combined with --check-head", proc.stderr)
+
+    def test_file_limits_baseline_files_ratchet_and_extensions(self):
+        # --init populates baseline_files with existing oversize code files (.mts/.cts included, .css excluded).
+        self.write("src/big.mts", "\n".join(f"export const a{i} = {i};" for i in range(8)) + "\n")
+        self.write("src/styles.css", "\n".join(f".s{i} {{ color: red; }}" for i in range(15)) + "\n")
+        self.write("tests/test_ok.py", "import unittest\nclass T(unittest.TestCase):\n    def test_ok(self): pass\n")
+        code_init, rep_init, _ = self.run_cli("--init", "--max-lines", "5")
+        self.assertEqual(code_init, 0, rep_init["errors"])
+        init_cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        self.assertEqual(init_cfg["file_limits"]["baseline_files"], {"src/big.mts": 8})
+
+        # Switch to valid L1 setup and test growth, new monolith, stale missing file, and shrunk file.
+        self.write_minimal_guardrails(trust_level="L1")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["file_limits"] = {
+            "max_lines": 5,
+            "max_allowed": 3,
+            "allow_paths": [],
+            "baseline_files": {"src/big.mts": 8, "src/gone.cts": 10},
+        }
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+
+        # 1. Exact baseline ceiling passes (with stale missing warning for gone.cts).
+        c1, r1, _ = self.run_cli()
+        self.assertEqual(c1, 0, r1["errors"])
+        self.assertTrue(any("baselined oversize file 'src/gone.cts' no longer exists" in w for w in r1["warnings"]))
+
+        # 2. Growing src/big.mts from 8 -> 9 fails EVEN THOUGH max_allowed is 3.
+        self.write("src/big.mts", "\n".join(f"export const a{i} = {i};" for i in range(9)) + "\n")
+        c2, r2, _ = self.run_cli()
+        self.assertEqual(c2, 1)
+        self.assertIn("oversize file 'src/big.mts' grew from 8 to 9 lines", "\n".join(r2["errors"]))
+
+        # 3. Reset src/big.mts to 8 lines; adding new oversize src/new_big.cts fails EVEN WITH max_allowed=3.
+        self.write("src/big.mts", "\n".join(f"export const a{i} = {i};" for i in range(8)) + "\n")
+        self.write("src/new_big.cts", "\n".join(f"export const b{i} = {i};" for i in range(7)) + "\n")
+        c3, r3, _ = self.run_cli()
+        self.assertEqual(c3, 1)
+        self.assertIn("new oversize file 'src/new_big.cts' is 7 lines (> 5)", "\n".join(r3["errors"]))
+
+        # 4. Remove new_big.cts and shrink src/big.mts <= 5 -> warns to remove from baseline_files and lower max_allowed.
+        (self.repo / "src/new_big.cts").unlink()
+        self.write("src/big.mts", "export const a0 = 0;\n")
+        c4, r4, _ = self.run_cli()
+        self.assertEqual(c4, 0, r4["errors"])
+        self.assertTrue(any("oversize file 'src/big.mts' shrunk to 1 lines" in w for w in r4["warnings"]))
 
 
 if __name__ == "__main__":

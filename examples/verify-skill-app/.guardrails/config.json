@@ -14,10 +14,15 @@
   },
   "anti_patterns": {
     "max_allowed": 0,
-    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret"],
+    "enabled": ["silent-catch", "blind-wait", "hardcoded-path", "hardcoded-localhost", "hardcoded-secret", "mock-in-prod"],
     "allow_paths": [],
     "allow_by_category": {},
     "extra_rules": []
+  },
+  "file_limits": {
+    "max_lines": 600,
+    "max_allowed": 0,
+    "allow_paths": []
   },
   "forbidden_primitives": [],
   "boundary_rules": []

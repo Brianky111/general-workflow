@@ -18,7 +18,7 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 | --- | --- | --- |
 | `invalid` | 存在 `.guardrails/`，但护栏检查、逃生舱上限、特征地图或产物门禁报错 | 先修报错再推进新功能；契约问题看 `06-repo-guard-contract.md` |
 | `legacy_v1` | 未建 `.guardrails/`，但发现旧版 `docs/workflow/` 或 `WORKFLOW-STATE.md` | 不覆盖旧文件；按 `06-repo-guard-contract.md` 迁移后再继续 |
-| `uninitialized` | 新仓库或尚无 `.guardrails/` 的已有仓库 | 加载 `01-intent-and-invariants.md`，立一页意图并建最小护栏 |
+| `uninitialized` | 新仓或尚无 `.guardrails/` 的旧仓 | 先跑 `--scan` / `--init` 锁基线棘轮，再加载 `01-intent-and-invariants.md` 补意图与地图 |
 | `ready` | `.guardrails/` 配置和基础校验通过 | 对照下表选一份 reference 执行本轮任务 |
 
 ## 信任层级（L0–L3）
@@ -75,7 +75,7 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 - **意图或核心不变量歧义**：同一句话有两种会改变用户可见结果或数据正确性的解释；
 - **不可逆边界**：改动涉及资金/账务、隐私合规、鉴权放宽、不可逆数据迁移/删库或破坏性公共 API；
 - **校验环境损坏**：基础构建、测试或依赖无法安装运行，需要外部凭据或修改环境前提；
-- **试图抬高旧债上限**：当前改动唯一能过 `repo_guard.py` 的方式是调大 `escape_hatches.max_allowed`、`anti_patterns.max_allowed` 或关掉既有检查（永远不允许静默抬限）；
+- **试图抬高旧债上限**：唯一过检方式是调大 `escape_hatches`、`anti_patterns` 或 `file_limits` 的 `max_allowed` 或关掉检查（严禁静默抬限）；
 - **单模块深潜止损**：同一内部模块连改 2 轮仍无用户可见进展，或试图自发开启多轮纯内部重构而主流程尚未跑通；
 - **顺手发现进停放区**：途中发现的非阻塞旧债或边缘问题只记一行（见 `04-correction-and-gardening.md`），严禁当场顺藤摸瓜深挖；内部技术选型由 Agent 选最简可逆方案拍板，只把产品行为/业务口径/不可逆决策以每次最多 1–2 个通俗选择题问用户。
 

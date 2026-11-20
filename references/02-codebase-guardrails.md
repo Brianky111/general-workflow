@@ -25,17 +25,17 @@ Agent 很容易在大型仓库里搞混一段代码到底运行在哪个进程�
 
 ## 反过度工程、反防御性吞错与反硬编码
 
-AI 在无人约束时最容易把简单需求写重、用静默兜底把 Bug 藏起来，或者随手写死路径与等待时间（参见 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md`）。本工作流对以下四类反模式实行零容忍（或旧仓棘轮收敛）：
+AI 在无人约束时最容易把简单需求写重、用静默兜底掩盖 Bug、在生产代码里写假数据回退或硬编码路径与延时（参见 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md`）。本工作流对以下红线实行零容忍（或旧仓棘轮收敛）：
 
-1. **反过度工程化（先减后加 + 三次法则）**：先做出最小可用垂直切片再按需提炼；只有一个真实调用方时严禁提前抽出 Factory / Strategy / Adapter / DI 容器等空壳抽象；同一重复模式在代码中真实出现 **≥ 3 次**才允许抽象复用，优先删除死代码与投机式兼容层。
-2. **反滥用防御性编码（边界单点校验，内部 Fail Fast）**：只在系统外部边界（HTTP/RPC 入参、用户输入、环境变量、数据库读取）校验与转换一次；进入内部逻辑后信任类型与契约，**严禁**用 `try/catch` / `except: pass` 静默吞掉异常或返回 `null`/`[]`/`{}`/假默认值来“保页面不崩”。内部非法状态必须立即抛出明确错误，绝不把真问题掩盖成“看起来没报错但算错了数”。
+1. **反过度工程化（先减后加 + 禁空壳分层 + 防巨石文件）**：先做最小可用垂直切片再按需提炼；单实现严禁套 `IXxx`/`XxxImpl`/Factory，单调用方严禁写纯透传 Wrapper/Manager，无明确多实现需求严禁自造 Plugin/Registry 架子；同一重复模式真实出现 **≥ 3 次**且演进同源才抽复用。同时启用 `file_limits`（默认 `max_lines: 600` + 旧仓 `max_allowed` 棘轮）卡死上千行巨石文件。
+2. **反防御性冗余与静默吞错（Parse, Don't Validate + 内部 Fail Fast）**：只在系统外部边界（HTTP/RPC 入参、用户输入、环境变量、数据库读取）校验解析成强类型；内部逻辑信任契约，**严禁**层层冗余 `val ?? fallback` 掩盖上游脏数据，**严禁** Python `except: pass` / `suppress(Exception)`、JS/TS 空 `catch` 与 Promise `.catch(() => {})` / `.catch(() => null | [])`。内部非法状态必须立即抛错，绝不假装正常。
 3. **反硬编码四红线**：
-   - **禁止硬编码延时与盲等凑时序**：数据或接口就绪后严禁加 `minLoadingMs` / 强等 1.5s 再展示页面，严禁 `wait_for_timeout` / `waitForTimeout`、人工 `new Promise(r => setTimeout(r, 1500))` 或业务层裸 `sleep`，必须等待真实状态信号、完成事件或服务端版本号。
-   - **禁止环境硬编码**：严禁把本机绝对路径（`C:\Users\...`、`/Users/...`、`/home/...`）、散落的 `http://localhost` / `127.0.0.1` 或密钥/Token 写进业务源码。
-   - **禁止业务可变参数硬编码**：起算日、费率、阈值、开关等归口单一配置源，对照 `01-intent-and-invariants.md` 的 `configurable_params`。
-   - **禁止主路径假数据与特判硬编码**：严禁在业务组件里塞写死 demo 数组或 `if (id === 'xxx')` 特判冒充真实状态；演示/测试数据只许走独立 seed 或 fixture。
+   - **禁盲等延时与人为最小加载**：数据/接口就绪后严禁加 `minLoadingMs` / `artificialDelay`（如加载完强等 1.5s）、`wait_for_timeout` / `waitForTimeout`、`await sleep(1500)` / `delay()` 包装器、`Promise(setTimeout)` 或业务裸 `sleep`/`setTimeout`，必须等真实状态信号或服务端版本号。
+   - **禁环境硬编码与散落读环境**：严禁本机及 WSL 路径（`C:\Users\...`、`/Users/...`、`/home/<user>/...`、`/mnt/*/Users/`、`/root/`、`file:///Users/...`）、本地/内网 IP 的 HTTP/WS/DB 地址或密钥字面量进源码；环境变量只许收口单一配置入口。
+   - **禁业务可变参数与魔法常量硬编码**：起算日、费率、阈值、开关等归口单一配置源，对照 `01-intent-and-invariants.md` 的 `configurable_params`。
+   - **禁生产假数据与回退造假（`mock-in-prod`）**：严禁在生产源码定义 `MOCK_*`/`FAKE_*`/`mockXxxData`、写 `rows || mockData` 兜底或导入 `__mocks__`/`fixtures`；演示数据只许放独立 seed 或测试目录。
 
-高置信度的静默吞错、盲等延时、本机路径、`localhost` 与密钥字面量由 `repo_guard.py` 的 `anti_patterns` 门禁直接扫描拦截（配置语法见 `06-repo-guard-contract.md`）。
+以上 `repo_guard.py` 规则属**零依赖启发式棘轮兜底**（拦截高信号坏模式与超长/按路径 `baseline_files` 行数天花板，而非完整编译器或词法器）；底层适配器所需的重试退避必须收口到单一 `runtime` 模块并仅在配置内以 `allow_by_category` 放行；而复杂 AST/语义问题（复杂 JS 表达式、单实现 `IXxx` 接口、层层 `??` 兜底、散落直读环境变量、魔法业务常量）须由挂进 `check_command` 的原生编译器/Linter、`/architect` 与产物审查协同拦截（边界详 `06-repo-guard-contract.md`）。
 
 ## 根因导向的自定义 Lint
 
@@ -64,6 +64,6 @@ AI 在无人约束时最容易把简单需求写重、用静默兜底把 Bug 藏
 完成代码库护栏建设或变更后，检查以下四条是否全部成立：
 
 1. 核心运行上下文与模块边界已通过目录结构表达，并接入可自动运行的依赖边界检查（原生图检查器优先，或 `boundary_rules`）；
-2. 已识别的易误用底层原语已封装进受控模块，未引入单调用方空壳抽象、静默吞错或四类硬编码（`repo_guard.py` 的 `anti_patterns` 门禁通过）；
-3. `.guardrails/config.json` 的 `escape_hatches.max_allowed` 与 `anti_patterns.max_allowed` 已设定（绿地项目为 `0`），运行 `repo_guard.py` 确认无新增逃生舱、反模式或绕过注释，必要时已过 `/no-comments` 语义复核；
+2. 已识别的易误用底层原语已封装进受控模块（合法重试退避只进单一 `runtime` 白名单），`repo_guard.py` `anti_patterns` 通过，并已借原生编译器/AST Lint（`check_command`）与 `/architect` 排查过空壳接口、`??` 兜底与魔法常量；
+3. `.guardrails/config.json` 的 `escape_hatches`、`anti_patterns`、`file_limits`（含存量 `baseline_files`）已锁定（绿地为 `0`），必要时已过 `/no-comments` 语义复核；
 4. 项目级 `check_command`（format + lint + typecheck + unit/integration）能在干净命令行一键退出 0。
