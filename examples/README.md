@@ -3,7 +3,7 @@
 这里放三个真实可运行、带 `.guardrails/` 护栏和 `tests/` 的小型 Python 项目。`tests/test_examples.py` 每次都会对它们真跑一遍 `scripts/repo_guard.py --run-check`，并与本页贴出的预期输出逐行核对。
 
 - `clean-app/`：从零按护栏建起来的订单导出 CLI。信任层级 `L1`，零逃生舱（`0/0`），含 `time.sleep` 原语白名单与 `src/ui` → `core/storage` 目录边界规则，并附可复用的 `tools/verify.py`。
-- `weeding-brownfield/`：接手旧仓库起步的账单解析工具。信任层级 `L0`，先用 `escape_hatches.max_allowed: 1` 棘轮冻住 `src/legacy/parser.py` 里的 1 条旧 `# HACK` 注释，防止新增坏模式扩散。
+- `weeding-brownfield/`：接手旧仓库起步的账单解析工具。信任层级 `L0`，先用 `escape_hatches.max_allowed: 1` 棘轮冻住 `src/legacy/parser.py` 里的 1 条旧 `# HACK` 注释，同时用 `"clean_scopes": ["src/app.py"]` 将已清理的新入口锁死在零旧债状态。
 - `verify-skill-app/`：使用项目本地分片验证 Skill（`.agents/skills/verify-orders/`）替代单表 `feature-map.md` 的订单 CLI。信任层级 `L1`，由 `config.json` 的 `verify_skill` 指向并校验 `SKILL.md` 与 `features/*.md` 四节契约。
 
 ## clean-app/：L1 内循环示例
@@ -69,6 +69,7 @@ python -X utf8 scripts/repo_guard.py --root examples/weeding-brownfield --run-ch
 ```text
 trust_level L0 | guard_status ready | fresh_head false
   scan: files=2 escape_hatches=1/1 primitive_violations=0 boundary_violations=0
+  clean_scopes: src/app.py (files=1, violations=0)
   features: total=2 core=1 verified=1
   prose: AGENTS.md bytes=240 prohibitions=0
   check_run: PASS (exit 0)
@@ -77,7 +78,7 @@ trust_level L0 | guard_status ready | fresh_head false
 
 ### 它证明了什么
 
-- 旧仓接入不必停工重写全部历史代码：先把现存 1 处 `# HACK` 锁在 `max_allowed: 1`，阻止任何新提交新增绕过；等用正式 CSV 解析器替掉它后，把 `max_allowed` 降回 `0` 即可向 `L2`/`L3` 演进。
+- 旧仓接入不必停工重写全部历史代码：先把现存 1 处 `# HACK` 锁在 `max_allowed: 1` 并用 `clean_scopes` 把干净的 `src/app.py` 护住，阻止任何新提交在净土区或全仓扩散坏模式；等用正式 CSV 解析器替掉旧债后，把 `max_allowed` 降回 `0` 即可向更高信任层级演进。
 
 ## verify-skill-app/：分片项目本地验证 Skill 示例
 

@@ -1,39 +1,46 @@
 # 行为验证与验收产物
 
-前两层护栏保证了代码“结构没写烂、没违规”，但完全不能证明“做对了用户要的东西”。本文件定义如何低成本地验证真实行为、产出让人一眼看懂的产物，并在高风险处使用深度验证。
+前两层护栏保证代码“结构没写烂”，但不能证明“做对了需求”。本文件定义低成本行为验证、真实场景驱动、独立验收与科学爬坡规范。
 
 ## 为什么审行为产物而不是逐行审 diff
 
-Agent 完全可以写出格式完美、类型全对、Lint 全绿、单元测试全过，却把用户需求理解反了的代码。举个常见例子：你让 Agent“修一下切换聊天时的卡顿”。它先把旧消息清空再异步加载，点击回调确实快了，单测也全绿——但用户每次切换都要看半秒白屏闪动。
-
-只看代码 diff 很难一眼发现这种体验缺陷；或者反过来，人为审查几千行 PR diff 根本跟不上 Agent 的产出速度。因此审查的重心必须从“逐行看源码”转向**审行为产物**（对照 `vendor/pstack/skills/principle-prove-it-works/SKILL.md` 与 `vendor/pstack/skills/principle-test-behavior-not-implementation/SKILL.md`）：
+Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反了的代码（例如为修切换卡顿先清空消息再异步加载，导致用户每次看到半秒白屏）。且人眼逐行审大量 diff 跟不上吞吐。因此验收重心必须转向**审行为产物**（参见 `vendor/pstack/skills/principle-prove-it-works/SKILL.md` 与 `vendor/pstack/skills/principle-test-behavior-not-implementation/SKILL.md`）：
 
 - 对比独立于实现的预期：**用户在什么前置条件下做了什么操作，应该观察到什么结果？**
-- **早演示、早纠偏**：每个小垂直切片完成后立即交出截图/录屏/试跑结果让用户确认产品方向，同时当场核对不存在“数据已就绪却人为干等（如 1.5s 固定遮罩）”或“页面写死假数据冒充成功”。
-- 针对可复现的 bug 修复，执行**证伪检查**：把新写的验证或复现测试放回修复前的提交跑一遍，它必须失败；放回当前修复后，它必须通过。旧提交也绿的测试不能证明修复有效。
-- 测试只断言用户或外部系统可观察的结果，不绑死私有辅助函数或内部调用顺序；能用两类破坏性假设检验每一条测试——打坏行为时必须失败、只改内部实现时必须保持通过。
+- **早演示、早纠偏**：小切片完结即交出截图/录屏/试跑结果确认方向，核对无“就绪后人为干等”或“写死假数据”。
+- **独立 Verifier 隔离验收**：大改动或高风险切片优先交给未参与编写该实现、不带实现滤镜的独立上下文子代理（见 `00-router.md`）按地图实跑挑刺并留证。
+- **Bug 修复双面证伪**：新复现验证在修复前提交必须红灯失败，在当前提交必须绿灯通过。
+- 测试只断言用户或外部系统可观察结果，不绑死私有辅助函数或内部调用顺序。
 
 ## 用户视角 Feature Map
 
-`AGENT` 在写代码或验证时最常浪费 token 的地方，是靠猜去翻整个仓库找“用户说的左边栏那个导出按钮到底对应哪段代码”。按仓库规模选一种形态作为人与 Agent 的共享词汇表，**二选一不双份维护**：
+用用户视角地图消除 Agent 猜路径浪费的 token，按规模**二选一不双份维护**：
 
-1. **紧凑单表模式（小型应用 / 早期起步）**：在 `.guardrails/feature-map.md` 维护一张用户语言清单（功能名、真实入口、`Verify CLI`、期望 `Artifact` 与 `core`/`secondary` 优先级）。
-2. **分片项目本地验证 Skill 模式（中大型应用推荐）**：按 `vendor/pstack/skills/create-verification-skill/SKILL.md` 生成项目本地的 `verify-<app>` 目录（如 `.agents/skills/verify-<app>/`），并在 `.guardrails/config.json` 配置 `verify_skill` 路径：
-   - `SKILL.md`：含 YAML frontmatter 与 `Launch` / `Doctor` / `Drive` / `Evidence` / `Cleanup` 章节；
-   - `features/README.md`：索引同目录下所有功能文件，修改哪个功能就只读那一份；
-   - `features/<slug>.md`：每个用户可见功能一份文件（H1 为功能名，固定顺序四节：`Sub-features`、`How to get to it (user POV)`、`Driving it with <harness>`、`Gotchas`；非核心功能可加 `<!-- priority: secondary -->`）。
-   - 应用变更后用 `vendor/pstack/skills/maintain-verification-skill/SKILL.md` 巡检：为每个 feature 并发派出只读源读 Agent，再由协调者用单个会话串行实跑全部功能，严格区分文档漂移（改 map）与产品回归（报缺陷不掩盖）。
+1. **紧凑单表模式（小型/早期应用）**：在 `.guardrails/feature-map.md` 记录 Feature、真实入口、`Verify CLI`、期望 `Artifact` 与 `core`/`secondary` 优先级。
+2. **分片本地验证 Skill 模式（中大型应用推荐）**：按 `vendor/pstack/skills/create-verification-skill/SKILL.md` 生成项目本地 `verify-<app>`（如 `.agents/skills/verify-<app>/`）并配入 `config.json` `verify_skill`：
+   - `SKILL.md`：含 YAML frontmatter 与 `Launch` / `Doctor` / `Drive` / `Evidence` / `Cleanup`；
+   - `features/README.md`：索引所有功能文件，改哪个只读那一份；
+   - `features/<slug>.md`：H1 功能名 + 固定四节 `Sub-features`、`How to get to it (user POV)`、`Driving it with <harness>`、`Gotchas`（次要标 `<!-- priority: secondary -->`）；
+   - 应用演进后用 `vendor/pstack/skills/maintain-verification-skill/SKILL.md` 并发核查漂移并在单会话串行实跑全部路径。
 
-每次新增或调整核心用户功能，必须同步更新对应地图；前置条件或种子数据缺失导致路径不可达时，按真实失败汇报并将前置记录到 `Gotchas`，绝不为凑通过而削弱验证路径。
+新增或调整核心功能必须同步更新地图；前置缺失导致路径不通时按真实失败汇报，绝不削弱断言凑绿。
 
 ## 复用型验证 CLI 与调试通道
 
-不要每次修改都让 Agent 现编一段临时 Playwright/curl 脚本去点界面——那样既费 token，又极其脆弱，每次会话都要重摸一遍。参考 Grok Bot 与 `create-verification-skill` 的做法，在项目内部（例如 `tools/verify.py` 或 `scripts/verify/`）沉淀一个**可复用的验证 CLI / Driver**：
+不要每次修改都让 Agent 现编临时脚本点界面。在项目内部（如 `tools/verify.py` 或 `scripts/verify/`）沉淀**可复用的场景驱动 CLI**：
 
-- 封装好“从空数据目录干净启动并完成迁移/种子数据 → 确认可用而非仅端口监听 → 走完用户真实路径 → 抓取日志/性能数字/截图/录屏”的固定命令，优先使用 ARIA 标签、路由等稳定句柄而非易碎的坐标或 CSS 选择器；
-- **`Doctor` 只读自检**：提供一条快速只读命令回答“当前实例是否值得继续驱动”（进程存活、版本/构建匹配、端口归属、鉴权有效），任何异常先跑 `Doctor` 再重跑；
-- **实例隔离与清理不毁证**：明确多实例能否并行（端口、数据目录、profile）；`Cleanup` 只回收本次启动的进程与临时状态（不按进程名误杀），且必须保留证明产物文件；
-- 验证 CLI 自身也是仓库代码的一部分，受同一套测试与静态检查保护，每次修 bug 或加功能顺手给它加一个子命令。
+- **禁止拿单测或浅探针冒充 `verify_cli`**：对于常规应用（默认 `project_kind: "app"` 且未配 `verify_skill`），禁止直接把 `pytest`/`vitest`/`npm test`、纯 `/api/health` `/healthz` `/ping` 探针或照抄 `check_command` 填进 `verify_cli` 或 `core` 行 Verify CLI（`repo_guard.py` 会在起步层发警告、在更高层级直接报错拦截）。纯底层库若确无独立场景驱动器，须在 `config.json` 显式声明 `"project_kind": "library"`。
+- **真实驱动器必备能力**：干净启动并准备数据 → 确认可用而非仅端口监听 → 走完端到端用户路径 → 输出日志/耗时/截图/录屏；优先用 ARIA 标签、路由或稳定 ID，不用脆性像素坐标。
+- **`Doctor` 只读自检**：提供只读子命令检查进程、构建匹配、端口与鉴权是否值得继续驱动；异常先跑 `Doctor`。
+- **隔离与清理不毁证**：明确并行端口/数据目录隔离；`Cleanup` 只回收本次子进程与临时状态，保留产物文件；验证 CLI 自身纳入 `source_roots` 与静态检查保护。
+
+## 科学性能与指标爬坡（Hillclimb）
+
+针对“启动耗时降 50%”“消除某条卡顿指标”等持续可量化调优（区分于一次性 bug 修复），按 `vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md` 执行单变量循环：
+
+1. **先冻结可信杠杆**：基于真实负载写出可复现差距的测量脚本（取 N 次中位数抗噪声）并绑定回归门禁；先证明基准能拉开好坏案例再冻结，迭代中禁改测量口径。
+2. **一改一测、进则留退则回**：每次只验证一个架构假设，指标越过噪声改善且回归门禁全绿才单独提交；没改善或破坏正确性立刻完整回滚（“可能有用”一律丢弃），每轮记入被 gitignore 的决策日志 `decision.tsv`。
+3. **停步与简并重**：达到“目标幅度 + 最少迭代轮数”双停止条件即止；保留不降指标的简化删减，遇平台期先重读源码换思路，绝不放松停止阈值凑过关。
 
 ## 行为产物与新鲜度门禁
 
@@ -46,20 +53,20 @@ Agent 完全可以写出格式完美、类型全对、Lint 全绿、单元测试
 
 ## 深度验证：PBT 与形式化验证
 
-过去属性测试（Property-Based Testing）和形式化方法因为编写与维护太昂贵，只在少数底层系统里出现；Agent 把编写成本打下来之后，它们变成了高性价比的防线。需要时可用 `vendor/pstack/skills/create-formal-verification-skill/SKILL.md` 生成并证明项目本地形式化验证 Skill，用 `vendor/pstack/skills/maintain-formal-verification-skill/SKILL.md` 随代码提交同步，禁止“代码已改但旧模型继续假绿”。
+需要时用 `vendor/pstack/skills/create-formal-verification-skill/SKILL.md` 生成本地形式化验证 Skill，并用 `vendor/pstack/skills/maintain-formal-verification-skill/SKILL.md` 随提交同步，防模型假绿：
 
 | 信号与风险 | 推荐武器 | 产出与检查方式 |
 | --- | --- | --- |
-| 复杂 UI 交互、任意乱点/快速连击导致状态错乱或白屏 | **UI 属性测试（PBT）**，如 Bombadil、fast-check 驱动交互序列 | 随机动作序列不得触发崩溃、白屏或非法 UI 状态，失败保留可重放序列与录屏 |
-| 账本计算、状态机转换、解析器/序列化、幂等重试 | **属性测试（PBT）**，如 Hypothesis、fast-check | 直接验证 `01` 写下的不变量在数千组随机输入下成立，失败用例固化成回归单测 |
-| 多端同步、通知投递、并发乱序、分布式状态协作 | **TLA+ 模型检测** + `vendor/pstack/skills/statechart/SKILL.md` | 运行 `vendor/pstack/skills/statechart/scripts/statechart.ts` 抓反例最短路径并导出用户视角 Mermaid 状态图 |
-| 高复杂度核心自研算法（如虚拟列表、布局排布、调度器） | **Lean / 形式化证明** | 对关键无闪烁、单调性或不变量做机器可核查证明，在破损变更上证明能红并记录同步 commit |
+| 复杂 UI 乱点/连击状态错乱 | **UI PBT**（Bombadil、fast-check） | 随机序列不崩不白屏，留可重放序列与录屏 |
+| 账本计算、状态机、解析与幂等 | **属性测试**（Hypothesis、fast-check） | 验证 `01` 不变量在数千随机输入下成立 |
+| 多端同步、通知并发乱序 | **TLA+** + `vendor/pstack/skills/statechart/SKILL.md` | 跑 `statechart.ts` 抓反例路径并导出状态图 |
+| 高复杂度核心算法（虚拟列表/调度） | **Lean / 形式化证明** | 机器核查不变量并在破损变更上证明能红 |
 
 ## 验证门禁
 
-离开本阶段或声称某项功能交付前，逐项核对：
+声称功能交付前核对：
 
-1. 所有 `core` 级功能已登记在 `.guardrails/feature-map.md` 或 `verify_skill` 目录，且对应验证命令已当场跑通（`verify_skill` 须满足索引卫生、4-H2 结构与清理留证）；
-2. `.guardrails/verification.md` 覆盖全部 `core` 功能，每行均有具体观察结果、非空磁盘产物（或运行链接）及不可变提交锚点；
-3. 若本次是修可复现缺陷，已确认新校验在旧提交失败、在当前提交通过；涉及并发/状态机/复杂 UI 的已补相应深度验证与状态图；
-4. 运行 `python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --run-check` 退出码为 `0`（高信任分支同时加 `--check-head`）。
+1. 全部 `core` 功能已入 `.guardrails/feature-map.md` 或 `verify_skill`，对应驱动命令实跑通过；
+2. `.guardrails/verification.md` 覆盖全部 `core` 功能，均有观察结果、非空产物及不可变 commit 锚点；
+3. 缺陷修复已双面证伪；高风险并发/状态流已补深度验证或状态图；
+4. 运行 `python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --run-check` 退出 `0`（高信任分支同时加 `--check-head`）。

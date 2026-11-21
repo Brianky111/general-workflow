@@ -55,17 +55,17 @@ flowchart TD
 ├── vendor/
 │   └── pstack/                          # Lauren Tan pstack (v0.15.46 @ aaeb0ea, MIT) 原样内置包
 │       ├── LICENSE
-│       ├── UPSTREAM.json                # 锁定上游提交、技能清单与 LF SHA-256 校验和
+│       ├── UPSTREAM.json                # 锁定上游提交、技能清单与 62 份文件 LF SHA-256 校验和
 │       ├── agents/comment-sicko.md
-│       └── skills/                      # 9 个核心执行技能 + 10 个工程原则技能
+│       └── skills/                      # 11 个核心执行技能 + 12 个原则技能 + 2 份 Playbook
 ├── examples/                            # 三个可直接跑通的目标项目示例
 │   ├── clean-app/                       # L1 内循环：零逃生舱、边界规则、验证 CLI 与产物
-│   ├── weeding-brownfield/              # L0 旧仓起步：棘轮锁定 1 条历史 HACK 等待除草
+│   ├── weeding-brownfield/              # L0 旧仓起步：clean_scopes 保护新模块 + 棘轮锁定历史债务
 │   └── verify-skill-app/                # L1 分片验证 Skill：verify_skill 替代单表 feature-map.md
 ├── tests/
 │   ├── test_check_consistency.py        # 一致性校验器回归测试、预算与 vendor 契约钉死
-│   ├── test_repo_guard.py               # repo_guard.py 护栏、verify_skill 与新鲜度测试
-│   ├── test_install.py                  # install.py 与 sync_vendor.py 跨工具安装/卸载测试
+│   ├── test_repo_guard.py               # repo_guard.py 护栏、verify_cli、clean_scopes 与新鲜度测试
+│   ├── test_install.py                  # install.py 与 sync_vendor.py 跨工具（含 pi）安装/卸载测试
 │   └── test_examples.py                 # 对 examples/ 真跑脚本并与 README 逐行对齐
 └── archive/                             # 只读历史快照，不属于安装包
     ├── general-workflow-v0.12.0/
@@ -76,8 +76,9 @@ flowchart TD
 
 本仓库依据 MIT 协议在 [`vendor/pstack/`](vendor/pstack/UPSTREAM.json) 原样内置了 Lauren Tan（`@poteto`）[`cursor/plugins` 的 `pstack`](https://github.com/cursor/plugins/tree/main/pstack)（`v0.15.46`，锁定提交 `aaeb0ea`），由 [`00-router.md`](references/00-router.md) 按需调度，并在安装时可选一并展开为独立同级 Skill：
 
-- **9 个核心执行技能（默认安装 `--vendor-mode core`）**：`correct`（历史错例聚类与旧错例证伪）、`no-comments`（借口注释猎杀）、`architect`（写前两方案对比）、`why`（提交与 PR 追溯）、`create-verification-skill` / `maintain-verification-skill`（生成与巡检分片 `verify-<app>`）、`create-formal-verification-skill` / `maintain-formal-verification-skill`（形式化验证与同步）、`statechart`（TLA+ 检测与 Mermaid 状态图生成）。
-- **10 个原则参考技能（`--vendor-mode all` 一并安装）**：`principle-encode-lessons-in-structure`、`principle-fix-root-causes`、`principle-redesign-from-first-principles`、`principle-boundary-discipline`、`principle-type-system-discipline`、`principle-migrate-callers-then-delete-legacy-apis`、`principle-test-behavior-not-implementation`、`principle-prove-it-works`、`principle-subtract-before-you-add`、`principle-sequence-verifiable-units`。
+- **11 个核心执行技能（默认安装 `--vendor-mode core`）**：`correct`（历史错例聚类与旧错例证伪）、`no-comments`（借口注释猎杀）、`architect`（写前两方案对比）、`why`（提交与 PR 追溯）、`reflect`（复盘反思与结构化沉淀）、`recall`（历史经验检索）、`create-verification-skill` / `maintain-verification-skill`（生成与巡检分片 `verify-<app>`）、`create-formal-verification-skill` / `maintain-formal-verification-skill`（形式化验证与同步）、`statechart`（TLA+ 检测与 Mermaid 状态图生成）。
+- **12 个原则参考技能（`--vendor-mode all` 一并安装）**：`principle-encode-lessons-in-structure`、`principle-fix-root-causes`、`principle-redesign-from-first-principles`、`principle-boundary-discipline`、`principle-type-system-discipline`、`principle-migrate-callers-then-delete-legacy-apis`、`principle-test-behavior-not-implementation`、`principle-prove-it-works`、`principle-subtract-before-you-add`、`principle-sequence-verifiable-units`、`principle-laziness-protocol`、`principle-guard-the-context-window`。
+- **随主技能内置的 2 份 Playbook**：`skills/poteto-mode/playbooks/eval.md` 与 `hillclimb.md`（供评测基准对照与多轮爬坡优化按需读取，随主技能打包，不展开为独立同级 Skill）。
 - **独立审查 Agent**：`agents/comment-sicko.md`（安装到 Claude/Cursor 的 `agents/` 目录；在 Codex 等无命名子 Agent 的环境中作为子 Agent 提示词使用）。
 
 ## 目标项目里会出现什么
@@ -143,17 +144,17 @@ flowchart TD
 
 ## 安装与更新
 
-推荐使用跨工具安装脚本 [`scripts/install.py`](scripts/install.py)：默认自动剔除 `archive/`，将 `general-workflow` 与 9 个核心 `pstack` 技能（以及 Claude/Cursor 下的 `comment-sicko`）一并安装到目标工具目录，并在安装后自动跑一致性与 checksum 校验：
+推荐使用跨工具安装脚本 [`scripts/install.py`](scripts/install.py)：默认自动剔除 `archive/`，将 `general-workflow` 与 11 个核心 `pstack` 技能（以及 Claude/Cursor 下的 `comment-sicko`）一并安装到目标工具目录（含 `--target pi` 与 `--target all`），并在安装后自动跑一致性与 checksum 校验：
 
 ```powershell
 # 预览将安装的文件（不改动磁盘）
 python -X utf8 scripts/install.py --target claude --dry-run
 
-# 安装 general-workflow + 9 个核心 vendor 技能 + comment-sicko.md（--target 可重复或用 all）
-python -X utf8 scripts/install.py --target claude
-python -X utf8 scripts/install.py --target codex --target agents --target cursor
+# 安装 general-workflow + 11 个核心 vendor 技能 + comment-sicko.md（--target 可重复或用 all，覆盖 claude/cursor/codex/agents/pi）
+python -X utf8 scripts/install.py --target all
+python -X utf8 scripts/install.py --target codex --target agents --target cursor --target pi
 
-# 连同 8 个 principle-* 技能一起装入（--vendor-mode all），或只装单目录内置包（--vendor-mode bundled）
+# 连同 12 个 principle-* 技能一起装入（--vendor-mode all），或只装单目录内置包（--vendor-mode bundled）
 python -X utf8 scripts/install.py --target claude --vendor-mode all
 
 # 仅卸载本脚本安装的 general-workflow 及带 .general-workflow-vendor.json 标记的目录
@@ -173,7 +174,7 @@ python -X utf8 "$HOME\.claude\skills\general-workflow\scripts\repo_guard.py" --r
 三个脚本分别面向本仓库、vendor 快照与目标项目：
 
 ```powershell
-# 1. 离线校验 vendor/pstack/ 56 份上游文件校验和与结构
+# 1. 离线校验 vendor/pstack/ 62 份上游文件校验和与结构
 python -X utf8 scripts/sync_vendor.py --verify
 
 # 2. 校验本 skill 仓库自身的契约、预算、vendor 引用与全套单测

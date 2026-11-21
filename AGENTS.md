@@ -11,11 +11,11 @@ This repository **is** the skill package. `SKILL.md` at the root is the entry po
 ├── references/                          # 7 stage/topic docs, loaded one at a time
 │   ├── 00-router.md                     # resident: intent vs action, repo_guard CLI, routing, pstack dispatch, stop rules
 │   ├── 01-intent-and-invariants.md      # 1-page intent + configurable_params, vertical slices (WIP=1), onboarding
-│   ├── 02-codebase-guardrails.md        # directory context, anti-overengineering/silent-catch/hardcoding, lint, escape hatches
-│   ├── 03-verification-and-artifacts.md # Feature Map / verify_skill, verify CLI, artifacts & freshness, PBT/TLA+/Lean
-│   ├── 04-correction-and-gardening.md   # inverse pyramid correction, /correct falsification, anti-rabbit-hole stop-loss, AGENTS diet
-│   ├── 05-outer-loop-factory.md         # L0-L3 maturity ladder, irreversible gates, fuzzing & KPIs
-│   └── 06-repo-guard-contract.md        # .guardrails/ schema, verify_skill rules, repo_guard.py CLI, v1 migration
+│   ├── 02-codebase-guardrails.md        # directory context, anti-overengineering/silent-catch/hardcoding, clean_scopes, escape hatches
+│   ├── 03-verification-and-artifacts.md # Feature Map / verify_skill, scenario verify_cli, hillclimb, artifacts & freshness, PBT/TLA+/Lean
+│   ├── 04-correction-and-gardening.md   # inverse pyramid correction, /correct + /reflect + /recall, parking-lot buffer, AGENTS diet
+│   ├── 05-outer-loop-factory.md         # L0-L3 maturity ladder, clean_scopes L2 promotion, blinded eval, irreversible gates, KPIs
+│   └── 06-repo-guard-contract.md        # .guardrails/ schema (project_kind, clean_scopes), verify_skill rules, repo_guard.py CLI, v1 migration
 ├── scripts/
 │   ├── check_consistency.py             # validates this repository and vendor/pstack/
 │   ├── repo_guard.py                    # ships with skill, runs --scan/--init, anti_patterns, file_limits on target repos

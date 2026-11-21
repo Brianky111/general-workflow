@@ -73,11 +73,12 @@ def resolve_destinations(
         "cursor": (home / ".cursor" / "skills", home / ".cursor" / "agents"),
         "codex": (home / ".codex" / "skills", None),
         "agents": (home / ".agents" / "skills", None),
+        "pi": (home / ".pi" / "agent" / "skills", None),
     }
     expanded: list[str] = []
     for t in targets:
         if t == "all":
-            for name in ("claude", "cursor", "codex", "agents"):
+            for name in ("claude", "cursor", "codex", "agents", "pi"):
                 if name not in expanded:
                     expanded.append(name)
         elif t not in expanded:
@@ -348,9 +349,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--target",
         action="append",
-        choices=("claude", "cursor", "codex", "agents", "all"),
+        choices=("claude", "cursor", "codex", "agents", "pi", "all"),
         default=[],
-        help="target tool preset (repeatable; 'all' expands to claude, cursor, codex, agents)",
+        help="target tool preset (repeatable; 'all' expands to claude, cursor, codex, agents, pi)",
     )
     parser.add_argument(
         "--home",
@@ -371,7 +372,7 @@ def main(argv: list[str] | None = None) -> int:
         "--vendor-mode",
         choices=("core", "all", "bundled"),
         default="core",
-        help="how to install vendored pstack skills: core (9 skills, default), all (17), or bundled",
+        help="how to install vendored pstack skills: core (11 skills, default), all (23), or bundled",
     )
     agent_group = parser.add_mutually_exclusive_group()
     agent_group.add_argument(
@@ -411,7 +412,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.target and args.skills_dir is None:
         parser.error(
-            "specify at least one --target (claude, cursor, codex, agents, all) or --skills-dir"
+            "specify at least one --target (claude, cursor, codex, agents, pi, all) or --skills-dir"
         )
     if args.agents_dir is not None and args.skills_dir is None:
         parser.error("--agents-dir requires --skills-dir")

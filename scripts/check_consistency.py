@@ -98,6 +98,10 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 信任层级（L0–L3）",
         "## 路由表",
         "## 内置 pstack 专项技能调度",
+        "reflect",
+        "recall",
+        "eval.md",
+        "hillclimb.md",
         "## 全局停止条件",
     ),
     "01-intent-and-invariants.md": (
@@ -124,6 +128,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 为什么审行为产物而不是逐行审 diff",
         "## 用户视角 Feature Map",
         "## 复用型验证 CLI 与调试通道",
+        "project_kind",
+        "hillclimb.md",
         "## 行为产物与新鲜度门禁",
         "## 深度验证：PBT 与形式化验证",
         "## 验证门禁",
@@ -131,7 +137,9 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "04-correction-and-gardening.md": (
         "## 倒金字塔纠错阶梯",
         "## 历史错误聚类与旧错例证伪（/correct 闭环）",
+        "reflect",
         "## 反深潜熔断与停放区（Anti-Rabbit-Hole）",
+        "parking-lot.md",
         "## 主动除草与棘轮协议",
         "## AGENTS.md 瘦身规则",
         "## 除草门禁",
@@ -139,6 +147,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "05-outer-loop-factory.md": (
         "## 先内循环，再外循环",
         "## 成熟度阶梯（L0–L3）",
+        "clean_scopes",
+        "eval.md",
         "## 不可逆边界的永久人工门禁",
         "## 真实质量指标（不只看 PR 数量）",
         "## 外循环门禁",
@@ -146,6 +156,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     "06-repo-guard-contract.md": (
         "## .guardrails/ 目录布局",
         "## config.json 契约",
+        "project_kind",
+        "clean_scopes",
         "verify_skill",
         "anti_patterns",
         "mock-in-prod",
@@ -523,12 +535,58 @@ def check_vendor(tree: Tree, texts: dict[str, str], errors: list[str]) -> None:
                     principles = raw_principles
 
             expected_skills = set(core) | set(principles)
+            declared_playbooks: set[str] = set()
+            raw_playbooks = manifest.get("playbooks", [])
+            if "playbooks" in manifest:
+                if not isinstance(raw_playbooks, list) or any(
+                    not isinstance(x, str) or not x.strip() for x in raw_playbooks
+                ):
+                    errors.append("vendor/pstack/UPSTREAM.json: playbooks must be a list of paths")
+                else:
+                    for pb in raw_playbooks:
+                        norm_pb = pb.strip().replace("\\", "/")
+                        if not norm_pb.endswith(".md"):
+                            errors.append(
+                                f"vendor/pstack/UPSTREAM.json: playbook path must end with .md: {pb}"
+                            )
+                            continue
+                        try:
+                            pb_path = sync_vendor.safe_vendor_path(vendor_dir, norm_pb)
+                        except ValueError as exc:
+                            errors.append(f"vendor/pstack/UPSTREAM.json: {exc}")
+                            continue
+                        declared_playbooks.add(norm_pb)
+                        if not pb_path.is_file():
+                            errors.append(f"missing vendored playbook: vendor/pstack/{norm_pb}")
+                        elif not read_text(tree, pb_path, errors).strip():
+                            errors.append(f"empty vendored playbook: vendor/pstack/{norm_pb}")
+
+            playbook_containers: set[str] = set()
+            for pb in declared_playbooks:
+                parts = pb.split("/")
+                if len(parts) >= 3 and parts[0] == "skills" and parts[1] not in expected_skills:
+                    playbook_containers.add(parts[1])
+
             skills_root = vendor_dir / "skills"
             actual_skills = (
                 {p.name for p in skills_root.iterdir() if p.is_dir()}
                 if skills_root.is_dir()
                 else set()
             )
+            exempt_containers: set[str] = set()
+            for container in sorted(playbook_containers & actual_skills):
+                c_dir = skills_root / container
+                if (c_dir / "SKILL.md").exists():
+                    continue
+                files_inside = {
+                    p.relative_to(vendor_dir).as_posix()
+                    for p in c_dir.rglob("*")
+                    if p.is_file()
+                }
+                if files_inside and files_inside <= declared_playbooks:
+                    exempt_containers.add(container)
+            actual_skills -= exempt_containers
+
             for name in sorted(expected_skills - actual_skills):
                 errors.append(f"missing vendored skill directory: vendor/pstack/skills/{name}")
             for name in sorted(actual_skills - expected_skills):

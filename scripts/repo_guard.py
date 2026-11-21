@@ -26,6 +26,7 @@ if hasattr(sys.stderr, "reconfigure"):
 GUARD_DIR = Path(".guardrails")
 GUARDRAILS_VERSION = 2
 TRUST_LEVELS = ("L0", "L1", "L2", "L3")
+PROJECT_KINDS = ("app", "library")
 LEGACY_V1_PATHS = (
     Path("docs") / "workflow",
     Path("docs") / "workflow-state.md",
@@ -120,6 +121,39 @@ IMMUTABLE_COMMIT = re.compile(
     r"^(?:[0-9a-fA-F]{7,40}|v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z._-]+)?)$"
 )
 HEX_SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")
+
+SHALLOW_HEALTH_URL = re.compile(
+    r"(?:https?://\S+|(?:^|\s))/(?:api/)?(?:healthz?|readyz?|livez?|ping|status)(?:[/?#\s'\"`]|$)",
+    re.I,
+)
+HTTP_PROBE_TOOL = re.compile(
+    r"(?:\b(?:curl|wget|http|xh|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b|"
+    r"\bapi\.sh\b|\bGET\s+/(?:api/)?(?:healthz?|readyz?|livez?|ping|status)\b)",
+    re.I,
+)
+PY_TEST_RUNNER = re.compile(
+    r"^(?:uv(?:\s+--\S+(?:\s+\S+)?)*\s+run(?:\s+--\S+)*\s+|poetry\s+run\s+|"
+    r"python(?:3(?:\.\d+)?)?(?:\s+-[A-Za-z0-9_]+)*\s+-m\s+)?"
+    r"(?:pytest|py\.test|unittest)\b",
+    re.I,
+)
+JS_TEST_RUNNER = re.compile(
+    r"^(?:(?:npx|bunx|(?:pnpm|yarn|npm)(?:\s+(?:--dir|--prefix|--cwd)\s+\S+)*\s+exec(?:\s+--)?)\s+)?"
+    r"(?:vitest|jest|mocha|ava)\b|"
+    r"^(?:npm|pnpm|yarn|bun)(?:\s+(?:--dir|--prefix|--cwd)\s+\S+|\s+run)*\s+"
+    r"(?:test(?::[A-Za-z0-9_.:-]+)?|vitest|jest|mocha|ava)\b",
+    re.I,
+)
+NATIVE_TEST_RUNNER = re.compile(
+    r"^(?:cargo(?:\s+\S+)*\s+test|go(?:\s+-C\s+\S+)?\s+test)\b",
+    re.I,
+)
+BUILD_OR_LINT_ONLY = re.compile(
+    r"^(?:(?:npm|pnpm|yarn|bun)(?:\s+(?:--dir|--prefix|--cwd)\s+\S+|\s+run)*\s+"
+    r"(?:build|lint|typecheck|format|fmt|check)|"
+    r"(?:uv(?:\s+--\S+(?:\s+\S+)?)*\s+run(?:\s+--\S+)*\s+)?(?:ruff|pyright|mypy|tsc|eslint))\b",
+    re.I,
+)
 
 DEFAULT_ESCAPE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("eslint-disable", re.compile(r"eslint-disable(?:-next-line|-line)?\b")),
@@ -344,11 +378,13 @@ class FileLimitsConfig:
 class GuardConfig:
     trust_level: str
     trust_level_valid: bool
+    project_kind: str
     check_command: str
     verify_cli: str
     verify_skill: Path | None
     verify_skill_configured: bool
     source_roots: list[Path]
+    clean_scopes: list[Path]
     exclude_dirs: set[str]
     prose_files: list[Path]
     prose_max_bytes: int
@@ -371,6 +407,88 @@ def normalized_token(value: str) -> str:
         .strip("`\"'“”‘’()（）[]【】<>《》.,;:!?、。，；：！？…-— ")
         .casefold()
     )
+
+
+def _split_shell_segments(cmd: str) -> list[str]:
+    """Split a command string on &&, ||, or ; outside quoted substrings."""
+    segments: list[str] = []
+    cur: list[str] = []
+    quote = ""
+    escaped = False
+    i = 0
+    n = len(cmd)
+    while i < n:
+        ch = cmd[i]
+        if quote:
+            cur.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\" and quote != "'":
+                escaped = True
+            elif ch == quote:
+                quote = ""
+            i += 1
+            continue
+        if ch in ("'", '"', "`"):
+            quote = ch
+            cur.append(ch)
+            i += 1
+            continue
+        if cmd.startswith("&&", i) or cmd.startswith("||", i):
+            seg = "".join(cur).strip()
+            if seg:
+                segments.append(seg)
+            cur = []
+            i += 2
+            continue
+        if ch == ";":
+            seg = "".join(cur).strip()
+            if seg:
+                segments.append(seg)
+            cur = []
+            i += 1
+            continue
+        cur.append(ch)
+        i += 1
+    tail = "".join(cur).strip()
+    if tail:
+        segments.append(tail)
+    return segments
+
+
+def _is_health_probe_segment(seg: str) -> bool:
+    return bool(HTTP_PROBE_TOOL.search(seg) and SHALLOW_HEALTH_URL.search(seg))
+
+
+def _is_test_runner_segment(seg: str) -> bool:
+    s = seg.strip()
+    return bool(
+        PY_TEST_RUNNER.search(s) or JS_TEST_RUNNER.search(s) or NATIVE_TEST_RUNNER.search(s)
+    )
+
+
+def classify_fake_verify_cli(cmd: str, check_command: str = "") -> str | None:
+    """Return a concrete reason if cmd looks like a fake verify_cli on an app repo."""
+    norm_cmd = " ".join(cmd.strip().strip("`").split())
+    if not norm_cmd:
+        return None
+    norm_chk = " ".join(check_command.strip().strip("`").split())
+    if norm_chk and norm_cmd == norm_chk:
+        return "duplicates check_command verbatim"
+    segments = _split_shell_segments(norm_cmd)
+    if not segments:
+        return None
+    probes = [_is_health_probe_segment(seg) for seg in segments]
+    tests = [_is_test_runner_segment(seg) for seg in segments]
+    has_real_driver = any(
+        not p and not t and not BUILD_OR_LINT_ONLY.search(seg)
+        for seg, p, t in zip(segments, probes, tests)
+    )
+    if any(probes) and not has_real_driver:
+        return "is a shallow health/ping probe rather than a user-scenario driver"
+    if any(tests) and not has_real_driver:
+        return "invokes a test runner instead of a reusable application scenario driver"
+    return None
 
 
 def is_set(value: str) -> bool:
@@ -590,7 +708,11 @@ def parse_pattern_rules(
 
 
 def parse_anti_patterns_config(
-    root: Path, raw_ap: object, trust_level_valid: str, errors: list[str]
+    root: Path,
+    raw_ap: object,
+    trust_level_valid: str,
+    errors: list[str],
+    allow_l2_with_clean_scopes: bool = False,
 ) -> AntiPatternsConfig:
     if raw_ap is None:
         return AntiPatternsConfig(
@@ -620,7 +742,10 @@ def parse_anti_patterns_config(
         )
     else:
         max_allowed = max_val
-        if trust_level_valid in {"L2", "L3"} and max_allowed > 0:
+        if (
+            trust_level_valid == "L3"
+            or (trust_level_valid == "L2" and not allow_l2_with_clean_scopes)
+        ) and max_allowed > 0:
             errors.append(
                 f".guardrails/config.json: {trust_level_valid} requires "
                 "anti_patterns.max_allowed == 0; clean up anti-patterns before "
@@ -696,8 +821,13 @@ def parse_anti_patterns_config(
 
 
 def parse_file_limits_config(
-    root: Path, raw_fl: object, trust_level_valid: str, errors: list[str]
+    root: Path,
+    raw_fl: object,
+    trust_level_valid: str,
+    errors: list[str],
+    clean_scopes: list[Path] | None = None,
 ) -> FileLimitsConfig:
+    allow_l2_clean = bool(clean_scopes)
     if raw_fl is None:
         return FileLimitsConfig(
             configured=False,
@@ -731,7 +861,10 @@ def parse_file_limits_config(
         )
     else:
         max_allowed = max_val
-        if trust_level_valid in {"L2", "L3"} and max_allowed > 0:
+        if (
+            trust_level_valid == "L3"
+            or (trust_level_valid == "L2" and not allow_l2_clean)
+        ) and max_allowed > 0:
             errors.append(
                 f".guardrails/config.json: {trust_level_valid} requires "
                 "file_limits.max_allowed == 0; split oversize monolith files before "
@@ -780,12 +913,28 @@ def parse_file_limits_config(
                     )
                     continue
                 baseline_files[norm_rel] = raw_v
-            if trust_level_valid in {"L2", "L3"} and baseline_files:
+                if clean_scopes and any(
+                    path_is_within((root_resolved / norm_rel).resolve(), cs)
+                    for cs in clean_scopes
+                ):
+                    errors.append(
+                        f".guardrails/config.json: file_limits.baseline_files entry '{norm_rel}' "
+                        "cannot live inside clean_scopes"
+                    )
+            if (
+                trust_level_valid == "L3"
+                or (trust_level_valid == "L2" and not allow_l2_clean)
+            ) and baseline_files:
                 errors.append(
                     f".guardrails/config.json: {trust_level_valid} requires "
                     "file_limits.baseline_files to be empty; split oversize monolith files before "
                     "enabling outer-loop automation"
                 )
+    if trust_level_valid == "L2" and allow_l2_clean and max_allowed > 0 and not baseline_files:
+        errors.append(
+            ".guardrails/config.json: L2 with clean_scopes and file_limits.max_allowed > 0 "
+            "requires non-empty file_limits.baseline_files to lock oversize monoliths outside clean_scopes"
+        )
 
     return FileLimitsConfig(
         configured=True,
@@ -827,6 +976,14 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
         trust_level_valid = ""
     else:
         trust_level_valid = trust_level
+
+    project_kind = data.get("project_kind", "app")
+    if not isinstance(project_kind, str) or project_kind not in PROJECT_KINDS:
+        errors.append(
+            f".guardrails/config.json: project_kind '{project_kind}' is invalid; "
+            f"expected one of {', '.join(PROJECT_KINDS)}"
+        )
+        project_kind = "app"
 
     check_cmd = data.get("check_command", "")
     if not isinstance(check_cmd, str) or is_placeholder(check_cmd):
@@ -880,6 +1037,30 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
             except ValueError as exc:
                 errors.append(f".guardrails/config.json: invalid source_root '{entry}': {exc}")
 
+    clean_scopes: list[Path] = []
+    raw_cs = data.get("clean_scopes", [])
+    if raw_cs is None:
+        raw_cs = []
+    if not isinstance(raw_cs, list) or any(not isinstance(x, str) for x in raw_cs):
+        errors.append(".guardrails/config.json: clean_scopes must be an array of paths")
+    else:
+        seen_cs: set[str] = set()
+        for entry in raw_cs:
+            try:
+                cs_path = normalize_rel_path(root, entry)
+            except ValueError as exc:
+                errors.append(f".guardrails/config.json: invalid clean_scopes entry '{entry}': {exc}")
+                continue
+            if source_roots and not any(path_is_within(cs_path, sr) for sr in source_roots):
+                errors.append(
+                    f".guardrails/config.json: clean_scopes entry '{entry}' is not under any configured source_roots"
+                )
+                continue
+            key = norm_key(cs_path)
+            if key not in seen_cs:
+                seen_cs.add(key)
+                clean_scopes.append(cs_path)
+
     raw_excludes = data.get("exclude_dirs", [])
     exclude_dirs = set(DEFAULT_EXCLUDE_DIRS)
     if not isinstance(raw_excludes, list) or any(not isinstance(x, str) for x in raw_excludes):
@@ -923,7 +1104,10 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
             )
         else:
             max_escape_hatches = max_val
-            if trust_level_valid in {"L2", "L3"} and max_escape_hatches > 0:
+            if (
+                trust_level_valid == "L3"
+                or (trust_level_valid == "L2" and not clean_scopes)
+            ) and max_escape_hatches > 0:
                 errors.append(
                     f".guardrails/config.json: {trust_level_valid} requires "
                     "escape_hatches.max_allowed == 0; weed existing escape hatches before "
@@ -947,9 +1131,13 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
         root, data.get("forbidden_primitives", []), "forbidden_primitives", errors
     )
     raw_ap = data["anti_patterns"] if "anti_patterns" in data else None
-    anti_patterns = parse_anti_patterns_config(root, raw_ap, trust_level_valid, errors)
+    anti_patterns = parse_anti_patterns_config(
+        root, raw_ap, trust_level_valid, errors, allow_l2_with_clean_scopes=bool(clean_scopes)
+    )
     raw_fl = data["file_limits"] if "file_limits" in data else None
-    file_limits = parse_file_limits_config(root, raw_fl, trust_level_valid, errors)
+    file_limits = parse_file_limits_config(
+        root, raw_fl, trust_level_valid, errors, clean_scopes=clean_scopes
+    )
 
     boundary_rules: list[BoundaryRule] = []
     raw_br = data.get("boundary_rules", [])
@@ -994,11 +1182,13 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
     return GuardConfig(
         trust_level=trust_level_valid or "L0",
         trust_level_valid=bool(trust_level_valid),
+        project_kind=project_kind,
         check_command=check_cmd,
         verify_cli=verify_cli,
         verify_skill=verify_skill,
         verify_skill_configured=verify_skill_configured,
         source_roots=source_roots,
+        clean_scopes=clean_scopes,
         exclude_dirs=exclude_dirs,
         prose_files=prose_files,
         prose_max_bytes=prose_max_bytes,
@@ -1533,6 +1723,9 @@ def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
     primitive_errors: list[str] = []
     extra_ap_errors: list[str] = []
     boundary_errors: list[str] = []
+    clean_scope_errors: list[str] = []
+    clean_scope_file_counts: dict[str, int] = {}
+    clean_scope_unique_files = 0
 
     compiled_globs = {
         rule.id: [glob_to_regex(g) for g in rule.globs]
@@ -1557,8 +1750,18 @@ def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
         rel_posix = fpath.relative_to(root).as_posix()
         lines = text.split(LF)
         stripped_lines = [strip_code_comments(line) for line in lines]
+        matching_cs = [
+            cs.relative_to(root).as_posix()
+            for cs in cfg.clean_scopes
+            if path_is_within(fpath, cs)
+        ]
+        if matching_cs:
+            clean_scope_unique_files += 1
+            for cs_rel in matching_cs:
+                clean_scope_file_counts[cs_rel] = clean_scope_file_counts.get(cs_rel, 0) + 1
 
         # 1. Escape hatches & workaround comments
+        file_escapes: list[tuple[int, str]] = []
         for idx, line in enumerate(lines, start=1):
             matched_tag = None
             for tag, pat in all_escape_patterns:
@@ -1571,6 +1774,7 @@ def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
                     matched_tag = "workaround-comment"
             if matched_tag is not None:
                 escape_violations.append((rel_posix, idx, matched_tag))
+                file_escapes.append((idx, matched_tag))
 
         # 2. Forbidden primitives & anti_patterns.extra_rules
         match_pattern_rules(
@@ -1593,21 +1797,43 @@ def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
         )
 
         # 3. Built-in anti-patterns
-        ap_hits.extend(
-            scan_anti_patterns_in_file(fpath, rel_posix, text, stripped_lines, cfg.anti_patterns)
+        file_ap_hits = scan_anti_patterns_in_file(
+            fpath, rel_posix, text, stripped_lines, cfg.anti_patterns
         )
+        ap_hits.extend(file_ap_hits)
 
         # 4. File line limits
+        file_line_count = 0
+        file_oversize = False
         if (
-            cfg.file_limits.configured
-            and fpath.suffix.lower() in CODE_EXTENSIONS
+            fpath.suffix.lower() in CODE_EXTENSIONS
             and not is_test_or_fixture_path(rel_posix)
             and not any(path_is_within(fpath, allow) for allow in cfg.file_limits.allow_paths)
         ):
-            line_count = len(text.splitlines())
-            seen_line_counts[rel_posix] = line_count
-            if line_count > cfg.file_limits.max_lines:
-                oversize_violations.append((rel_posix, line_count))
+            file_line_count = len(text.splitlines())
+            if cfg.file_limits.configured:
+                seen_line_counts[rel_posix] = file_line_count
+                if file_line_count > cfg.file_limits.max_lines:
+                    oversize_violations.append((rel_posix, file_line_count))
+                    file_oversize = True
+            elif matching_cs and file_line_count > cfg.file_limits.max_lines:
+                file_oversize = True
+
+        if matching_cs:
+            for cs_rel in matching_cs:
+                for ln, tag in file_escapes:
+                    clean_scope_errors.append(
+                        f"clean_scope '{cs_rel}' violation: escape hatch at {rel_posix}:{ln}[{tag}]"
+                    )
+                for _p, ln, cat in file_ap_hits:
+                    clean_scope_errors.append(
+                        f"clean_scope '{cs_rel}' violation: anti-pattern at {rel_posix}:{ln}[{cat}]"
+                    )
+                if file_oversize:
+                    clean_scope_errors.append(
+                        f"clean_scope '{cs_rel}' violation: oversize file '{rel_posix}' "
+                        f"has {file_line_count} lines (> {cfg.file_limits.max_lines})"
+                    )
 
         # 5. Boundary rules
         for rule in cfg.boundary_rules:
@@ -1634,6 +1860,9 @@ def _collect_code_findings(root: Path, cfg: GuardConfig) -> dict:
         "primitive_errors": primitive_errors,
         "extra_ap_errors": extra_ap_errors,
         "boundary_errors": boundary_errors,
+        "clean_scope_errors": clean_scope_errors,
+        "clean_scope_file_counts": clean_scope_file_counts,
+        "clean_scope_unique_files": clean_scope_unique_files,
     }
 
 
@@ -1665,6 +1894,14 @@ def scan_sources(
     errors.extend(findings["primitive_errors"])
     errors.extend(findings["extra_ap_errors"])
     errors.extend(findings["boundary_errors"])
+    clean_scope_file_counts = findings["clean_scope_file_counts"]
+    for cs in cfg.clean_scopes:
+        cs_rel = cs.relative_to(root_resolved).as_posix()
+        if not cs.exists() or clean_scope_file_counts.get(cs_rel, 0) == 0:
+            errors.append(
+                f".guardrails/config.json: clean_scopes '{cs_rel}' matched 0 readable source files"
+            )
+    errors.extend(findings["clean_scope_errors"])
 
     found_escapes = len(escape_violations)
     if found_escapes > cfg.max_escape_hatches:
@@ -1751,6 +1988,8 @@ def scan_sources(
         "oversize_files": found_oversize,
         "primitive_violations": len(findings["primitive_errors"]),
         "boundary_violations": len(findings["boundary_errors"]),
+        "clean_scope_files": findings["clean_scope_unique_files"],
+        "clean_scope_violations": len(findings["clean_scope_errors"]),
     }
 
 
@@ -2000,6 +2239,20 @@ def check_features_and_verification(
     aliases: dict[str, str] = {}
     verify_skill_stats: dict | None = None
     feature_map_file = guard_dir / "feature-map.md"
+    enforce_driver_verify = cfg.project_kind == "app" and not cfg.verify_skill_configured
+
+    if enforce_driver_verify and cfg.verify_cli and not is_placeholder(cfg.verify_cli):
+        fake_reason = classify_fake_verify_cli(cfg.verify_cli, cfg.check_command)
+        if fake_reason:
+            msg = (
+                f".guardrails/config.json: verify_cli '{cfg.verify_cli}' {fake_reason}; "
+                "provide a reusable user-scenario driver (or verify_skill), or set "
+                '"project_kind": "library" for standalone libraries'
+            )
+            if cfg.trust_level_valid and cfg.trust_level in {"L1", "L2", "L3"}:
+                errors.append(msg)
+            else:
+                warnings.append(msg)
 
     if cfg.verify_skill_configured:
         if feature_map_file.is_file():
@@ -2054,6 +2307,17 @@ def check_features_and_verification(
                     f".guardrails/feature-map.md: '{name}' priority '{priority}' must be core or secondary"
                 )
                 prio_norm = "core"
+            elif enforce_driver_verify and not is_placeholder(cli):
+                row_fake = classify_fake_verify_cli(cli, cfg.check_command)
+                if row_fake:
+                    row_msg = (
+                        f".guardrails/feature-map.md: '{name}' verify CLI '{cli}' {row_fake}; "
+                        "point to a real scenario driver command"
+                    )
+                    if cfg.trust_level_valid and cfg.trust_level in {"L1", "L2", "L3"} and prio_norm == "core":
+                        errors.append(row_msg)
+                    else:
+                        warnings.append(row_msg)
             features[name] = {
                 "entrypoint": entry,
                 "verify_cli": cli,
@@ -2542,11 +2806,13 @@ def scan_baseline(
     cfg = GuardConfig(
         trust_level="L0",
         trust_level_valid=True,
+        project_kind="app",
         check_command=detected["check_command"] or "TODO",
         verify_cli="",
         verify_skill=None,
         verify_skill_configured=False,
         source_roots=[normalize_rel_path(root, sr) for sr in detected["source_roots"]],
+        clean_scopes=[],
         exclude_dirs=set(STACK_DETECT_EXCLUDES),
         prose_files=[root / "AGENTS.md"],
         prose_max_bytes=DEFAULT_PROSE_MAX_BYTES,
@@ -2837,12 +3103,20 @@ def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) 
         if run_check and cfg.check_command:
             check_run = run_check_command(root, cfg.check_command, errors)
 
+    root_resolved = root.resolve()
+    clean_scope_rels = (
+        [cs.relative_to(root_resolved).as_posix() for cs in cfg.clean_scopes]
+        if cfg
+        else []
+    )
     return {
         "root": str(root),
         "guard_status": "invalid" if errors else "ready",
         "trust_level": cfg.trust_level if cfg else "",
+        "project_kind": cfg.project_kind if cfg else "app",
         "require_fresh_head": cfg.require_fresh_head if cfg else False,
         "max_escape_hatches": cfg.max_escape_hatches if cfg else None,
+        "clean_scopes": clean_scope_rels,
         "anti_patterns_config": (
             {
                 "configured": cfg.anti_patterns.configured,
@@ -2944,6 +3218,13 @@ def format_human(report: dict) -> str:
             lines.append(
                 f"  file_limits: oversize={fl_found}/{fl_cfg.get('max_allowed', 0)} "
                 f"(max_lines={fl_cfg.get('max_lines', DEFAULT_MAX_FILE_LINES)})"
+            )
+        clean_scopes_list = report.get("clean_scopes") or []
+        if clean_scopes_list:
+            lines.append(
+                f"  clean_scopes: {', '.join(clean_scopes_list)} "
+                f"(files={scan.get('clean_scope_files', 0)}, "
+                f"violations={scan.get('clean_scope_violations', 0)})"
             )
     if ver:
         lines.append(

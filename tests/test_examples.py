@@ -114,6 +114,11 @@ class WeedingBrownfieldExampleTests(ExampleChecks, unittest.TestCase):
     EXPECTED_CORE_FEATURES = 1
     EXPECTED_VERIFIED = 1
 
+    def test_clean_scopes_metadata_is_reported(self):
+        self.assertEqual(self.report["clean_scopes"], ["src/app.py"])
+        self.assertEqual(self.report["scan"]["clean_scope_files"], 1)
+        self.assertEqual(self.report["scan"]["clean_scope_violations"], 0)
+
 
 class VerifySkillAppExampleTests(ExampleChecks, unittest.TestCase):
     EXAMPLE = VERIFY_SKILL

@@ -285,6 +285,25 @@ class CheckConsistencyTests(unittest.TestCase):
         (self.root / "scripts" / "sync_vendor.py").unlink()
         self.assert_only_error("missing scripts/sync_vendor.py")
 
+    def test_vendor_playbooks_verified_and_tamper_or_extra_caught(self):
+        eval_pb = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "eval.md"
+        hill_pb = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md"
+        self.assertTrue(eval_pb.is_file())
+        self.assertTrue(hill_pb.is_file())
+
+        eval_pb.write_text(eval_pb.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8")
+        self.assert_only_error("checksum mismatch for vendor/pstack/skills/poteto-mode/playbooks/eval.md")
+
+        self.setUp()
+        (self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md").unlink()
+        found_missing = self.assert_error("missing vendored playbook: vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md")
+        self.assertTrue(any("missing vendored file: vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md" in e for e in found_missing))
+
+        self.setUp()
+        self.write("vendor/pstack/skills/poteto-mode/playbooks/extra.md", "# extra\n")
+        found_extra = self.assert_error("undeclared vendored skill directory: vendor/pstack/skills/poteto-mode")
+        self.assertTrue(any("undeclared file under vendor/pstack" in e for e in found_extra))
+
 
 PINNED_SIZE_BUDGETS = {"SKILL.md": 6_500, "00-router.md": 7_500}
 PINNED_REFERENCE_BUDGET = 12_000

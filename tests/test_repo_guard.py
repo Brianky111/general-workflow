@@ -1334,6 +1334,131 @@ class RepoGuardTests(unittest.TestCase):
         self.assertEqual(c4, 0, r4["errors"])
         self.assertTrue(any("oversize file 'src/big.mts' shrunk to 1 lines" in w for w in r4["warnings"]))
 
+    def test_verify_cli_anti_fake_gate_and_library_exemption(self):
+        # 1. App repo at L1 rejects health probes, test runners, and verbatim check_command duplicates.
+        for bad_verify in (
+            "bash backend/scripts/api.sh GET /api/health",
+            "curl -sf http://127.0.0.1:8000/healthz",
+            "npm run test:integration -- src/server/inbox/accounting-flow.int.spec.ts",
+            "uv --directory backend run --frozen pytest -q",
+            "python -c \"print('ok')\"",
+        ):
+            self.write_minimal_guardrails(trust_level="L1", verify_cli=bad_verify)
+            code, rep, _ = self.run_cli()
+            self.assertEqual(code, 1, bad_verify)
+            err_blob = "\n".join(rep["errors"])
+            self.assertIn("verify_cli", err_blob, bad_verify)
+
+        # 2. Feature map core row rejects test runner at L1, while secondary row only warns.
+        self.write_minimal_guardrails(trust_level="L1", verify_cli="python tools/verify.py")
+        self.write(
+            ".guardrails/feature-map.md",
+            "\n".join([
+                "# Feature Map",
+                "| Feature | Entrypoint | Verify CLI | Artifact | Priority |",
+                "| --- | --- | --- | --- | --- |",
+                "| 导出报表 | `python -m src.app` | `pytest -q tests/test_export.py` | `artifacts/out.txt` | core |",
+                "| 次要页面 | `python -m src.app --sub` | `npx vitest run` | `artifacts/out.txt` | secondary |",
+                "",
+            ]),
+        )
+        c_row, r_row, _ = self.run_cli()
+        self.assertEqual(c_row, 1)
+        self.assertTrue(any("'导出报表' verify CLI" in e for e in r_row["errors"]))
+        self.assertTrue(any("'次要页面' verify CLI" in w for w in r_row["warnings"]))
+
+        # 3. Real driver passes cleanly with 0 warnings.
+        self.write_minimal_guardrails(trust_level="L1", verify_cli="python tools/verify.py")
+        c_ok, r_ok, _ = self.run_cli()
+        self.assertEqual(c_ok, 0, r_ok["errors"])
+        self.assertEqual(r_ok["warnings"], [])
+        self.assertEqual(r_ok["project_kind"], "app")
+
+        # 4. At L0, fake verify_cli warns without failing startup.
+        self.write_minimal_guardrails(trust_level="L0", verify_cli="curl -s http://localhost:8000/ping")
+        c_l0, r_l0, _ = self.run_cli()
+        self.assertEqual(c_l0, 0, r_l0["errors"])
+        self.assertTrue(any("shallow health/ping probe" in w for w in r_l0["warnings"]))
+
+        # 5. Library repo explicitly allows test runner as verify_cli at L1.
+        self.write_minimal_guardrails(trust_level="L1", verify_cli="pytest -q")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["project_kind"] = "library"
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        c_lib, r_lib, _ = self.run_cli()
+        self.assertEqual(c_lib, 0, (r_lib["errors"], r_lib["warnings"]))
+        self.assertEqual(r_lib["project_kind"], "library")
+
+    def test_clean_scopes_zero_debt_ratchet_and_l2_l3_admission(self):
+        self.write_minimal_guardrails(trust_level="L2")
+        self.write("src/legacy/giant.py", "x = 1  # noqa\ntry:\n    work()\nexcept Exception: pass\n" + "a = 1\nb = 2\n")
+        self.write("src/clean/mod.py", "def ok():\n    return 1\n")
+        cfg = json.loads((self.repo / ".guardrails" / "config.json").read_text(encoding="utf-8"))
+        cfg["clean_scopes"] = ["src/clean"]
+        cfg["escape_hatches"] = {"max_allowed": 1, "extra_patterns": []}
+        cfg["anti_patterns"] = {"max_allowed": 1, "enabled": ["silent-catch"], "allow_paths": [], "allow_by_category": {}, "extra_rules": []}
+        cfg["file_limits"] = {"max_lines": 5, "max_allowed": 1, "allow_paths": [], "baseline_files": {"src/legacy/giant.py": 6}}
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+
+        # 1. Brownfield L2 succeeds when legacy debt is locked outside clean_scopes and clean_scopes is pristine.
+        c1, r1, _ = self.run_cli()
+        self.assertEqual(c1, 0, r1["errors"])
+        self.assertEqual(r1["clean_scopes"], ["src/clean"])
+        self.assertEqual(r1["scan"]["clean_scope_files"], 1)
+        self.assertEqual(r1["scan"]["clean_scope_violations"], 0)
+
+        # 2. Any escape hatch, anti-pattern, or oversize file INSIDE clean_scopes fails IMMEDIATELY even if max_allowed is raised.
+        cfg["escape_hatches"]["max_allowed"] = 5
+        cfg["anti_patterns"]["max_allowed"] = 5
+        cfg["file_limits"]["max_allowed"] = 5
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        self.write(
+            "src/clean/mod.py",
+            "x = 1  # noqa\ntry:\n    work()\nexcept Exception: pass\nline5 = 5\nline6 = 6\n",
+        )
+        c2, r2, _ = self.run_cli()
+        self.assertEqual(c2, 1)
+        err2 = "\n".join(r2["errors"])
+        self.assertIn("clean_scope 'src/clean' violation: escape hatch at src/clean/mod.py:1[python-ignore]", err2)
+        self.assertIn("clean_scope 'src/clean' violation: anti-pattern at src/clean/mod.py:4[silent-catch]", err2)
+        self.assertIn("clean_scope 'src/clean' violation: oversize file 'src/clean/mod.py' has 6 lines (> 5)", err2)
+
+        # 3. Restore clean module; L2 with oversize max_allowed>0 without baseline_files is rejected.
+        self.write("src/clean/mod.py", "def ok():\n    return 1\n")
+        cfg["escape_hatches"]["max_allowed"] = 1
+        cfg["anti_patterns"]["max_allowed"] = 1
+        cfg["file_limits"] = {"max_lines": 5, "max_allowed": 1, "allow_paths": []}
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        c3, r3, _ = self.run_cli()
+        self.assertEqual(c3, 1)
+        self.assertIn("requires non-empty file_limits.baseline_files", "\n".join(r3["errors"]))
+
+        # 4. baseline_files cannot live inside clean_scopes; clean_scopes cannot escape source_roots or be empty.
+        cfg["file_limits"]["baseline_files"] = {"src/clean/mod.py": 5}
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        c4, r4, _ = self.run_cli()
+        self.assertEqual(c4, 1)
+        self.assertIn("cannot live inside clean_scopes", "\n".join(r4["errors"]))
+
+        cfg["file_limits"]["baseline_files"] = {"src/legacy/giant.py": 6}
+        cfg["clean_scopes"] = ["outside_dir"]
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        c5, r5, _ = self.run_cli()
+        self.assertEqual(c5, 1)
+        self.assertIn("not under any configured source_roots", "\n".join(r5["errors"]))
+
+        # 5. L3 still forbids non-zero repo-wide debt even when clean_scopes is configured.
+        cfg["trust_level"] = "L3"
+        cfg["require_fresh_head"] = True
+        cfg["clean_scopes"] = ["src/clean"]
+        self.write(".guardrails/config.json", json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+        c6, r6, _ = self.run_cli()
+        self.assertEqual(c6, 1)
+        err6 = "\n".join(r6["errors"])
+        self.assertIn("L3 requires escape_hatches.max_allowed == 0", err6)
+        self.assertIn("L3 requires anti_patterns.max_allowed == 0", err6)
+        self.assertIn("L3 requires file_limits.max_allowed == 0", err6)
+
 
 if __name__ == "__main__":
     unittest.main()

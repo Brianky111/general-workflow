@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.3.0 - 2026-11-21
+
+Closed real-world workflow blind spots discovered during `v2.2.0` trials and cross-referenced against Lauren Tan's full interview corpus and upstream `pstack` playbooks:
+
+- Added `project_kind` (`"app"` default vs `"library"`) and `classify_fake_verify_cli()` to `scripts/repo_guard.py`: on `"app"` repos without `verify_skill`, rejects (at `L1`–`L3`) or warns (at `L0`) when `verify_cli` or core `feature-map.md` rows duplicate `check_command`, run shallow `/health`/`/ping` probes, or invoke test runners (`pytest`, `unittest`, `vitest`, `jest`, `cargo test`, `go test`, `npm/pnpm/yarn/bun test*`) instead of a reusable application scenario driver.
+- Added `clean_scopes` to `.guardrails/config.json` and `scripts/repo_guard.py`: enforces zero escape hatches, zero unwhitelisted `anti_patterns`, and strict `file_limits.max_lines` inside declared clean scopes at every trust level (`L0`–`L3`), rejects `baseline_files` inside `clean_scopes`, and lets large brownfield repos unlock `L2` outer-loop fuzzing for `clean_scopes` once outside monoliths are locked in `file_limits.baseline_files` (while keeping `L3` automerge gated on zero repo-wide debt).
+- Expanded `vendor/pstack/` (`v0.15.46` @ `aaeb0ea`, now 62 verified files) with `reflect`, `recall`, `principle-laziness-protocol`, `principle-guard-the-context-window`, and the bundled playbooks `poteto-mode/playbooks/eval.md` and `hillclimb.md`, with `scripts/check_consistency.py` verifying playbook containers without exposing `poteto-mode` as a top-level sibling skill.
+- Added `--target pi` (`~/.pi/agent/skills`) and expanded `--target all` in `scripts/install.py`.
+- Updated `SKILL.md` and `references/00`-`06` (trimming prose budgets below 86% across all files) to integrate Coordinator/Worker/Verifier isolation, `/reflect` + `/recall` transcript mining, `.guardrails/parking-lot.md` buffer-first clustering, single-variable `hillclimb` measurement Discipline, and blinded cross-model `eval` experiments.
+- Added `"clean_scopes": ["src/app.py"]` to `examples/weeding-brownfield/.guardrails/config.json` and expanded unit tests across `tests/test_repo_guard.py`, `tests/test_check_consistency.py`, `tests/test_install.py`, and `tests/test_examples.py`.
+
 ## 2.2.0 - 2026-11-20
 
 Closed anti-pattern blind spots, added file-size guardrails (`file_limits`),

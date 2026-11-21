@@ -134,7 +134,7 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
             errors="replace",
         )
         self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
-        self.assertIn("56 file(s) verified, 0 error(s)", ok.stdout)
+        self.assertIn("62 file(s) verified, 0 error(s)", ok.stdout)
 
         copy_root = Path(self.temp.name) / "repo-copy"
         shutil.copytree(ROOT / "vendor", copy_root / "vendor")
@@ -150,6 +150,32 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
         )
         self.assertEqual(bad.returncode, 1)
         self.assertIn("checksum mismatch", bad.stdout + bad.stderr)
+
+    def test_pi_target_and_playbooks_stay_bundled(self):
+        res = self.run_install("--target", "pi")
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+
+        pi_skills = self.home / ".pi" / "agent" / "skills"
+        gw_dir = pi_skills / "general-workflow"
+        self.assertTrue((gw_dir / "SKILL.md").is_file())
+        self.assertTrue(
+            (gw_dir / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "eval.md").is_file()
+        )
+        self.assertTrue(
+            (gw_dir / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md").is_file()
+        )
+        self.assertFalse((pi_skills / "poteto-mode").exists())
+        for name in ("reflect", "recall"):
+            s_dir = pi_skills / name
+            self.assertTrue((s_dir / "SKILL.md").is_file(), name)
+            self.assertTrue((s_dir / "LICENSE.pstack").is_file(), name)
+            self.assertTrue((s_dir / ".general-workflow-vendor.json").is_file(), name)
+
+        un = self.run_install("--target", "pi", "--uninstall")
+        self.assertEqual(un.returncode, 0, un.stdout + un.stderr)
+        self.assertFalse(gw_dir.exists())
+        for name in CORE_SKILLS:
+            self.assertFalse((pi_skills / name).exists(), name)
 
 
 if __name__ == "__main__":

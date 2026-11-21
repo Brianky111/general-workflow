@@ -4,6 +4,7 @@
   "check_command": "python -X utf8 -B -m unittest discover -s tests -p \"test_*.py\"",
   "verify_cli": "python -X utf8 -m src.app",
   "source_roots": ["src"],
+  "clean_scopes": ["src/app.py"],
   "exclude_dirs": [".git", "__pycache__", "node_modules", ".venv", ".guardrails"],
   "prose_files": ["AGENTS.md"],
   "prose_max_bytes": 6000,

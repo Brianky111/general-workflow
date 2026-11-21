@@ -15,7 +15,9 @@
       "maintain-verification-skill",
       "create-formal-verification-skill",
       "maintain-formal-verification-skill",
-      "statechart"
+      "statechart",
+      "reflect",
+      "recall"
     ],
     "principles": [
       "principle-encode-lessons-in-structure",
@@ -27,9 +29,15 @@
       "principle-test-behavior-not-implementation",
       "principle-prove-it-works",
       "principle-subtract-before-you-add",
-      "principle-sequence-verifiable-units"
+      "principle-sequence-verifiable-units",
+      "principle-laziness-protocol",
+      "principle-guard-the-context-window"
     ]
   },
+  "playbooks": [
+    "skills/poteto-mode/playbooks/eval.md",
+    "skills/poteto-mode/playbooks/hillclimb.md"
+  ],
   "agents": [
     "comment-sicko"
   ],
@@ -49,9 +57,13 @@
     "skills/maintain-formal-verification-skill/SKILL.md": "0c96f54293542d3818b68754562b338073958781a9684454611dca37592e2d2c",
     "skills/maintain-verification-skill/SKILL.md": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
     "skills/no-comments/SKILL.md": "054a46f2662c725add02d9e0440d8dcb4351f3bd0afcf797acc22a501b527b54",
+    "skills/poteto-mode/playbooks/eval.md": "369bfda8bf305fb57bf4cabada7862c41dc21f1dc0ad7993cfcd29d0a4d99a68",
+    "skills/poteto-mode/playbooks/hillclimb.md": "a1d71e026d648991646533539939641f33508d5a02340f5041482ddd58116216",
     "skills/principle-boundary-discipline/SKILL.md": "c02c26cca3906bfd57829535f8fa7ee9e00df037b4dbb24e5f85ec9e12710b48",
     "skills/principle-encode-lessons-in-structure/SKILL.md": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
     "skills/principle-fix-root-causes/SKILL.md": "79afd7e67d8951203231f6f1ccfc7b4a1f30d8d6cdb68e92755c80012414dbeb",
+    "skills/principle-guard-the-context-window/SKILL.md": "af0b9dd70b43628ce4a59a4d332e9d9ad055084e460f430e7a757495c627e81a",
+    "skills/principle-laziness-protocol/SKILL.md": "1be6e7a435f26a75a76eb848b9c3d611b9977d0f5822361753244da25ca3ca45",
     "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
     "skills/principle-prove-it-works/SKILL.md": "3d6c482e341974cfcb8d19ebf66fb1d4274d8673af35e36d3c231a6aa9e03f25",
     "skills/principle-redesign-from-first-principles/SKILL.md": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
@@ -59,6 +71,8 @@
     "skills/principle-subtract-before-you-add/SKILL.md": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
     "skills/principle-test-behavior-not-implementation/SKILL.md": "42afc1a2c7176363b6410cfde06a9fd3e96f5022ba86bdb8de4838ad65c2442d",
     "skills/principle-type-system-discipline/SKILL.md": "9cd1ce345bc9d666c73c64c89c89164217b659aa4c4dde5600cbbe6f6e775461",
+    "skills/recall/SKILL.md": "1f4eda450650a7bd3948f44489a94f6c692f6a14ab9ce56ab9ed6f60c50e2258",
+    "skills/reflect/SKILL.md": "6f6952f91514dc86257830da93a446c732a1af906f6acd5e5783dc587a29031e",
     "skills/statechart/SKILL.md": "ca7b3e43b1ddc4fb2425a33960f9390357323a869e1d921b6e2aff4f3004d55e",
     "skills/statechart/references/render.md": "8cca446eb0c8f87f2ef7b97c4b149f59aacdc153134b4217c4bcde09b10ac3c4",
     "skills/statechart/scripts/backends/cfg.ts": "aea4d8766d214e7fa08f4881f1037319655e75eb56652e1b6d5d4f13a162e3e1",
