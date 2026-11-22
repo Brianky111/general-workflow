@@ -372,7 +372,7 @@ def main(argv: list[str] | None = None) -> int:
         "--vendor-mode",
         choices=("core", "all", "bundled"),
         default="core",
-        help="how to install vendored pstack skills: core (11 skills, default), all (23), or bundled",
+        help="how to install vendored pstack skills: core (13 skills, default), all (37), or bundled",
     )
     agent_group = parser.add_mutually_exclusive_group()
     agent_group.add_argument(

@@ -1,7 +1,7 @@
 interface:
   display_name: "Codebase-First Agent Workflow"
-  short_description: "Vibe-coding guardrails, --scan/--init bootstrap, clean_scopes, anti-fake verify_cli, pstack reflect/recall/eval/hillclimb"
-  default_prompt: "Check the target repository with scripts/repo_guard.py first (using --scan or --init on uninitialized repos), lock thin intent plus configurable_params, deliver 1 verifiable end-to-end vertical slice at a time (WIP=1, buffering non-blocking issues into parking-lot.md, stopping single-module rabbit holes after 2 rounds), enforce clean_scopes and anti_patterns/file_limits, reject fake test-runner/health verify_cli on app repos, and verify core features via fresh behavioral artifacts or isolated verifier/hillclimb loops before enabling outer-loop automation."
+  short_description: "Upstream Grill + stack/ARCHITECTURE.md/contracts planning, --check-arch, vibe-coding guardrails, clean_scopes, pstack"
+  default_prompt: "Check the target repository with scripts/repo_guard.py first (using --scan or --init on existing repos, or Frontier Grill + 01a/01b architecture planning + --check-arch before Slice 1 on 0->1 or multi-module projects), lock thin intent plus configurable_params and GLOSSARY.md, apply Candor over Sycophancy, deliver 1 verifiable end-to-end vertical slice at a time (WIP=1, buffering non-blocking issues into parking-lot.md, triggering attack-the-premise/2-round stop-loss), enforce clean_scopes and anti_patterns/file_limits, reject fake test-runner/health verify_cli on app repos, and dispatch vendored pstack playbooks with cross-host shielding before enabling outer-loop automation."
 
 policy:
   allow_implicit_invocation: true

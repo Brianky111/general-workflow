@@ -76,6 +76,41 @@ SKIPPED_FILENAMES = {
 SKIPPED_SUFFIXES = {".log", ".lock", ".sqlite", ".sqlite3", ".db", ".map"}
 DEFAULT_PROSE_FILES = ["AGENTS.md"]
 DEFAULT_PROSE_MAX_BYTES = 6000
+ARCH_INTENT_MAX_BYTES = 6000
+ARCH_GLOSSARY_MAX_BYTES = 3000
+ARCH_ADR_MAX_BYTES = 3000
+ARCH_DOC_MAX_BYTES = 6000
+ARCH_DATAFLOW_MAX_BYTES = 8000
+ARCH_CONTRACTS_MAX_BYTES = 10000
+ARCH_SLICE_QUEUE_MAX_BYTES = 6000
+REQUIRED_INTENT_FIELDS = (
+    "problem",
+    "primary_users",
+    "entrypoints",
+    "user_outcomes",
+    "invariants",
+    "non_goals",
+    "configurable_params",
+    "irreversible_boundaries",
+)
+FRAGMENT_ALLOWED_KEYS = {
+    "project_kind",
+    "prose_files",
+    "clean_scopes",
+    "boundary_rules",
+    "forbidden_primitives",
+}
+BRITTLE_LINE_REF = re.compile(
+    r"(?:#L\d+\b|\b[A-Za-z0-9_./-]+\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|rs|go|java|kt|kts|cs|rb|php|swift|c|cc|cpp|h|hpp):\d+\b)"
+)
+HORIZONTAL_SLICE_NAME = re.compile(
+    r"^\s*(?:db\s+|database\s+)?(?:schema|schemas|foundation|scaffold(?:ing)?|"
+    r"infrastructure|infra|base\s+layer|core\s+engine|engine|orm|migrations?|data\s+layer|"
+    r"数据库表(?:结构)?|表结构|基础架子|底座|底层框架|公共基础层)\s*$",
+    re.I,
+)
+UNCOMPILED_MARKER = re.compile(r"\bUNCOMPILED\s*:", re.I)
+TEMPLATE_PLACEHOLDER = re.compile(r"<[^>\n]{2,}>")
 MIN_RULE_MESSAGE_CHARS = 15
 MIN_VERIFY_SECTION_CHARS = 15
 VERIFY_SKILL_REQUIRED_SECTIONS = ("launch", "doctor", "drive", "evidence", "cleanup")
@@ -642,16 +677,20 @@ def is_int_strict(value: object) -> bool:
 
 
 def parse_pattern_rules(
-    root: Path, raw_rules: object, field_name: str, errors: list[str]
+    root: Path,
+    raw_rules: object,
+    field_name: str,
+    errors: list[str],
+    source_label: str = ".guardrails/config.json",
 ) -> list[ForbiddenPrimitive]:
     """Parse forbidden_primitives or anti_patterns.extra_rules entries with shared validation."""
     rules: list[ForbiddenPrimitive] = []
     if not isinstance(raw_rules, list):
-        errors.append(f".guardrails/config.json: {field_name} must be an array")
+        errors.append(f"{source_label}: {field_name} must be an array")
         return rules
     for idx, item in enumerate(raw_rules):
         if not isinstance(item, dict):
-            errors.append(f".guardrails/config.json: {field_name}[{idx}] must be object")
+            errors.append(f"{source_label}: {field_name}[{idx}] must be object")
             continue
         rid = str(item.get("id", "")).strip()
         pat_str = item.get("pattern", "")
@@ -659,28 +698,28 @@ def parse_pattern_rules(
         allow_raw = item.get("allow_paths", [])
         msg = str(item.get("message", "")).strip()
         if not rid or is_placeholder(rid):
-            errors.append(f".guardrails/config.json: {field_name}[{idx}] missing id")
+            errors.append(f"{source_label}: {field_name}[{idx}] missing id")
             continue
         if not isinstance(pat_str, str) or not pat_str:
-            errors.append(f".guardrails/config.json: {field_name} '{rid}' missing pattern")
+            errors.append(f"{source_label}: {field_name} '{rid}' missing pattern")
             continue
         try:
             compiled = re.compile(pat_str)
         except re.error as exc:
             errors.append(
-                f".guardrails/config.json: {field_name} '{rid}' invalid regex: {exc}"
+                f"{source_label}: {field_name} '{rid}' invalid regex: {exc}"
             )
             continue
         if not isinstance(globs, list) or not globs or any(
             not isinstance(g, str) or not g.strip() for g in globs
         ):
             errors.append(
-                f".guardrails/config.json: {field_name} '{rid}' requires non-empty globs"
+                f"{source_label}: {field_name} '{rid}' requires non-empty globs"
             )
             continue
         if not isinstance(allow_raw, list) or any(not isinstance(a, str) for a in allow_raw):
             errors.append(
-                f".guardrails/config.json: {field_name} '{rid}' allow_paths must be strings"
+                f"{source_label}: {field_name} '{rid}' allow_paths must be strings"
             )
             continue
         allow_paths: list[Path] = []
@@ -690,14 +729,14 @@ def parse_pattern_rules(
                 allow_paths.append(normalize_rel_path(root, a))
             except ValueError as exc:
                 errors.append(
-                    f".guardrails/config.json: {field_name} '{rid}' invalid allow_path '{a}': {exc}"
+                    f"{source_label}: {field_name} '{rid}' invalid allow_path '{a}': {exc}"
                 )
                 valid_allow = False
         if not valid_allow:
             continue
         if is_placeholder(msg) or len(msg) < MIN_RULE_MESSAGE_CHARS:
             errors.append(
-                f".guardrails/config.json: {field_name} '{rid}' requires an actionable "
+                f"{source_label}: {field_name} '{rid}' requires an actionable "
                 f"root-cause message (>= {MIN_RULE_MESSAGE_CHARS} chars)"
             )
             continue
@@ -705,6 +744,117 @@ def parse_pattern_rules(
             ForbiddenPrimitive(rid, compiled, [g.strip() for g in globs], allow_paths, msg)
         )
     return rules
+
+
+def parse_boundary_rules(
+    root: Path,
+    raw_br: object,
+    source_label: str,
+    errors: list[str],
+) -> list[BoundaryRule]:
+    """Parse and validate boundary_rules shared between config.json and architecture fragments."""
+    rules: list[BoundaryRule] = []
+    if not isinstance(raw_br, list):
+        errors.append(f"{source_label}: boundary_rules must be an array")
+        return rules
+    for idx, item in enumerate(raw_br):
+        if not isinstance(item, dict):
+            errors.append(f"{source_label}: boundary_rules[{idx}] must be object")
+            continue
+        rid = str(item.get("id", "")).strip()
+        from_raw = item.get("from_dir", "")
+        forbid_raw = item.get("forbid_import", "")
+        msg = str(item.get("message", "")).strip()
+        if not rid or is_placeholder(rid):
+            errors.append(f"{source_label}: boundary_rules[{idx}] missing id")
+            continue
+        if not isinstance(from_raw, str):
+            errors.append(f"{source_label}: boundary_rules '{rid}' invalid from_dir")
+            continue
+        try:
+            from_dir = normalize_rel_path(root, from_raw)
+        except ValueError as exc:
+            errors.append(
+                f"{source_label}: boundary_rules '{rid}' invalid from_dir '{from_raw}': {exc}"
+            )
+            continue
+        if not isinstance(forbid_raw, str) or is_placeholder(forbid_raw):
+            errors.append(
+                f"{source_label}: boundary_rules '{rid}' requires non-placeholder forbid_import"
+            )
+            continue
+        if is_placeholder(msg) or len(msg) < MIN_RULE_MESSAGE_CHARS:
+            errors.append(
+                f"{source_label}: boundary_rules '{rid}' requires an actionable "
+                f"root-cause message (>= {MIN_RULE_MESSAGE_CHARS} chars)"
+            )
+            continue
+        norm_forbid = forbid_raw.strip().replace("\\", "/").replace(".", "/").strip("/")
+        rules.append(BoundaryRule(rid, from_dir, norm_forbid, msg))
+    return rules
+
+
+def validate_guardrails_fragment(
+    root: Path,
+    raw_text: str,
+    errors: list[str],
+    source_label: str = "docs/arch/guardrails-fragment.json",
+) -> dict | None:
+    """Validate an architecture-stage guardrails JSON fragment before --init merges it."""
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        errors.append(f"{source_label}: invalid JSON ({exc.msg} at line {exc.lineno})")
+        return None
+    if not isinstance(data, dict):
+        errors.append(f"{source_label}: top-level JSON value must be an object")
+        return None
+
+    unknown = sorted(set(data) - FRAGMENT_ALLOWED_KEYS)
+    if unknown:
+        errors.append(
+            f"{source_label}: unsupported key(s) {', '.join(unknown)}; "
+            f"allowed: {', '.join(sorted(FRAGMENT_ALLOWED_KEYS))}"
+        )
+
+    before_errs = len(errors)
+    if "project_kind" in data:
+        pk = data["project_kind"]
+        if not isinstance(pk, str) or pk not in PROJECT_KINDS:
+            errors.append(
+                f"{source_label}: project_kind '{pk}' is invalid; expected {', '.join(PROJECT_KINDS)}"
+            )
+    if "prose_files" in data:
+        pf = data["prose_files"]
+        if not isinstance(pf, list) or not pf or any(not isinstance(x, str) for x in pf):
+            errors.append(f"{source_label}: prose_files must be a non-empty array of paths")
+        else:
+            for entry in pf:
+                try:
+                    normalize_rel_path(root, entry)
+                except ValueError as exc:
+                    errors.append(f"{source_label}: invalid prose_files entry '{entry}': {exc}")
+    if "clean_scopes" in data:
+        cs = data["clean_scopes"]
+        if not isinstance(cs, list) or any(not isinstance(x, str) for x in cs):
+            errors.append(f"{source_label}: clean_scopes must be an array of paths")
+        else:
+            for entry in cs:
+                try:
+                    normalize_rel_path(root, entry)
+                except ValueError as exc:
+                    errors.append(f"{source_label}: invalid clean_scopes entry '{entry}': {exc}")
+    if "boundary_rules" in data:
+        parse_boundary_rules(root, data["boundary_rules"], source_label, errors)
+    if "forbidden_primitives" in data:
+        parse_pattern_rules(
+            root,
+            data["forbidden_primitives"],
+            "forbidden_primitives",
+            errors,
+            source_label=source_label,
+        )
+    return None if len(errors) > before_errs else data
 
 
 def parse_anti_patterns_config(
@@ -1139,45 +1289,9 @@ def parse_config(root: Path, raw_text: str, errors: list[str]) -> GuardConfig | 
         root, raw_fl, trust_level_valid, errors, clean_scopes=clean_scopes
     )
 
-    boundary_rules: list[BoundaryRule] = []
-    raw_br = data.get("boundary_rules", [])
-    if not isinstance(raw_br, list):
-        errors.append(".guardrails/config.json: boundary_rules must be an array")
-    else:
-        for idx, item in enumerate(raw_br):
-            if not isinstance(item, dict):
-                errors.append(f".guardrails/config.json: boundary_rules[{idx}] must be object")
-                continue
-            rid = str(item.get("id", "")).strip()
-            from_raw = item.get("from_dir", "")
-            forbid_raw = item.get("forbid_import", "")
-            msg = str(item.get("message", "")).strip()
-            if not rid or is_placeholder(rid):
-                errors.append(f".guardrails/config.json: boundary_rules[{idx}] missing id")
-                continue
-            if not isinstance(from_raw, str):
-                errors.append(f".guardrails/config.json: boundary_rules '{rid}' invalid from_dir")
-                continue
-            try:
-                from_dir = normalize_rel_path(root, from_raw)
-            except ValueError as exc:
-                errors.append(
-                    f".guardrails/config.json: boundary_rules '{rid}' invalid from_dir '{from_raw}': {exc}"
-                )
-                continue
-            if not isinstance(forbid_raw, str) or is_placeholder(forbid_raw):
-                errors.append(
-                    f".guardrails/config.json: boundary_rules '{rid}' requires non-placeholder forbid_import"
-                )
-                continue
-            if is_placeholder(msg) or len(msg) < MIN_RULE_MESSAGE_CHARS:
-                errors.append(
-                    f".guardrails/config.json: boundary_rules '{rid}' requires an actionable "
-                    f"root-cause message (>= {MIN_RULE_MESSAGE_CHARS} chars)"
-                )
-                continue
-            norm_forbid = forbid_raw.strip().replace("\\", "/").replace(".", "/").strip("/")
-            boundary_rules.append(BoundaryRule(rid, from_dir, norm_forbid, msg))
+    boundary_rules = parse_boundary_rules(
+        root, data.get("boundary_rules", []), ".guardrails/config.json", errors
+    )
 
     return GuardConfig(
         trust_level=trust_level_valid or "L0",
@@ -1993,6 +2107,16 @@ def scan_sources(
     }
 
 
+def find_brittle_line_refs(text: str) -> list[str]:
+    """Return brittle file:line or #L123 references outside fenced code blocks."""
+    hits: list[str] = []
+    for line in visible_lines(text):
+        stripped = re.sub(r"https?://\S+", "", line)
+        for match in BRITTLE_LINE_REF.finditer(stripped):
+            hits.append(match.group(0))
+    return hits
+
+
 def check_prose_diet(
     root: Path, cfg: GuardConfig, errors: list[str], warnings: list[str]
 ) -> list[dict]:
@@ -2027,6 +2151,13 @@ def check_prose_diet(
                 f"{rel} is at {100 * byte_len / cfg.prose_max_bytes:.0f}% of its "
                 f"{cfg.prose_max_bytes}-byte budget; trim or promote rules to lint"
             )
+        if fpath.name == "ARCHITECTURE.md":
+            refs = find_brittle_line_refs(text)
+            if refs:
+                errors.append(
+                    f"{rel} contains brittle line-number reference ({refs[0]}); "
+                    "use searchable symbol and directory names per 01a-stack-and-architecture.md"
+                )
         prohibition_count = sum(
             1 for line in visible_lines(text) if PROSE_PROHIBITION.search(line)
         )
@@ -2957,14 +3088,46 @@ def init_guardrails(
             "warnings": scan_warnings,
         }
 
-    cfg_obj = {
+    prose_files = ["AGENTS.md"]
+    seen_prose = {norm_key(root / "AGENTS.md")}
+    arch_md = root / "ARCHITECTURE.md"
+    if arch_md.is_file() and arch_md.resolve().is_relative_to(root):
+        prose_files.append("ARCHITECTURE.md")
+        seen_prose.add(norm_key(arch_md))
+
+    frag_data: dict | None = None
+    frag_path = root / "docs" / "arch" / "guardrails-fragment.json"
+    if frag_path.exists() or frag_path.is_symlink():
+        frag_errors: list[str] = []
+        if not frag_path.is_file() or not frag_path.resolve().is_relative_to(root):
+            frag_errors.append("docs/arch/guardrails-fragment.json is not a regular file inside project root")
+        else:
+            try:
+                frag_raw = read_utf8_lf(frag_path)
+            except (OSError, UnicodeDecodeError) as exc:
+                frag_errors.append(f"docs/arch/guardrails-fragment.json cannot be read as UTF-8: {exc}")
+            else:
+                frag_data = validate_guardrails_fragment(
+                    root, frag_raw, frag_errors, source_label="docs/arch/guardrails-fragment.json"
+                )
+        if frag_errors:
+            return {
+                "root": str(root),
+                "guard_status": "invalid",
+                "detected": detected,
+                "baseline": baseline,
+                "errors": frag_errors,
+                "warnings": scan_warnings,
+            }
+
+    cfg_obj: dict = {
         "guardrails_version": GUARDRAILS_VERSION,
         "trust_level": "L0",
         "check_command": cmd_candidate,
         "verify_cli": "",
         "source_roots": detected["source_roots"],
         "exclude_dirs": sorted(STACK_DETECT_EXCLUDES),
-        "prose_files": ["AGENTS.md"],
+        "prose_files": prose_files,
         "prose_max_bytes": DEFAULT_PROSE_MAX_BYTES,
         "require_fresh_head": False,
         "escape_hatches": {
@@ -2987,6 +3150,24 @@ def init_guardrails(
         "forbidden_primitives": [],
         "boundary_rules": [],
     }
+    if frag_data:
+        if "project_kind" in frag_data:
+            cfg_obj["project_kind"] = frag_data["project_kind"]
+        for raw_prose in frag_data.get("prose_files") or []:
+            resolved_prose = normalize_rel_path(root, raw_prose)
+            key = norm_key(resolved_prose)
+            if key not in seen_prose:
+                prose_files.append(resolved_prose.relative_to(root).as_posix())
+                seen_prose.add(key)
+        if "clean_scopes" in frag_data:
+            cfg_obj["clean_scopes"] = [
+                normalize_rel_path(root, entry).relative_to(root).as_posix()
+                for entry in frag_data["clean_scopes"]
+            ]
+        if "boundary_rules" in frag_data:
+            cfg_obj["boundary_rules"] = list(frag_data["boundary_rules"])
+        if "forbidden_primitives" in frag_data:
+            cfg_obj["forbidden_primitives"] = list(frag_data["forbidden_primitives"])
     feature_map_text = LF.join([
         "# Feature Map",
         "",
@@ -3146,6 +3327,293 @@ def inspect_repo(root: Path, run_check: bool = False, check_head: bool = False) 
     }
 
 
+def _strip_comments_outside_fences(text: str) -> str:
+    return re.sub(r"<!--.*?-->", "", LF.join(visible_lines(text)), flags=re.S)
+
+
+def _has_non_heading_content(text: str, *, include_fences: bool = False) -> bool:
+    source = re.sub(r"<!--.*?-->", "", text, flags=re.S) if include_fences else _strip_comments_outside_fences(text)
+    return any(line.strip() and not line.strip().startswith("#") for line in source.split(LF))
+
+
+def _read_arch_doc(
+    root: Path,
+    rel: str,
+    max_bytes: int,
+    errors: list[str],
+    checked: list[str],
+    *,
+    required: bool = True,
+) -> str | None:
+    path = root / rel
+    if not path.exists() and not path.is_symlink():
+        if required:
+            errors.append(f"missing required architecture file {rel}")
+        return None
+    if not path.is_file() or not path.resolve().is_relative_to(root):
+        errors.append(f"{rel} is not a regular file inside project root")
+        return None
+    try:
+        text = read_utf8_lf(path)
+    except (OSError, UnicodeDecodeError) as exc:
+        errors.append(f"{rel} cannot be read as UTF-8: {exc}")
+        return None
+    checked.append(rel)
+    byte_len = len(text.encode("utf-8"))
+    if byte_len > max_bytes:
+        errors.append(f"{rel} is {byte_len} bytes, over its {max_bytes}-byte budget")
+    return text
+
+
+def _parse_markdown_data_rows(lines: list[str]) -> list[list[str]]:
+    """Extract non-header, non-separator data rows from Markdown tables."""
+    data_rows: list[list[str]] = []
+    block: list[list[str]] = []
+
+    def flush_block() -> None:
+        if len(block) < 2:
+            block.clear()
+            return
+        sep_idx = next(
+            (
+                i
+                for i, cells in enumerate(block)
+                if cells and all(set(c) <= {"-", ":"} for c in cells if c) and any("-" in c for c in cells)
+            ),
+            -1,
+        )
+        if sep_idx >= 1:
+            for row in block[sep_idx + 1 :]:
+                data_rows.append(row)
+        block.clear()
+
+    for raw in lines:
+        line = raw.strip()
+        if not line.startswith("|"):
+            flush_block()
+            continue
+        cells = [cell.strip() for cell in re.split(r"(?<!\\)\|", line.strip("|"))]
+        block.append(cells)
+    flush_block()
+    return data_rows
+
+
+def validate_intent_doc(text: str, rel: str, errors: list[str]) -> dict[str, list[str]]:
+    """Validate that an intent doc defines all 8 required non-placeholder fields."""
+    clean_text = _strip_comments_outside_fences(text)
+    fields: dict[str, list[str]] = {}
+    current_field: str | None = None
+    field_re = re.compile(r"^\s*(?:[-*]\s+)?(?:[*`]+)?([a-z][a-z0-9_]*)(?:[*`]+)?\s*[:：]\s*(.*)$")
+
+    for line in clean_text.split(LF):
+        if line.strip().startswith("#"):
+            current_field = None
+            continue
+        match = field_re.match(line)
+        if match and match.group(1) in REQUIRED_INTENT_FIELDS:
+            current_field = match.group(1)
+            fields.setdefault(current_field, [])
+            inline_val = match.group(2).strip()
+            if inline_val:
+                fields[current_field].append(inline_val)
+            continue
+        if current_field:
+            item = re.sub(r"^\s*(?:[-*]\s+)?", "", line).strip()
+            if item:
+                fields[current_field].append(item)
+
+    for key in REQUIRED_INTENT_FIELDS:
+        if key not in fields:
+            errors.append(f"{rel}: missing required field '{key}'")
+            continue
+        items = fields[key]
+        if not items:
+            errors.append(f"{rel}: field '{key}' is empty")
+            continue
+        if any(TEMPLATE_PLACEHOLDER.search(item) for item in items) or all(
+            is_placeholder(item) for item in items
+        ):
+            errors.append(f"{rel}: field '{key}' contains template or placeholder text")
+    return fields
+
+
+def check_architecture_pack(root: Path) -> dict:
+    """Validate pre-code intent, ADR, ARCHITECTURE.md, dataflow, contracts, and Slice 1 queue."""
+    root = root.resolve()
+    if not root.is_dir():
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "arch": {"checked_files": [], "slices": 0, "uncompiled_invariants": 0},
+            "errors": [f"target root does not exist or is not a directory: {root}"],
+            "warnings": [],
+        }
+
+    legacy_found = [p.as_posix() for p in LEGACY_V1_PATHS if (root / p).exists()]
+    if legacy_found:
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "legacy_paths": legacy_found,
+            "arch": {"checked_files": [], "slices": 0, "uncompiled_invariants": 0},
+            "errors": [
+                f"cannot --check-arch: legacy v1 state detected ({', '.join(legacy_found)}); "
+                "migrate per references/06-repo-guard-contract.md instead of using docs/workflow/"
+            ],
+            "warnings": [],
+        }
+
+    guard_dir = root / GUARD_DIR
+    if guard_dir.exists() and not (guard_dir / "config.json").is_file():
+        return {
+            "root": str(root),
+            "guard_status": "invalid",
+            "arch": {"checked_files": [], "slices": 0, "uncompiled_invariants": 0},
+            "errors": [
+                "cannot --check-arch: premature .guardrails/ directory without config.json; "
+                "keep docs/intent.md outside .guardrails/ until Slice 1 + --init"
+            ],
+            "warnings": [],
+        }
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    checked: list[str] = []
+    intent_rel = (
+        f"{GUARD_DIR}/intent.md"
+        if (guard_dir / "intent.md").is_file()
+        else "docs/intent.md"
+    )
+
+    intent_text = _read_arch_doc(root, intent_rel, ARCH_INTENT_MAX_BYTES, errors, checked)
+    if intent_text is not None:
+        validate_intent_doc(intent_text, intent_rel, errors)
+
+    glossary_text = _read_arch_doc(
+        root, "GLOSSARY.md", ARCH_GLOSSARY_MAX_BYTES, errors, checked, required=False
+    )
+    if glossary_text is not None and not _has_non_heading_content(glossary_text, include_fences=True):
+        errors.append("GLOSSARY.md is empty; define ambiguous domain terms or omit GLOSSARY.md")
+
+    adr_text = _read_arch_doc(root, "docs/adr/0001-stack.md", ARCH_ADR_MAX_BYTES, errors, checked)
+    if adr_text is not None:
+        adr_clean = _strip_comments_outside_fences(adr_text)
+        if not _has_non_heading_content(adr_text, include_fences=True):
+            errors.append("docs/adr/0001-stack.md is empty")
+        elif TEMPLATE_PLACEHOLDER.search(adr_clean):
+            errors.append("docs/adr/0001-stack.md contains unresolved <...> template placeholder")
+
+    uncompiled_count = 0
+    arch_text = _read_arch_doc(root, "ARCHITECTURE.md", ARCH_DOC_MAX_BYTES, errors, checked)
+    if arch_text is not None:
+        if not _has_non_heading_content(arch_text, include_fences=True):
+            errors.append("ARCHITECTURE.md is empty")
+        refs = find_brittle_line_refs(arch_text)
+        if refs:
+            errors.append(
+                f"ARCHITECTURE.md contains brittle line-number reference ({refs[0]}); "
+                "use searchable symbol and directory names per 01a-stack-and-architecture.md"
+            )
+        uncompiled_count = sum(1 for line in visible_lines(arch_text) if UNCOMPILED_MARKER.search(line))
+        if uncompiled_count > 0:
+            warnings.append(
+                f"ARCHITECTURE.md marks {uncompiled_count} UNCOMPILED invariant(s); "
+                "track them to lint or review gates"
+            )
+
+    dataflow_text = _read_arch_doc(
+        root, "docs/arch/dataflow.md", ARCH_DATAFLOW_MAX_BYTES, errors, checked
+    )
+    if dataflow_text is not None:
+        df_clean = _strip_comments_outside_fences(dataflow_text)
+        if not re.search(
+            r"(?:SSOT|单一真相源|单一事实源|single\s+source\s+of\s+truth)", df_clean, re.I
+        ):
+            errors.append(
+                "docs/arch/dataflow.md: missing SSOT / single source of truth ownership specification"
+            )
+        if not re.search(
+            r"(?:```mermaid|\b(?:flowchart|sequenceDiagram|graph\s+(?:LR|TD|TB|RL))\b|(?:--|==|──)>|->)",
+            dataflow_text,
+        ):
+            errors.append(
+                "docs/arch/dataflow.md: missing end-to-end Mermaid or ASCII dataflow diagram"
+            )
+        if not re.search(
+            r"(?:静态上限|显式(?:静态)?上限|\bbounds?\b|timeout|max[_a-z0-9]*|\bcap\b|上限|退避|背压)",
+            df_clean,
+            re.I,
+        ):
+            errors.append(
+                "docs/arch/dataflow.md: missing failure mode / explicit static bounds specification"
+            )
+
+    contracts_text = _read_arch_doc(
+        root, "docs/arch/contracts.md", ARCH_CONTRACTS_MAX_BYTES, errors, checked
+    )
+    if contracts_text is not None and not _has_non_heading_content(contracts_text, include_fences=True):
+        errors.append("docs/arch/contracts.md is empty; define boundary schemas and error contracts")
+
+    slices_count = 0
+    slice_text = _read_arch_doc(
+        root, "docs/arch/slice-queue.md", ARCH_SLICE_QUEUE_MAX_BYTES, errors, checked
+    )
+    if slice_text is not None:
+        rows = _parse_markdown_data_rows(visible_lines(slice_text))
+        if not rows:
+            errors.append(
+                "docs/arch/slice-queue.md: must contain at least 1 vertical slice row in its Markdown table"
+            )
+        else:
+            slices_count = len(rows)
+            for row in rows:
+                idx_cell = row[0].strip().strip("`").strip() if row else ""
+                title_cell = row[1].strip().strip("`").strip() if len(row) > 1 else ""
+                norm_title = re.sub(
+                    r"^(?:S?\d+|slice\s*\d+)\s*[:：\-—.]\s*", "", title_cell, flags=re.I
+                ).strip()
+                if (
+                    HORIZONTAL_SLICE_NAME.match(idx_cell)
+                    or HORIZONTAL_SLICE_NAME.match(title_cell)
+                    or HORIZONTAL_SLICE_NAME.match(norm_title)
+                ):
+                    errors.append(
+                        f"docs/arch/slice-queue.md: horizontal technical layer slice rejected ('{idx_cell} | {title_cell}'); "
+                        "slice vertically by user-visible outcome"
+                    )
+                elif not idx_cell or not title_cell or is_placeholder(title_cell) or TEMPLATE_PLACEHOLDER.search(title_cell):
+                    errors.append(
+                        "docs/arch/slice-queue.md: slice row is missing a concrete user-visible outcome"
+                    )
+
+    frag_rel = "docs/arch/guardrails-fragment.json"
+    frag_path = root / frag_rel
+    if frag_path.exists() or frag_path.is_symlink():
+        if not frag_path.is_file() or not frag_path.resolve().is_relative_to(root):
+            errors.append(f"{frag_rel} is not a regular file inside project root")
+        else:
+            checked.append(frag_rel)
+            try:
+                frag_raw = read_utf8_lf(frag_path)
+            except (OSError, UnicodeDecodeError) as exc:
+                errors.append(f"{frag_rel} cannot be read as UTF-8: {exc}")
+            else:
+                validate_guardrails_fragment(root, frag_raw, errors, source_label=frag_rel)
+
+    return {
+        "root": str(root),
+        "guard_status": "invalid" if errors else "arch_ready",
+        "intent_file": intent_rel,
+        "arch": {
+            "checked_files": checked,
+            "slices": slices_count,
+            "uncompiled_invariants": uncompiled_count,
+        },
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
 def format_human(report: dict) -> str:
     status = report["guard_status"]
     if status == "uninitialized":
@@ -3156,6 +3624,22 @@ def format_human(report: dict) -> str:
             report["message"],
             "0 error(s), 0 warning(s)",
         ])
+    if report.get("arch") is not None:
+        arch = report["arch"]
+        lines = [
+            f"guard_status {status} | intent={report.get('intent_file') or '(missing)'} | "
+            f"slices={arch.get('slices', 0)} | uncompiled={arch.get('uncompiled_invariants', 0)}",
+        ]
+        if arch.get("checked_files"):
+            lines.append(f"  arch_files: {', '.join(arch['checked_files'])}")
+        for warn in report.get("warnings") or []:
+            lines.append(f"WARN  {warn}")
+        for err in report.get("errors") or []:
+            lines.append(f"ERROR {err}")
+        lines.append(
+            f"{len(report.get('errors') or [])} error(s), {len(report.get('warnings') or [])} warning(s)"
+        )
+        return "\n".join(lines)
     if status == "baseline_scan":
         det = report.get("detected") or {}
         base = report.get("baseline") or {}
@@ -3288,6 +3772,11 @@ def main(argv: list[str] | None = None) -> int:
         help="initialize L0 .guardrails/ skeleton locked to current baseline counts",
     )
     parser.add_argument(
+        "--check-arch",
+        action="store_true",
+        help="validate pre-code intent, ADR, ARCHITECTURE.md, dataflow, contracts, and slice-queue.md",
+    )
+    parser.add_argument(
         "--max-lines",
         type=int,
         default=DEFAULT_MAX_FILE_LINES,
@@ -3301,13 +3790,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.scan and args.init:
         parser.error("--scan and --init cannot be used together")
+    if args.check_arch and (args.scan or args.init):
+        parser.error("--check-arch cannot be combined with --scan or --init")
     if args.scan and (args.run_check or args.check_head):
         parser.error("--scan is read-only and cannot be combined with --run-check or --check-head")
+    if args.check_arch and (args.run_check or args.check_head):
+        parser.error("--check-arch is read-only and cannot be combined with --run-check or --check-head")
     if args.init and args.check_head:
         parser.error("--init cannot be combined with --check-head; commit .guardrails/ and verification.md first")
 
     root = Path(args.root)
-    if args.scan:
+    if args.check_arch:
+        report = check_architecture_pack(root)
+    elif args.scan:
         report = scan_baseline(root, max_lines=args.max_lines, override_check_cmd=args.check_command)
     elif args.init:
         report = init_guardrails(

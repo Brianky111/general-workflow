@@ -17,7 +17,9 @@
       "maintain-formal-verification-skill",
       "statechart",
       "reflect",
-      "recall"
+      "recall",
+      "benchmark-checklist",
+      "unslop"
     ],
     "principles": [
       "principle-encode-lessons-in-structure",
@@ -31,12 +33,32 @@
       "principle-subtract-before-you-add",
       "principle-sequence-verifiable-units",
       "principle-laziness-protocol",
-      "principle-guard-the-context-window"
+      "principle-guard-the-context-window",
+      "principle-attack-the-premise",
+      "principle-build-the-lever",
+      "principle-exhaust-the-design-space",
+      "principle-experience-first",
+      "principle-explain-the-number",
+      "principle-foundational-thinking",
+      "principle-make-operations-idempotent",
+      "principle-minimize-reader-load",
+      "principle-model-the-domain",
+      "principle-never-block-on-the-human",
+      "principle-outcome-oriented-execution",
+      "principle-separate-before-serializing-shared-state"
     ]
   },
   "playbooks": [
+    "skills/poteto-mode/playbooks/bug-fix.md",
     "skills/poteto-mode/playbooks/eval.md",
-    "skills/poteto-mode/playbooks/hillclimb.md"
+    "skills/poteto-mode/playbooks/hillclimb.md",
+    "skills/poteto-mode/playbooks/perf-issue.md",
+    "skills/poteto-mode/playbooks/prototype.md",
+    "skills/poteto-mode/playbooks/refactoring.md",
+    "skills/poteto-mode/playbooks/runtime-forensics.md",
+    "skills/poteto-mode/playbooks/trace-forensics.md",
+    "skills/poteto-mode/playbooks/visual-parity.md",
+    "skills/poteto-mode/references/bugbot-triage.md"
   ],
   "agents": [
     "comment-sicko"
@@ -48,6 +70,7 @@
     "LICENSE": "bc957ca6bee02792566a1a028d105e02e247c6e77cf057061674273da77b200e",
     "agents/comment-sicko.md": "0fb37221ab2a9159714d38f1528898e82b9758b5750f244bbe2e575bb593a1de",
     "skills/architect/SKILL.md": "aea83d7aa109eb73402182701b14c289844663ad9c8f959fedbef2df66787ce0",
+    "skills/benchmark-checklist/SKILL.md": "5efd79495e3eebf3b53814861330fe812458212958f8f009492e866c329161f6",
     "skills/correct/SKILL.md": "e347045d00c967a0b831ef883cc6ac79d21329aa10b5968637df95de7febf0ba",
     "skills/create-formal-verification-skill/SKILL.md": "30ef0ac27612ecd16fdc081112113221d673053cef3f8603db11932193861211",
     "skills/create-verification-skill/SKILL.md": "d353973547bf8ad8977eca645f4cd4feaed0d32f4b43d1448f906b0a76c4d694",
@@ -57,16 +80,36 @@
     "skills/maintain-formal-verification-skill/SKILL.md": "0c96f54293542d3818b68754562b338073958781a9684454611dca37592e2d2c",
     "skills/maintain-verification-skill/SKILL.md": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
     "skills/no-comments/SKILL.md": "054a46f2662c725add02d9e0440d8dcb4351f3bd0afcf797acc22a501b527b54",
+    "skills/poteto-mode/playbooks/bug-fix.md": "eef68686ea0128d36979c39ce88f5cd5c248eb4e58f1ca3229692b9902961170",
     "skills/poteto-mode/playbooks/eval.md": "369bfda8bf305fb57bf4cabada7862c41dc21f1dc0ad7993cfcd29d0a4d99a68",
     "skills/poteto-mode/playbooks/hillclimb.md": "a1d71e026d648991646533539939641f33508d5a02340f5041482ddd58116216",
+    "skills/poteto-mode/playbooks/perf-issue.md": "0eb3130e34798cdc0971eb1b3582856cb81023ccab0abeb64301458660be15a1",
+    "skills/poteto-mode/playbooks/prototype.md": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+    "skills/poteto-mode/playbooks/refactoring.md": "f11ff3c3ff0ea09d3ce2db0a3c11be3a3c11c279c04b83324723d0e0f984755b",
+    "skills/poteto-mode/playbooks/runtime-forensics.md": "79634d9bbc1a6fef3fa5c852c1c723d525f7fab45568e9637121e4afc058405f",
+    "skills/poteto-mode/playbooks/trace-forensics.md": "a2d5e20b544835755407b9bdd945e2b595d2e5f826b44c438cbadf92e7efd797",
+    "skills/poteto-mode/playbooks/visual-parity.md": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
+    "skills/poteto-mode/references/bugbot-triage.md": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
+    "skills/principle-attack-the-premise/SKILL.md": "831e916c540f4b6b720b7472aeea6e6ef93996655e36cc2517221f6f2081b480",
     "skills/principle-boundary-discipline/SKILL.md": "c02c26cca3906bfd57829535f8fa7ee9e00df037b4dbb24e5f85ec9e12710b48",
+    "skills/principle-build-the-lever/SKILL.md": "753d81cf9ca2a4e9d1f057429f0c63c9c622e6022dd877ec97ec15f442076aac",
     "skills/principle-encode-lessons-in-structure/SKILL.md": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
+    "skills/principle-exhaust-the-design-space/SKILL.md": "2de83d99f93f60ec6313455b0bc9aa9f0bfb93dd59f414f403691322db00d4db",
+    "skills/principle-experience-first/SKILL.md": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
+    "skills/principle-explain-the-number/SKILL.md": "e6a3f00991f4949cf18a0b5c77dd3126ca4402b8553f88c9c7905e577512676e",
     "skills/principle-fix-root-causes/SKILL.md": "79afd7e67d8951203231f6f1ccfc7b4a1f30d8d6cdb68e92755c80012414dbeb",
+    "skills/principle-foundational-thinking/SKILL.md": "5c63eecf4b83ea5a99eda7a95a96cac0929d2dce7393d7089c83917bc12cf820",
     "skills/principle-guard-the-context-window/SKILL.md": "af0b9dd70b43628ce4a59a4d332e9d9ad055084e460f430e7a757495c627e81a",
     "skills/principle-laziness-protocol/SKILL.md": "1be6e7a435f26a75a76eb848b9c3d611b9977d0f5822361753244da25ca3ca45",
+    "skills/principle-make-operations-idempotent/SKILL.md": "76ad0a99b6ff2a05a159accfeee48412d62f62774eb8d05bbff26a1f3aa3eab5",
     "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
+    "skills/principle-minimize-reader-load/SKILL.md": "22d27deffb0a3726858d0d4b02d71acd4a3eb4d44e218bc89b66e49dc9823937",
+    "skills/principle-model-the-domain/SKILL.md": "97c6214dc6a18b93177dda6429185a8640878b36ddee6ec9400c23a0eb9be2d8",
+    "skills/principle-never-block-on-the-human/SKILL.md": "05030a7a083c337676f793881b4e93cd218e8f1dd676529f56e6ac1d3efb8d1f",
+    "skills/principle-outcome-oriented-execution/SKILL.md": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d",
     "skills/principle-prove-it-works/SKILL.md": "3d6c482e341974cfcb8d19ebf66fb1d4274d8673af35e36d3c231a6aa9e03f25",
     "skills/principle-redesign-from-first-principles/SKILL.md": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
+    "skills/principle-separate-before-serializing-shared-state/SKILL.md": "2e5625d686b657e0b607c329fd8043bf50261b808239308fe4c6776e2817e95a",
     "skills/principle-sequence-verifiable-units/SKILL.md": "ab0cc331cf317c07bb0ed6dd13ee9f618338b36e4e851521977bc5c4a8d429e1",
     "skills/principle-subtract-before-you-add/SKILL.md": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
     "skills/principle-test-behavior-not-implementation/SKILL.md": "42afc1a2c7176363b6410cfde06a9fd3e96f5022ba86bdb8de4838ad65c2442d",
@@ -106,6 +149,7 @@
     "skills/statechart/scripts/statechart.ts": "5d5feff7d78204c828a8e30d531d23419234a81a7149dc3e48efb08dd770d6c1",
     "skills/statechart/scripts/tsconfig.json": "6bb2af53f7b251328e6117cd4fb761468dc4d4b96085d31a19304ccb73c32cc1",
     "skills/statechart/scripts/worker.ts": "1f18ed5ef806982e05e8a40fc217e88257700b28b63cb4acbd647872f85f782b",
+    "skills/unslop/SKILL.md": "2b823fd069e031c1420180be8e0d4f5e2fd25bf2c428049e5c835c59a489b5e0",
     "skills/why/SKILL.md": "6b65b3180f1f1bd3b696d7933daf900747410c82931d220a3f57a98addb1c0fd"
   }
 }

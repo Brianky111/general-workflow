@@ -107,13 +107,15 @@
 ```powershell
 python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" [--json] [--run-check] [--check-head]
 python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" [--scan | --init] [--max-lines 600] [--check-command "<cmd>"] [--json]
+python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --check-arch [--json]
 ```
 
-- 无参数：静态护栏、净土区、文档体积、逃生舱、反模式、`file_limits`、地图、防伪 `verify_cli` 与产物校验；
+- 无参数：静态护栏、净土区、文档体积（含 `ARCHITECTURE.md` 无行号检查）、逃生舱、反模式、`file_limits`、地图、防伪 `verify_cli` 与产物校验；
+- `--check-arch`：在 0 源码阶段校验 `docs/intent.md` 八字段、`docs/adr/0001-stack.md`、根目录 `ARCHITECTURE.md`（`<= 6,000`B 且禁写 `#L123`/`file:line` 脆性行号）、`docs/arch/{dataflow,contracts,slice-queue}.md`（含 SSOT/流图/上限与禁横向切片拦截）及可选 `docs/arch/guardrails-fragment.json`，通过返回 `guard_status: "arch_ready"`；
 - `--scan`：只读起草技术栈、`source_roots`、`check_command` 与存量基线；
-- `--init`：预检源码非空与 `check_command` 有效后生成起步层 `.guardrails/` 并锁初始棘轮；
+- `--init`：预检源码非空与 `check_command` 有效后生成起步层 `.guardrails/` 并锁初始棘轮；若根目录存在 `ARCHITECTURE.md` 自动加入 `prose_files`，若存在 `docs/arch/guardrails-fragment.json` 自动校验并合并其中的 `boundary_rules`、`forbidden_primitives`、`clean_scopes`、`prose_files` 与 `project_kind`；
 - `--run-check`：执行 `check_command`；`--check-head`：核对 Git `HEAD` 与 `source_roots` 干净度；
-- `guard_status`：`uninitialized`、`baseline_scan`、`legacy_v1`、`invalid`（退出 `1`）或 `ready`。
+- `guard_status`：`uninitialized`、`arch_ready`、`baseline_scan`、`legacy_v1`、`invalid`（退出 `1`）或 `ready`。
 
 ## 从 v1.x 状态目录迁移
 

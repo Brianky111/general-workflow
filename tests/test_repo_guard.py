@@ -1459,6 +1459,255 @@ class RepoGuardTests(unittest.TestCase):
         self.assertIn("L3 requires anti_patterns.max_allowed == 0", err6)
         self.assertIn("L3 requires file_limits.max_allowed == 0", err6)
 
+    def write_arch_pack(self) -> None:
+        self.write(
+            "docs/intent.md",
+            "\n".join([
+                "# Intent & Invariants",
+                "- problem: 商户手工核对每日流水耗时且易漏单",
+                "- primary_users: 门店财务",
+                "- entrypoints: python -m src.ui.cli reconcile",
+                "- user_outcomes:",
+                "  - 执行对账命令后生成差异清单与汇总表",
+                "- invariants:",
+                "  - 同一交易号重复导入不得产生第二条流水",
+                "- non_goals:",
+                "  - 首版不做自动打款",
+                "- configurable_params:",
+                "  - 对账容差与超时统一收口于 config.py",
+                "- irreversible_boundaries:",
+                "  - 不可逆核销标记需人工二次确认",
+                "",
+            ]),
+        )
+        self.write("GLOSSARY.md", "# Glossary\n- 核销：将回执与账单状态标记为已结算。\n")
+        self.write(
+            "docs/adr/0001-stack.md",
+            "# ADR-0001 Stack\n- Chosen: Python + SQLite (单进程单库 boring default)\n- Rejected: Kafka + 微服务（无并发瓶颈证据，解交织负担高）\n",
+        )
+        self.write(
+            "ARCHITECTURE.md",
+            "\n".join([
+                "# Architecture",
+                "CLI 读取 CSV 后调用 `src/core/reconcile` 执行幂等入账并持久化至 SQLite。",
+                "",
+                "## Codemap",
+                "- `src/ui/cli`: 用户命令入口 `run_cli`",
+                "- `src/core/reconcile`: 领域核销入口 `apply_batch`",
+                "",
+                "## 架构负不变量",
+                "- `[ui-no-storage]` `src/ui` 只经 `core/reconcile` 读写状态。",
+                "- `UNCOMPILED:` 核销批次提交前必须校验外部货币单位为整数分。",
+                "",
+            ]),
+        )
+        self.write(
+            "docs/arch/dataflow.md",
+            "\n".join([
+                "# Dataflow",
+                "| 状态 | 单一真相源（SSOT） | 唯一写入模块 | 派生副本与重建路径 | 失败语义 |",
+                "| --- | --- | --- | --- | --- |",
+                "| ledger | SQLite ledger 表 | src/core/reconcile | 汇总视图由 ledger 重算重建 | 按 tx_id 幂等跳过 |",
+                "",
+                "```mermaid",
+                "flowchart LR",
+                "  CSV --> BoundaryParse --> ReconcileCore --> SQLiteSSOT",
+                "```",
+                "",
+                "## 失败模式与静态上限",
+                "| 模式 | 信号 | 表现 | 重试 | 显式静态上限 | 不变量 | 验证 |",
+                "| --- | --- | --- | --- | --- | --- | --- |",
+                "| 导入超时 | Timeout | 返回错误码 | 最多 3 次退避 | 单批上限 1000 条 / timeout 3000ms | 不重复入账 | verify.py |",
+                "",
+            ]),
+        )
+        self.write(
+            "docs/arch/contracts.md",
+            "# Contracts\n```python\nclass LedgerEntry:\n    tx_id: str\n    amount_cents: int\n```\n",
+        )
+        self.write(
+            "docs/arch/slice-queue.md",
+            "\n".join([
+                "# Slice Queue",
+                "| 序号 | 用户可见结果与真实入口 | 穿过的模块 | 契约与不变量 | 验证钩子 |",
+                "| --- | --- | --- | --- | --- |",
+                "| S1 | 执行 `cli reconcile` 输出对账摘要表 | ui/cli -> core/reconcile | LedgerEntry + ui-no-storage | tools/verify.py s1 |",
+                "",
+            ]),
+        )
+        self.write(
+            "docs/arch/guardrails-fragment.json",
+            json.dumps(
+                {
+                    "project_kind": "app",
+                    "prose_files": ["ARCHITECTURE.md", "docs/notes.md"],
+                    "clean_scopes": ["src/core"],
+                    "boundary_rules": [
+                        {
+                            "id": "ui-no-storage",
+                            "from_dir": "src/ui",
+                            "forbid_import": "core/storage",
+                            "message": "src/ui 不得直接导入 core/storage，请经由 src/core/reconcile 调用。",
+                        }
+                    ],
+                    "forbidden_primitives": [
+                        {
+                            "id": "no-raw-sleep",
+                            "pattern": r"\btime\.sleep\s*\(",
+                            "globs": ["src/**/*.py"],
+                            "message": "业务逻辑不要直接调用 time.sleep；请改用受控时钟封装。",
+                        }
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ) + "\n",
+        )
+
+    def test_check_arch_ready_and_uncompiled_warning(self):
+        self.write_arch_pack()
+        code, report, _ = self.run_cli("--check-arch")
+        self.assertEqual(code, 0)
+        self.assertEqual(report["guard_status"], "arch_ready")
+        self.assertEqual(report["errors"], [])
+        self.assertEqual(report["arch"]["slices"], 1)
+        self.assertEqual(report["arch"]["uncompiled_invariants"], 1)
+        self.assertTrue(any("UNCOMPILED" in w for w in report["warnings"]))
+
+        human = subprocess.run(
+            [sys.executable, "-X", "utf8", str(SCRIPT), "--root", str(self.repo), "--check-arch"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        self.assertEqual(human.returncode, 0, human.stdout + human.stderr)
+        self.assertIn("guard_status arch_ready", human.stdout)
+        self.assertIn("0 error(s), 1 warning(s)", human.stdout)
+
+    def test_check_arch_rejects_premature_guardrails_and_legacy_docs_workflow(self):
+        self.write_arch_pack()
+        self.write(".guardrails/intent.md", (self.repo / "docs/intent.md").read_text(encoding="utf-8"))
+        code, report, _ = self.run_cli("--check-arch")
+        self.assertEqual(code, 1)
+        self.assertEqual(report["guard_status"], "invalid")
+        self.assertIn("premature .guardrails/", "\n".join(report["errors"]))
+
+        shutil.rmtree(self.repo / ".guardrails")
+        self.write("docs/workflow/state.md", "# v1 state\n")
+        code2, report2, _ = self.run_cli("--check-arch")
+        self.assertEqual(code2, 1)
+        self.assertEqual(report2["guard_status"], "invalid")
+        self.assertIn("legacy v1 state detected", "\n".join(report2["errors"]))
+
+    def test_check_arch_rejects_missing_or_placeholder_intent_and_adr(self):
+        self.write_arch_pack()
+        self.write(
+            "docs/intent.md",
+            "\n".join([
+                "- problem: <待补充>",
+                "- primary_users: 运营",
+                "- entrypoints: cli",
+                "- user_outcomes: 输出报表",
+                "- non_goals: TBD",
+                "- configurable_params: config.py",
+                "- irreversible_boundaries: 删除",
+            ]),
+        )
+        self.write("docs/adr/0001-stack.md", "# ADR\n- Chosen: <choose db>\n")
+        code, report, _ = self.run_cli("--check-arch")
+        self.assertEqual(code, 1)
+        err_text = "\n".join(report["errors"])
+        self.assertIn("missing required field 'invariants'", err_text)
+        self.assertIn("field 'problem'", err_text)
+        self.assertIn("field 'non_goals'", err_text)
+        self.assertIn("0001-stack.md contains unresolved <...> template placeholder", err_text)
+
+    def test_brittle_line_refs_rejected_in_check_arch_and_prose_diet(self):
+        self.write_arch_pack()
+        bad_arch = "# Architecture\n核心实现见 src/core/engine.py:42 以及 README#L19。\n"
+        self.write("ARCHITECTURE.md", bad_arch)
+        code, report, _ = self.run_cli("--check-arch")
+        self.assertEqual(code, 1)
+        self.assertIn("brittle line-number reference", "\n".join(report["errors"]))
+
+        self.write_minimal_guardrails()
+        self.write("AGENTS.md", "# Rules\n")
+        cfg = json.loads((self.repo / ".guardrails/config.json").read_text(encoding="utf-8"))
+        cfg["prose_files"] = ["AGENTS.md", "ARCHITECTURE.md"]
+        self.write(".guardrails/config.json", json.dumps(cfg, indent=2) + "\n")
+        code2, report2, _ = self.run_cli()
+        self.assertEqual(code2, 1)
+        self.assertIn("brittle line-number reference", "\n".join(report2["errors"]))
+
+    def test_check_arch_rejects_horizontal_slice_bad_dataflow_and_fragment(self):
+        self.write_arch_pack()
+        self.write(
+            "docs/arch/slice-queue.md",
+            "\n".join([
+                "| 序号 | 用户可见结果与真实入口 | 穿过的模块 | 契约与不变量 | 验证钩子 |",
+                "| --- | --- | --- | --- | --- |",
+                "| S1 | db schema | core/db | rule | verify |",
+            ]),
+        )
+        self.write("docs/arch/dataflow.md", "# Dataflow\n纯文字描述没有任何流图、状态所有权表或限制。\n")
+        self.write(
+            "docs/arch/guardrails-fragment.json",
+            json.dumps(
+                {
+                    "extra_unknown": 1,
+                    "boundary_rules": [
+                        {"id": "b1", "from_dir": "src/ui", "forbid_import": "core/db", "message": "too short"}
+                    ],
+                }
+            ),
+        )
+        code, report, _ = self.run_cli("--check-arch")
+        self.assertEqual(code, 1)
+        err_text = "\n".join(report["errors"])
+        self.assertIn("horizontal technical layer slice rejected", err_text)
+        self.assertIn("missing SSOT", err_text)
+        self.assertIn("missing end-to-end", err_text)
+        self.assertIn("missing failure mode", err_text)
+        self.assertIn("unsupported key(s) extra_unknown", err_text)
+        self.assertIn(">= 15 chars", err_text)
+
+    def test_init_auto_registers_architecture_md_and_merges_fragment(self):
+        self.write_arch_pack()
+        self.write("AGENTS.md", "# Project\n")
+        self.write("docs/notes.md", "# Notes\n")
+        self.write("src/core/reconcile.py", "def apply_batch(items: list[str]) -> int:\n    return len(items)\n")
+        self.write("src/ui/cli.py", "from core.reconcile import apply_batch\n\ndef main() -> int:\n    return apply_batch([])\n")
+
+        # Invalid fragment prevents creating .guardrails/
+        self.write("docs/arch/guardrails-fragment.json", "{bad json")
+        bad_code, bad_report, _ = self.run_cli("--init", "--check-command", "python -c \"print('ok')\"")
+        self.assertEqual(bad_code, 1)
+        self.assertFalse((self.repo / ".guardrails").exists())
+        self.assertIn("invalid JSON", "\n".join(bad_report["errors"]))
+
+        # Restore valid pack & initialize
+        self.write_arch_pack()
+        code, report, _ = self.run_cli("--init", "--check-command", "python -c \"print('ok')\"")
+        self.assertEqual(code, 0, report.get("errors"))
+        cfg = json.loads((self.repo / ".guardrails/config.json").read_text(encoding="utf-8"))
+        self.assertEqual(cfg["prose_files"], ["AGENTS.md", "ARCHITECTURE.md", "docs/notes.md"])
+        self.assertEqual(cfg["project_kind"], "app")
+        self.assertEqual(cfg["clean_scopes"], ["src/core"])
+        self.assertEqual(cfg["boundary_rules"][0]["id"], "ui-no-storage")
+        self.assertEqual(cfg["forbidden_primitives"][0]["id"], "no-raw-sleep")
+
+    def test_check_arch_flag_conflicts(self):
+        for bad_flags in (["--check-arch", "--init"], ["--check-arch", "--scan"], ["--check-arch", "--run-check"]):
+            proc = subprocess.run(
+                [sys.executable, "-X", "utf8", str(SCRIPT), "--root", str(self.repo), *bad_flags],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertNotEqual(proc.returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

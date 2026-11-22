@@ -14,7 +14,7 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 ## 意图与不变量模板
 
-建议写在项目根目录 `docs/intent.md` 或 `.guardrails/intent.md`（也可并入项目 README 的核心章节），内容精简到一屏能读完：
+未建 `.guardrails/` 的新仓统一先写根目录 `docs/intent.md`（切勿在空仓提前建残缺 `.guardrails/intent.md`，否则会阻断后续 `repo_guard.py --init`）；已有 `.guardrails/config.json` 时可写 `.guardrails/intent.md`。内容精简到一屏能读完：
 
 ```markdown
 # Intent & Invariants
@@ -37,12 +37,24 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 检验标准很简单：对照每一条 `user_outcomes` 和 `invariants`，看一眼就知道在 `03-verification-and-artifacts.md` 该测什么、该截什么产物；对照 `configurable_params`，确保从第一天起就没有业务常数散落硬编码；如果写着“系统更加稳定、体验流畅”这类空话，立刻重写成可观察结果。
 
+## 前沿追问法（Frontier Grill）
+
+遇到需求模糊、从零立项或隐藏前提未对齐时（借鉴 `mattpocock/skills` `grill-me` 与 `domain-modeling`），用决策树追问收敛后再定架构；若需求清晰、栈已定、单进程单库且预期 `<= 3` 个切片，跳过多轮追问直接落盘 `docs/intent.md` 进入 `02-codebase-guardrails.md`：
+
+1. **三类决策节点分流**：
+   - `FACT`（仓库现状、运行环境、官方配额与 API 约束）→ Agent 自己读代码或派只读子代理查明，**严禁拿可自查的事实问用户**；
+   - `AGENT`（内部结构与可逆技术参数）→ 由 Agent 选最简可逆方案拍板并记录；
+   - `USER`（两个不同回答会导致**不同技术栈、模块图、数据所有权或不可逆边界**的真分叉）→ 放入追问树。
+2. **只问当前前沿（Frontier）**：每轮仅抛出前置条件已落定的 `USER` 节点（每轮 `<= 4` 问，依赖本轮未决答案的下游分支留到下一轮），每问附简明选项、推荐默认及翻转代价，措辞支持用户回“是 / 全按默认”快速过关；Frontier 清空即停（交接进入切片编码后恢复“四行、1–2 个选择题”常规交互）。
+3. **同步提炼 `GLOSSARY.md`（`<= 3,000`B）**：追问中一旦出现含混或多义业务词（如“账户 / 取消 / 结算”），当场钉死一词一义写入根目录 `GLOSSARY.md`（纯领域定义、零实现细节，后续直接用作模块与类型命名）。
+
 ## 垂直可演示切片与决策分工
 
 面向不亲自写代码、靠体验验收的 Vibe Coding 工作方式，必须同时防住“按技术层拆成永不收口的半成品”与“把用户拉进底层技术评审泥潭”（参见 `vendor/pstack/skills/principle-sequence-verifiable-units/SKILL.md`）：
 
 1. **只切端到端可演示的垂直增量（WIP = 1）**：每轮任务动工前先钉死一句话——“这一轮做完，用户打开哪个页面或跑哪个命令，能亲眼看到什么新变化？”严禁按 `schema / foundation / engine` 横向拆层而不交付可用闭环；当前主线垂直切片未交出可看结果前，不得同时开启多个平行分支或皮肤方案，也**严禁**为单一具体切片预建多 Provider/Plugin/Factory 扩展架子。
-2. **人看演示、Agent 扛技术；配置进单源禁硬编码**：内部函数怎么拆、超时设几秒、局部单测怎么组织，由 Agent 选**最简可逆方案**自己拍板完成；**绝不**抛出几十条待逐行审阅的内部条目消耗用户注意力。只有会改变用户可见行为、业务口径或不可逆边界的问题，才用通俗人话向用户提问（每轮最多 1–2 个选择题）。同时从首个切片起，所有 `configurable_params` 统一收口进单一配置模块，严禁业务文件散落直读 `process.env` / `os.environ` 或写死魔法常量。
+2. **人看演示、Agent 扛技术；配置进单源禁硬编码**：内部函数怎么拆、超时设几秒、局部单测怎么组织，由 Agent 选**最简可逆方案**自己拍板并直接推进展示结果（`vendor/pstack/skills/principle-never-block-on-the-human/SKILL.md`），**绝不**抛出几十条内部条目消耗用户注意力；体验与省事冲突时优先用户愉悦度（`vendor/pstack/skills/principle-experience-first/SKILL.md`）。仅在会改变用户可见行为、业务口径或不可逆边界时提 1–2 个通俗选择题。同时从首个切片起，所有 `configurable_params` 统一收口进单一配置模块，严禁散落直读环境变量或写死魔法常量。
+3. **直率反迎合与抛弃式原型特区（Candor & Prototype）**：若提议的范围、抽象或前提不值当或行不通，直接摆证据说“不”（*"No is an acceptable answer"*），不礼貌附和。遇到无法靠空谈拍板的布局、交互手感或经验行为分叉时，按 `vendor/pstack/skills/poteto-mode/playbooks/prototype.md` 与 `vendor/pstack/skills/principle-exhaust-the-design-space/SKILL.md` 在 `source_roots` 之外的隔离临时目录做 2–3 个带切换开关的抛弃式变体（唯一允许反转最小 diff 与测试门槛的场景），选定后再回正规切片实现。
 
 ## 接手已有仓库（Brownfield 起步）
 
@@ -58,6 +70,6 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 离开本文件进入 `02-codebase-guardrails.md` 或写业务代码前，必须确认：
 
-1. 新项目已写出一页可观察的用户结果、核心不变量、至少一条明确的非目标、`configurable_params` 可变配置清单与不可逆边界；
+1. 新项目已写出一页可观察的用户结果、核心不变量、至少一条明确的非目标、`configurable_params` 可变配置清单与不可逆边界（写入 `docs/intent.md`）；
 2. 已有仓库已完成三步起步：有可跑的 `check_command`、已锁定 `escape_hatches.max_allowed` 初始棘轮值、已列出 `.guardrails/feature-map.md` 或 `verify_skill` 的首批核心入口；
-3. 本轮要做的第一个垂直切片已明确“做完后用户能亲眼看到什么”，且会改变核心结果或不可逆边界的歧义已以通俗选择题向用户确认。
+3. 若涉及**新选技术栈、多模块拓扑切分、多存储/外部副作用数据流或跨边界 API 设计**，下一步加载 `01a-stack-and-architecture.md`（完成后经 `01b-dataflow-and-contracts.md` 并跑 `repo_guard.py --check-arch`）；否则已明确首个垂直切片即可直接进入 `02-codebase-guardrails.md`。

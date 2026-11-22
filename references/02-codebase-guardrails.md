@@ -6,9 +6,9 @@
 
 把运行上下文、信任域和状态归属写进顶层目录，并用依赖规则锁死：
 
-- **写前对比、单源收敛与最小 diff**：非平凡改动先按 `vendor/pstack/skills/architect/SKILL.md` 与 `vendor/pstack/skills/principle-laziness-protocol/SKILL.md` 对比至少两种方案，选“单状态所有者、唯一做法、最小变动”，用单一事实源替代手工同步；
+- **写前对比、单源收敛与最小 diff**：非平凡改动先按 `vendor/pstack/skills/architect/SKILL.md`、`vendor/pstack/skills/principle-foundational-thinking/SKILL.md` 与 `vendor/pstack/skills/principle-laziness-protocol/SKILL.md` 定核心数据结构与并发共享面，对比至少两种方案，选“单状态所有者、唯一做法、最小变动”；
 - **进程与运行时边界**：如 `electron-main/` 与 `electron-renderer/`、`server/` 与 `client/`、`worker/` 与 `web/`；禁止跨目录导入，强制走显式 IPC/API 契约；
-- **领域与基础设施边界（Boundary Discipline）**：参照 `vendor/pstack/skills/principle-boundary-discipline/SKILL.md`，在系统边界完成解析、收窄与错误处理；核心逻辑写成纯函数，由 `core/api/` 暴露唯一安全入口，外部不得直连 `core/storage/`；
+- **领域建模与边界纪律**：参照 `vendor/pstack/skills/principle-boundary-discipline/SKILL.md` 在边界解析定型并信任内部类型；多分支与多布尔状态改用状态机、注册表或判别联合（`vendor/pstack/skills/principle-model-the-domain/SKILL.md`）；并发写入先拆分各自独立状态文件/键再聚合（`vendor/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md`），生命周期命令按现状差量幂等收敛并原子替换临时文件（`vendor/pstack/skills/principle-make-operations-idempotent/SKILL.md`）；
 - **共享原语与局部净土（`clean_scopes`）**：`shared/` 只放无业务归属的纯类型/纯函数；新建或彻底清理干净的模块目录立即写入 `.guardrails/config.json` 的 `clean_scopes` 锁死零逃生舱、零反模式与行数上限。
 
 用 `boundary_rules` 声明跨目录禁令；规模增大或存在路径别名时，接入 `dependency-cruiser`（JS/TS）或 `import-linter`（Python）挂进 `check_command`。
@@ -27,7 +27,7 @@
 
 参照 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md`，对以下红线实行零容忍（或旧仓棘轮收敛）：
 
-1. **反过度工程化（先减后加 + 禁空壳 + 防巨石文件）**：先交最小垂直切片；单实现禁套 `IXxx`/`XxxImpl`/Factory，单调用方禁纯透传 Wrapper/Manager，无多实现需求禁造 Plugin/Registry 架子；同模式真实重复 **≥ 3 次**才抽复用。启用 `file_limits`（默认 `max_lines: 600` + 旧仓 `baseline_files` 棘轮）卡死巨石文件。
+1. **反过度工程化与读者心智负担（先减后加 + 禁空壳 + 防巨石）**：先交最小垂直切片；单实现禁套 `IXxx`/`XxxImpl`/Factory，单调用方禁纯透传 Wrapper/Manager，无多实现需求禁造 Plugin/Registry；同模式真实重复 **≥ 3 次**才抽复用。严格遵循 `vendor/pstack/skills/poteto-mode/playbooks/refactoring.md` 与 `vendor/pstack/skills/principle-minimize-reader-load/SKILL.md`：重构必须先写特征测试钉死契约再删死码，新读者须能在 30 秒内追出值来源与可变点，未减少追踪层或可变状态的改动一律撤回；多步迁移直奔终态不留过渡兼容壳（`vendor/pstack/skills/principle-outcome-oriented-execution/SKILL.md`），非琐碎迁移先建可重跑脚本作交付杠杆（`vendor/pstack/skills/principle-build-the-lever/SKILL.md`）。启用 `file_limits`（默认 `max_lines: 600` + 旧仓 `baseline_files` 棘轮）卡死巨石文件。
 2. **反防御性冗余与静默吞错（Parse, Don't Validate + 内部 Fail Fast）**：只在外部边界解析成强类型；内部禁层层 `val ?? fallback` 掩盖脏数据，禁 Python `except: pass` / `suppress(Exception)`、JS/TS 空 `catch` 与 `.catch(() => {})` / `.catch(() => null | [])`。内部非法状态立刻抛错。
 3. **反硬编码四红线**：
    - **禁盲等延时与人为最小加载**：就绪后严禁 `minLoadingMs` / `artificialDelay`、`wait_for_timeout` / `waitForTimeout`、`await sleep(1500)`、`Promise(setTimeout)` 或业务裸 `sleep`/`setTimeout`，改等真实状态信号或版本号；

@@ -9,7 +9,7 @@ Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反
 - 对比独立于实现的预期：**用户在什么前置条件下做了什么操作，应该观察到什么结果？**
 - **早演示、早纠偏**：小切片完结即交出截图/录屏/试跑结果确认方向，核对无“就绪后人为干等”或“写死假数据”。
 - **独立 Verifier 隔离验收**：大改动或高风险切片优先交给未参与编写该实现、不带实现滤镜的独立上下文子代理（见 `00-router.md`）按地图实跑挑刺并留证。
-- **Bug 修复双面证伪**：新复现验证在修复前提交必须红灯失败，在当前提交必须绿灯通过。
+- **Bug 修复双面证伪与视觉像素对齐**：按 `vendor/pstack/skills/poteto-mode/playbooks/bug-fix.md` 在匹配真实表面复现 → 二分与运行时插桩排除假设 → 保持失败复现提交在修复提交之前；UI 重构或像素对齐按 `vendor/pstack/skills/poteto-mode/playbooks/visual-parity.md` 先截冻结基准图，图像 diff 归零才过关，禁改基准混过。
 - 测试只断言用户或外部系统可观察结果，不绑死私有辅助函数或内部调用顺序。
 
 ## 用户视角 Feature Map
@@ -36,11 +36,10 @@ Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反
 
 ## 科学性能与指标爬坡（Hillclimb）
 
-针对“启动耗时降 50%”“消除某条卡顿指标”等持续可量化调优（区分于一次性 bug 修复），按 `vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md` 执行单变量循环：
+针对一次性性能修复与持续量化调优，均须以真实负载测量为依据而非凭读代码猜瓶颈：
 
-1. **先冻结可信杠杆**：基于真实负载写出可复现差距的测量脚本（取 N 次中位数抗噪声）并绑定回归门禁；先证明基准能拉开好坏案例再冻结，迭代中禁改测量口径。
-2. **一改一测、进则留退则回**：每次只验证一个架构假设，指标越过噪声改善且回归门禁全绿才单独提交；没改善或破坏正确性立刻完整回滚（“可能有用”一律丢弃），每轮记入被 gitignore 的决策日志 `decision.tsv`。
-3. **停步与简并重**：达到“目标幅度 + 最少迭代轮数”双停止条件即止；保留不降指标的简化删减，遇平台期先重读源码换思路，绝不放松停止阈值凑过关。
+1. **按成本排序的性能七步与数字七问**：一次性性能排障按 `vendor/pstack/skills/poteto-mode/playbooks/perf-issue.md` 依序尝试：*Don't do it → Don't do it again → Do it less → Do it later → When not looking → Concurrently → Cheaper*，早命中即停。信任或汇报任何延迟、吞吐、加速比或 Eval 数字前，先过 `vendor/pstack/skills/principle-explain-the-number/SKILL.md` 与 `vendor/pstack/skills/benchmark-checklist/SKILL.md`（限速器 *Why not double?*、生产态调优对等、理论算术上限、错误与真跑核验、`>= 5` 轮 A/B 交替中位数与端到端占比）；活体插桩或离线大体积火焰图/堆快照先按 `vendor/pstack/skills/poteto-mode/playbooks/runtime-forensics.md` 或 `vendor/pstack/skills/poteto-mode/playbooks/trace-forensics.md` 在子代理转入 SQLite 查询定位源码符号。
+2. **Hillclimb 冻结基准爬坡循环**：针对持续调优按 `vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md` 执行：先冻结可拉开好坏的测量脚本并绑回归门禁（迭代禁改口径），每次只验证一个假设，指标跨过噪声且门禁全绿才提交，否则完整回滚，每轮记入被 gitignore 的 `decision.tsv`，达到双停止条件即止，保留不降指标的简化删减。
 
 ## 行为产物与新鲜度门禁
 

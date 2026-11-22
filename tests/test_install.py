@@ -125,6 +125,7 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
         self.assertTrue(unrelated_agent.is_file())
 
     def test_sync_vendor_verify_passes_on_repo_and_fails_on_mutation(self):
+        self.assertEqual(len(MANIFEST["files"]), 84)
         ok = subprocess.run(
             [sys.executable, "-X", "utf8", str(SYNC_SCRIPT), "--verify"],
             cwd=ROOT,
@@ -134,7 +135,7 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
             errors="replace",
         )
         self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
-        self.assertIn("62 file(s) verified, 0 error(s)", ok.stdout)
+        self.assertIn(f"{len(MANIFEST['files'])} file(s) verified, 0 error(s)", ok.stdout)
 
         copy_root = Path(self.temp.name) / "repo-copy"
         shutil.copytree(ROOT / "vendor", copy_root / "vendor")
@@ -164,8 +165,14 @@ class InstallerAndVendorSyncTests(unittest.TestCase):
         self.assertTrue(
             (gw_dir / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md").is_file()
         )
+        self.assertTrue(
+            (gw_dir / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "bug-fix.md").is_file()
+        )
+        self.assertTrue(
+            (gw_dir / "vendor" / "pstack" / "skills" / "poteto-mode" / "references" / "bugbot-triage.md").is_file()
+        )
         self.assertFalse((pi_skills / "poteto-mode").exists())
-        for name in ("reflect", "recall"):
+        for name in ("reflect", "recall", "unslop", "benchmark-checklist"):
             s_dir = pi_skills / name
             self.assertTrue((s_dir / "SKILL.md").is_file(), name)
             self.assertTrue((s_dir / "LICENSE.pstack").is_file(), name)

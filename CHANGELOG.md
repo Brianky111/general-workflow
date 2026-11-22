@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.5.0 - 2026-11-22
+
+Integrated upstream 0→1 & major-evolution architecture planning directly into `general-workflow` (combining `grill-me` frontier interviews, `gstack` engineering review rigor, Ousterhout/Pocock deep modules, `matklad` `ARCHITECTURE.md` + compiled negative invariants, and bias-isolated conditional overlays from Kleppmann, TigerStyle, and Rich Hickey) plus deterministic `--check-arch` and `--init` auto-merge support in `scripts/repo_guard.py`:
+
+- Updated `references/01-intent-and-invariants.md` with **Frontier Grill** (`FACT` / `AGENT` / `USER` decision-tree triage, `<= 4` frontier questions per round with defaults and flip costs, and `GLOSSARY.md` domain term crystallization) and pre-`--init` `docs/intent.md` placement guidance to avoid `.guardrails/` bootstrap deadlock.
+- Added `references/01a-stack-and-architecture.md` (Scope Challenge gate, 6-dimension Stack Scorecard with AI Inverse-Pyramid Fit and de-complecting question, `docs/adr/0001-stack.md`, system-level Design It Twice + deletion test, and `matklad` root `ARCHITECTURE.md` with `UNCOMPILED:` debt tracking) and `references/01b-dataflow-and-contracts.md` (`docs/arch/dataflow.md` SSOT table + Mermaid dataflow + failure/static-bounds matrix, code-level `docs/arch/contracts.md`, Tracer-Bullet `docs/arch/slice-queue.md`, `docs/arch/guardrails-fragment.json`, and 2-phase `--check-arch` → Slice 1 → `--init` handoff).
+- Added three mechanically triggered conditional overlays (`01c-distributed-and-sync.md`, `01d-high-assurance-bounds.md`, `01e-client-state-flow.md`) so distributed outbox/idempotency/fencing, ledger conservation/paired assertions/bounds, and client 4-bucket state de-complecting never pollute simple single-DB CRUD contexts.
+- Extended `scripts/repo_guard.py`: added `--check-arch` (`check_architecture_pack` returning `arch_ready` / `invalid`), shared `parse_boundary_rules` and fragment validation, brittle `#L123`/`file:line` checks on `ARCHITECTURE.md` in both `--check-arch` and `check_prose_diet()`, horizontal-layer slice rejection in `slice-queue.md`, and automatic `ARCHITECTURE.md` + `docs/arch/guardrails-fragment.json` merging inside `--init`.
+- Updated `SKILL.md`, `references/00-router.md`, `references/06-repo-guard-contract.md`, `scripts/check_consistency.py` (12 active references), `AGENTS.md`, `README.md`, `agents/openai.yaml`, `tests/test_check_consistency.py`, `tests/test_repo_guard.py`, and aligned `poteto-review` Mode B rubric.
+
+## 2.4.0 - 2026-11-22
+
+Absorbed the cross-host methodology, all remaining principles, and universal playbooks from Lauren Tan's `pstack/skills/poteto-mode` (`v0.15.46` @ `aaeb0ea`) without colliding with `general-workflow`'s top-level router or introducing Cursor-private dependencies:
+
+- Expanded `vendor/pstack/` (`84` verified upstream files at commit `aaeb0ea`): added the remaining 12 `principle-*` skills (completing all 24 upstream principles), 2 core execution skills (`unslop` and `benchmark-checklist`), and 8 universal `poteto-mode` playbooks/references (`bug-fix.md`, `perf-issue.md`, `refactoring.md`, `prototype.md`, `runtime-forensics.md`, `trace-forensics.md`, `visual-parity.md`, and `references/bugbot-triage.md`).
+- Updated `SKILL.md` and `references/00`–`05` (staying strictly below the 90% LF byte warning threshold) with:
+  - Explicit cross-host shielding in `references/00-router.md` mapping Cursor-private references (`cursor-team-kit` `/deslop`/`control-*`, `/loop`, `origin pr`, `poteto-agent`, and fixed model slugs) to host-agnostic equivalents;
+  - Candor over Sycophancy ("No is an acceptable answer") and isolated throwaway `prototype.md` boundaries in `SKILL.md` and `references/01-intent-and-invariants.md`;
+  - Domain modeling (`model-the-domain`), reader-load reduction (`minimize-reader-load`), refactoring cadence (`refactoring.md`), shared-state separation, idempotent operations, and lever building (`build-the-lever`) in `references/02-codebase-guardrails.md`;
+  - `bug-fix.md`, `visual-parity.md`, `perf-issue.md` 7-mantra ordering, `runtime-forensics.md`/`trace-forensics.md` SQLite capture reduction, and `benchmark-checklist`/`explain-the-number` 7-question verification in `references/03-verification-and-artifacts.md`;
+  - `attack-the-premise` stop-loss trigger on repeated same-premise failures in `references/04-correction-and-gardening.md`;
+  - Skeptical `bugbot-triage.md` (`fix / dismiss / ask`) and `unslop` prose discipline in `references/05-outer-loop-factory.md`.
+- Updated `scripts/check_consistency.py`, `scripts/install.py`, `AGENTS.md`, `README.md`, `agents/openai.yaml`, `tests/test_check_consistency.py`, and `tests/test_install.py`.
+
 ## 2.3.0 - 2026-11-21
 
 Closed real-world workflow blind spots discovered during `v2.2.0` trials and cross-referenced against Lauren Tan's full interview corpus and upstream `pstack` playbooks:

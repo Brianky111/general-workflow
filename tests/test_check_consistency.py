@@ -112,12 +112,12 @@ class CheckConsistencyTests(unittest.TestCase):
     def test_a_clean_copy_passes(self):
         code, out = self.run_check("--root", str(self.root))
         self.assertEqual(code, 0, out)
-        self.assertIn("7 active reference files, 0 error(s), 0 warning(s)", out)
+        self.assertIn("12 active reference files, 0 error(s), 0 warning(s)", out)
 
     def test_the_default_root_is_the_shipped_tree(self):
         code, out = self.run_check()
         self.assertEqual(code, 0, out)
-        self.assertIn("7 active reference files, 0 error(s), 0 warning(s)", out)
+        self.assertIn("12 active reference files, 0 error(s), 0 warning(s)", out)
 
     def test_file_missing_from_reference_map_is_reported(self):
         head, sep, tail = self.read("SKILL.md").partition("## Reference Map")
@@ -288,11 +288,20 @@ class CheckConsistencyTests(unittest.TestCase):
     def test_vendor_playbooks_verified_and_tamper_or_extra_caught(self):
         eval_pb = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "eval.md"
         hill_pb = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md"
+        bug_pb = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "bug-fix.md"
+        triage_ref = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "references" / "bugbot-triage.md"
         self.assertTrue(eval_pb.is_file())
         self.assertTrue(hill_pb.is_file())
+        self.assertTrue(bug_pb.is_file())
+        self.assertTrue(triage_ref.is_file())
 
         eval_pb.write_text(eval_pb.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8")
         self.assert_only_error("checksum mismatch for vendor/pstack/skills/poteto-mode/playbooks/eval.md")
+
+        self.setUp()
+        triage_ref = self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "references" / "bugbot-triage.md"
+        triage_ref.write_text(triage_ref.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8")
+        self.assert_only_error("checksum mismatch for vendor/pstack/skills/poteto-mode/references/bugbot-triage.md")
 
         self.setUp()
         (self.root / "vendor" / "pstack" / "skills" / "poteto-mode" / "playbooks" / "hillclimb.md").unlink()
