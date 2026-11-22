@@ -25,14 +25,17 @@
 
 ## 反过度工程、反防御性吞错与反硬编码
 
-参照 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md`，对以下红线实行零容忍（或旧仓棘轮收敛）：
+参照 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md` 与 `vendor/pstack/skills/principle-minimize-reader-load/SKILL.md`，坚持务实、最小化的工程风格，对以下红线实行零容忍（或旧仓棘轮收敛）：
 
-1. **反过度工程化与读者心智负担（先减后加 + 禁空壳 + 防巨石）**：先交最小垂直切片；单实现禁套 `IXxx`/`XxxImpl`/Factory，单调用方禁纯透传 Wrapper/Manager，无多实现需求禁造 Plugin/Registry；同模式真实重复 **≥ 3 次**才抽复用。严格遵循 `vendor/pstack/skills/poteto-mode/playbooks/refactoring.md` 与 `vendor/pstack/skills/principle-minimize-reader-load/SKILL.md`：重构必须先写特征测试钉死契约再删死码，新读者须能在 30 秒内追出值来源与可变点，未减少追踪层或可变状态的改动一律撤回；多步迁移直奔终态不留过渡兼容壳（`vendor/pstack/skills/principle-outcome-oriented-execution/SKILL.md`），非琐碎迁移先建可重跑脚本作交付杠杆（`vendor/pstack/skills/principle-build-the-lever/SKILL.md`）。启用 `file_limits`（默认 `max_lines: 600` + 旧仓 `baseline_files` 棘轮）卡死巨石文件。
-2. **反防御性冗余与静默吞错（Parse, Don't Validate + 内部 Fail Fast）**：只在外部边界解析成强类型；内部禁层层 `val ?? fallback` 掩盖脏数据，禁 Python `except: pass` / `suppress(Exception)`、JS/TS 空 `catch` 与 `.catch(() => {})` / `.catch(() => null | [])`。内部非法状态立刻抛错。
-3. **反硬编码四红线**：
+1. **只做明确需求与必需改动**：只实现明确要求的功能和完成它所必需的改动；禁顺手重构无关代码、禁擅加配置项/开关、禁扩展未要求的兼容性或设计未来功能。每项新增复杂性必须对应当前需求、已确认错误或现有实测瓶颈（“以后可能需要”“这样更稳健”不能单独成为理由）。
+2. **优先既有能力与最短路径**：不为一次性操作创建通用抽象，不为假想规模设计架构；优先使用现有代码和框架能力，选择最短、最清晰的实现路径。单实现禁套 `IXxx`/`XxxImpl`/Factory，单调用方禁纯透传 Wrapper/Manager，同模式真实重复 **≥ 3 次**才抽复用。遵循 `vendor/pstack/skills/poteto-mode/playbooks/refactoring.md`：重构必须先写特征测试钉死契约再删死码，新读者须在 30 秒内追出值来源与可变点；多步迁移直奔终态不留过渡兼容壳（`vendor/pstack/skills/principle-outcome-oriented-execution/SKILL.md`），非琐碎迁移先建可重跑脚本作交付杠杆（`vendor/pstack/skills/principle-build-the-lever/SKILL.md`），并用 `file_limits`（默认 `max_lines: 600` + 旧仓 `baseline_files` 棘轮）卡死巨石文件。
+3. **边界一次解析，内部完全信任（Parse, Don't Validate）**：必要校验集中在系统外部边界一次性解析成强类型；信任已明确的内部类型、调用约定与框架保证，不在内部各层重复检查，不防御按现有契约不可能出现的状态。
+4. **无明确恢复策略时让错误直接传播（Fail Fast）**：禁止用宽泛 `try/except`（如 `except Exception`、`except: pass`、`suppress(Exception)`）、空 `catch`、`.catch(() => {})` / `.catch(() => null | [])`、静默默认值（`val ?? fallback`）、空结果或多级 fallback 掩盖问题。
+5. **禁主动增加未要求的韧性与状态机制**：不主动增加重试、回退、恢复流程、额外状态、健康检查或新的持久化机制；只有当前需求或已确认问题直接需要它们时才添加。
+6. **反硬编码四红线**：
    - **禁盲等延时与人为最小加载**：就绪后严禁 `minLoadingMs` / `artificialDelay`、`wait_for_timeout` / `waitForTimeout`、`await sleep(1500)`、`Promise(setTimeout)` 或业务裸 `sleep`/`setTimeout`，改等真实状态信号或版本号；
    - **禁环境硬编码与散落读环境**：禁本机及 WSL 路径（`C:\Users\...`、`/Users/...`、`/home/<user>/...`、`/mnt/*/Users/`、`/root/`、`file:///Users/...`）、本地/内网 IP 与密钥字面量进源码；环境变量只收口单一入口；
-   - **禁业务参数与魔法常量硬编码**：起算日、费率、阈值、开关归口单一配置源（对齐 `01` `configurable_params`）；
+   - **禁参数硬编码与擅增开关**：仅将当前需求**明确要求可变的业务参数**（对齐 `01` `configurable_params`）收口单一配置源，不写死魔法常量，也不把固定行为擅自抽成未要求的新配置；
    - **禁生产假数据与回退造假（`mock-in-prod`）**：生产源码禁定义 `MOCK_*`/`FAKE_*`/`mockXxxData`、写 `rows || mockData` 兜底或导入 `__mocks__`/`fixtures`。
 
 以上 `repo_guard.py` 规则属零依赖启发式兜底；复杂 AST/语义问题由挂入 `check_command` 的原生编译器/Linter、`/architect` 与产物审查协同拦截（边界见 `06-repo-guard-contract.md`）。

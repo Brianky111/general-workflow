@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.5.1 - 2026-11-22
+
+Integrated pragmatic minimalism and anti-overengineering project collaboration conventions directly into the workflow:
+
+- Updated `SKILL.md` (`Core Principles` #5 and `Default Response Shape`) and `references/00-router.md` (`uninitialized` localized-task fast path and stop-when-done stop rule) so small tasks avoid forced full-repo governance, speculative follow-up todos, or unsolicited reliability audits.
+- Consolidated the 6 code/architecture collaboration rules into `references/02-codebase-guardrails.md` (`边界一次解析，内部完全信任`, `无明确恢复策略时让错误直接传播`, strict explicit-requirement-only complexity, reuse-first shortest path, and banning unrequested retries/fallbacks/recovery flows/extra state/health checks/persistence) and resolved cross-doc tensions across `01`, `01a`, `01b`, `01c`, and `01d`.
+- Updated `references/03-verification-and-artifacts.md`, `references/04-correction-and-gardening.md`, `README.md`, and `scripts/check_consistency.py` (`POLICY_ANCHORS`) to enforce `验证与改动规模匹配`, stop-when-done delivery, and no opportunistic refactoring during regular feature/bugfix turns.
+
 ## 2.5.0 - 2026-11-22
 
 Integrated upstream 0→1 & major-evolution architecture planning directly into `general-workflow` (combining `grill-me` frontier interviews, `gstack` engineering review rigor, Ousterhout/Pocock deep modules, `matklad` `ARCHITECTURE.md` + compiled negative invariants, and bias-isolated conditional overlays from Kleppmann, TigerStyle, and Rich Hickey) plus deterministic `--check-arch` and `--init` auto-merge support in `scripts/repo_guard.py`:

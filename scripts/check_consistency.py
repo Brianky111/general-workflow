@@ -92,8 +92,10 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "3. 运行时与形式化验证",
         "4. 极薄文档与规则",
         "## 核心原则",
+        "务实最小化",
         "## 五条工作循环",
         "## 默认响应形状",
+        "验证与改动规模匹配",
         "00-router.md",
     ),
     "00-router.md": (
@@ -172,6 +174,8 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "## 目录即上下文",
         "## 业务层禁用高分寸感原语",
         "## 反过度工程、反防御性吞错与反硬编码",
+        "边界一次解析，内部完全信任",
+        "无明确恢复策略时让错误直接传播",
         "principle-minimize-reader-load",
         "mock-in-prod",
         "file_limits",
@@ -181,6 +185,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "03-verification-and-artifacts.md": (
         "## 为什么审行为产物而不是逐行审 diff",
+        "验证与改动规模匹配",
         "## 用户视角 Feature Map",
         "## 复用型验证 CLI 与调试通道",
         "project_kind",

@@ -6,6 +6,7 @@
 
 Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反了的代码（例如为修切换卡顿先清空消息再异步加载，导致用户每次看到半秒白屏）。且人眼逐行审大量 diff 跟不上吞吐。因此验收重心必须转向**审行为产物**（参见 `vendor/pstack/skills/principle-prove-it-works/SKILL.md` 与 `vendor/pstack/skills/principle-test-behavior-not-implementation/SKILL.md`）：
 
+- **验证与改动规模匹配，完成即停**：只验证本次变更行为及直接相关分支；局部功能或 Bug 修复满足当前需求且直接相关检查通过后立即停止，**严禁自动扩展为全仓审计、故障注入、强行新建 `verify-<app>` Skill 或治理项目**。
 - 对比独立于实现的预期：**用户在什么前置条件下做了什么操作，应该观察到什么结果？**
 - **早演示、早纠偏**：小切片完结即交出截图/录屏/试跑结果确认方向，核对无“就绪后人为干等”或“写死假数据”。
 - **独立 Verifier 隔离验收**：大改动或高风险切片优先交给未参与编写该实现、不带实现滤镜的独立上下文子代理（见 `00-router.md`）按地图实跑挑刺并留证。
@@ -36,7 +37,7 @@ Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反
 
 ## 科学性能与指标爬坡（Hillclimb）
 
-针对一次性性能修复与持续量化调优，均须以真实负载测量为依据而非凭读代码猜瓶颈：
+针对一次性性能修复与持续量化调优，均须以真实负载测量为依据而非凭读代码猜瓶颈，且**只围绕目标瓶颈与实测收益交付结果，禁止把性能分析或功能实现自动演变成全量可靠性审查**：
 
 1. **按成本排序的性能七步与数字七问**：一次性性能排障按 `vendor/pstack/skills/poteto-mode/playbooks/perf-issue.md` 依序尝试：*Don't do it → Don't do it again → Do it less → Do it later → When not looking → Concurrently → Cheaper*，早命中即停。信任或汇报任何延迟、吞吐、加速比或 Eval 数字前，先过 `vendor/pstack/skills/principle-explain-the-number/SKILL.md` 与 `vendor/pstack/skills/benchmark-checklist/SKILL.md`（限速器 *Why not double?*、生产态调优对等、理论算术上限、错误与真跑核验、`>= 5` 轮 A/B 交替中位数与端到端占比）；活体插桩或离线大体积火焰图/堆快照先按 `vendor/pstack/skills/poteto-mode/playbooks/runtime-forensics.md` 或 `vendor/pstack/skills/poteto-mode/playbooks/trace-forensics.md` 在子代理转入 SQLite 查询定位源码符号。
 2. **Hillclimb 冻结基准爬坡循环**：针对持续调优按 `vendor/pstack/skills/poteto-mode/playbooks/hillclimb.md` 执行：先冻结可拉开好坏的测量脚本并绑回归门禁（迭代禁改口径），每次只验证一个假设，指标跨过噪声且门禁全绿才提交，否则完整回滚，每轮记入被 gitignore 的 `decision.tsv`，达到双停止条件即止，保留不降指标的简化删减。
@@ -63,9 +64,9 @@ Agent 能写出类型全对、Lint 全绿、单测全过，却把需求理解反
 
 ## 验证门禁
 
-声称功能交付前核对：
+声称功能交付前核对（**按当前改动规模裁剪，完成必要验证即停**）：
 
-1. 全部 `core` 功能已入 `.guardrails/feature-map.md` 或 `verify_skill`，对应驱动命令实跑通过；
-2. `.guardrails/verification.md` 覆盖全部 `core` 功能，均有观察结果、非空产物及不可变 commit 锚点；
-3. 缺陷修复已双面证伪；高风险并发/状态流已补深度验证或状态图；
-4. 运行 `python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --run-check` 退出 `0`（高信任分支同时加 `--check-head`）。
+1. 全部 `core` 功能已入 `.guardrails/feature-map.md` 或 `verify_skill`（仅当仓库已启用 `.guardrails/` 且改动涉及核心行为），本次改动功能及直接相关分支已实跑通过；
+2. 已有 `.guardrails/verification.md` 时同步更新观察结果、非空产物及不可变 commit 锚点；
+3. 缺陷修复已双面证伪；仅当当前需求明确涉及高风险并发/状态流时补深度验证或状态图；
+4. 若启用护栏仓，运行 `python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对路径>" --run-check` 退出 `0`（高信任分支同时加 `--check-head`）；回答仅汇报本次问题、改动、验证证据与直接收益，不附长篇假设风险待办。

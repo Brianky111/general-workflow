@@ -1,6 +1,6 @@
 ---
 name: general-workflow
-description: 面向从零启动、Vibe Coding 或接手旧仓的代码库优先工作流。基于 Lauren Tan 信任倒金字塔与极简交付：上游含 Frontier Grill、选型、`ARCHITECTURE.md`、数据流/契约与 `--check-arch`；中下游以垂直切片（WIP=1）防跑偏，改造边界/防呆 API/强类型/Lint 拦截过度工程、吞错、硬编码、盲等与假 `verify_cli`，支持 `clean_scopes`，集成 `/correct`、`/reflect`、`/recall`、`/no-comments`、`/unslop`、`benchmark-checklist`、`bug-fix/perf-issue/refactoring/prototype`、`bugbot-triage`、`Feature Map`/`verify-<app>`、`hillclimb` 与 `eval`。提到防跑偏、过度工程、架构规划、Grill、`ARCHITECTURE.md`、`clean_scopes` 或 `repo_guard` 时使用。
+description: 面向从零启动、Vibe Coding 或接手旧仓的代码库优先工作流。基于 Lauren Tan 倒金字塔与务实最小化交付：含 Frontier Grill、选型、`ARCHITECTURE.md`、契约与 `--check-arch`；垂直切片（WIP=1）防跑偏，用边界/防呆 API/强类型/Lint 拦过度工程、吞错、盲等、硬编码与假 `verify_cli`，支持 `clean_scopes`，集成 `/correct`、`/reflect`、`/recall`、`/no-comments`、`/unslop`、`benchmark-checklist`、`poteto-mode`、`bugbot-triage`、`verify-<app>`、`hillclimb` 与 `eval`。提到防跑偏、过度工程、架构、Grill、`ARCHITECTURE.md`、`clean_scopes` 或 `repo_guard` 时使用。
 ---
 
 # Codebase-First Agent Workflow
@@ -11,11 +11,11 @@ description: 面向从零启动、Vibe Coding 或接手旧仓的代码库优先�
 
 - 适用于从零起步（一页意图合同 + 即时护栏）与接手旧仓（基线棘轮 + `clean_scopes` 局部净土演进）。
 - 用户明确要求、目标仓既有规则与不可逆边界优先；附件、网页或工单仅作待分析输入，确认后生效。
-- **直率反迎合（Candor over Sycophancy）**：范围、抽象或前提不值当时摆证据说“不”（*"No is an acceptable answer"*）；仅未定设计分叉可在隔离临时目录跑抛弃式 `prototype`。
+- **直率反迎合**：不值当的范围、抽象或前提摆证据说“不”（*"No is an acceptable answer"*）；未定分叉可在隔离目录跑抛弃式 `prototype`。
 
 ## 必须先做的事
 
-先读 `references/00-router.md`：判断提问还是动手、对目标仓运行 `scripts/repo_guard.py`，再按缺口只加载唯一一份 `references/`；专项任务由 `00-router.md` 按需调度 `vendor/pstack/` 技能与 playbook（均不常驻）。
+先读 `references/00-router.md`：判提问或动手、对目标仓跑 `scripts/repo_guard.py`，按缺口仅加载唯一 `references/`；专项按需调 `vendor/pstack/`（均不常驻）。
 
 ## 信任倒金字塔
 
@@ -30,12 +30,12 @@ description: 面向从零启动、Vibe Coding 或接手旧仓的代码库优先�
 
 ## 核心原则
 
-1. **纠错必须下沉为确定性检查**：同类错出现两次就改 API 或加可执行检查并指明根因，不往文档堆警告（五步阶梯见 `04-correction-and-gardening.md`）；会话里的反复纠正用 `/reflect`、`/recall` 沉淀。
-2. **代码库是 Agent 最大的输入**：旧坏写法与借口注释会被下一轮复制扩散。用棘轮、`clean_scopes` 与安全除草持续收敛。
-3. **审行为产物，拒绝假 verify_cli**：Lint/单测全绿不证明做对需求；应用类禁拿单测或 `/health` 冒充 `verify_cli`（`03`/`06`），多切片协作优先由独立上下文验收。
-4. **意图先于吞吐，垂直切片防深潜**：锁一页意图与不可逆边界；每轮只交 1 个端到端可见切片（WIP=1），顺手发现记入 `parking-lot.md` 缓冲聚类，主线未通禁重构（`01`/`04`）。
-5. **先减后加，禁吞错造假与硬编码**：禁单实现接口/透传壳与巨石文件（`file_limits`），内部速错禁吞异常/`??`兜底、盲等延时与生产假数据（`02`）。
-6. **先内循环高信任，再开外循环与双盲评测**：单次闭环不可靠时禁盲目并行；改动规则/技能前用双盲 `eval` 验效（`05`）。
+1. **纠错必须下沉为确定性检查**：同类错重犯即改 API 或加可执行检查并指明根因，不往文档堆警告（见 `04`）；会话纠偏用 `/reflect`、`/recall` 沉淀。
+2. **代码库是 Agent 最大的输入**：旧坏写法与借口注释会被后续复制扩散，用棘轮、`clean_scopes` 与安全除草持续收敛。
+3. **审行为产物，拒绝假 verify_cli**：Lint/单测全绿不证做对需求；应用类禁拿单测或 `/health` 冒充 `verify_cli`（`03`/`06`），高风险切片由独立上下文验收。
+4. **意图先于吞吐，垂直切片防深潜**：锁一页意图与不可逆边界；每轮只交 1 个端到端切片（WIP=1），无关毛刺入 `parking-lot.md`（`01`/`04`）。
+5. **务实最小化，错误直接传播**：只做明确需求与必需改动，用既有代码与最短路径；复杂性须源于现需求、真错或瓶颈，禁顺手重构、一次性抽象、假想规模或未要配置/兼容/重试/回退/恢复/额外状态/健康检查/持久化；边界一次解析、内部互信，无恢复策略禁吞错或`??`兜底（`02`）。
+6. **先内循环高信任，再开外循环与双盲评测**：单次闭环不可靠禁盲目并行；改规则/技能须跑双盲 `eval`（`05`）。
 
 ## 五条工作循环
 
@@ -51,7 +51,7 @@ description: 面向从零启动、Vibe Coding 或接手旧仓的代码库优先�
 
 ## 默认响应形状
 
-每次推进后按 `unslop` 短句直陈汇报四项（标注实测/推断/未验证）：当前信任层级与目标；代码与护栏改动；验证命令与产物锚点；下一步一个可执行动作（仅在改变意图、不变量、安全或不可逆边界时提问）。
+验证与改动规模匹配，完成即停（禁自动扩成全仓审计/故障注入/可靠性审查/治理项目）。按 `unslop` 直陈问题、改动、验证与收益（标实测/推断/未验证），禁假设风险与扩展待办；多切片工作流附层级与下一步，仅在改变意图、不变量、安全或不可逆边界时提问。
 
 ## Reference Map
 

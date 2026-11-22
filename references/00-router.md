@@ -14,7 +14,7 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 | --- | --- | --- |
 | `invalid` | 护栏、驱动、地图或产物报错 | 先修报错，见 `06-repo-guard-contract.md` |
 | `legacy_v1` | 缺 `.guardrails/` 但有旧状态 | 不覆盖旧文件，按 `06-repo-guard-contract.md` 迁移 |
-| `uninitialized` | 新仓或未建护栏旧仓 | 新仓走 `01-intent-and-invariants.md`；旧仓先 `--scan` |
+| `uninitialized` | 无 `.guardrails/` 仓库 | 局部小改直入 `02`/`03` 最小实现并验证；建项走 `01-intent-and-invariants.md`，纳管旧仓先 `--scan` |
 | `ready` | 护栏通过 | 按下表加载唯一 reference |
 
 ## 信任层级（L0–L3）
@@ -69,16 +69,17 @@ python "<skill绝对路径>/scripts/repo_guard.py" --root "<目标项目绝对�
 | 验证 Skill | `vendor/pstack/skills/create-verification-skill/SKILL.md` | 建 `verify-<app>`；维护用 `maintain-verification-skill/SKILL.md` |
 | 形式化/TLA+ | `vendor/pstack/skills/create-formal-verification-skill/SKILL.md` | 维护 `maintain-*`；状态图用 `statechart/SKILL.md` |
 
-**跨工具屏蔽映射**：忽略 Cursor 私有项（`cursor-team-kit` `/deslop`/`control-*`、`/loop`、`origin pr`、`poteto-agent` 及固定模型 slug）。`control-*`→`verify_cli`/宿主工具；`/deslop`→`unslop`+`no-comments`；`/loop`→宿主循环/子代理；`tdd`/`arena`→`03` 先红后绿/`architect`；未要求 PR 跳过 `Opening a PR`。验证 Skill 放 `.agents/skills/verify-<app>`；无命名子 Agent 用 `comment-sicko.md`；`/recall` 仅读当前工作区转录（Cursor `~/.cursor/projects/`、Claude `~/.claude/projects/`、Codex `~/.codex/sessions/`、Pi `~/.pi/agent/sessions/`）。
+**跨工具屏蔽**：忽略 Cursor 私有项（`cursor-team-kit`、`/loop`、`origin pr`、`poteto-agent`、模型 slug）。`control-*`→`verify_cli`/宿主工具；`/deslop`→`unslop`+`no-comments`；`tdd`/`arena`→`03`/`architect`；未要 PR 跳过开 PR；`verify-<app>` 放 `.agents/skills/`；无命名子代理用 `comment-sicko.md`；`/recall` 仅扫本仓会话目录。
 
 ## 全局停止条件
 
-遇以下任一条立即停下确认：
+遇以下任一条立即停下或交还：
+- **完成即停（禁擅自扩项）**：明确需求与匹配验证通过即停，禁顺手重构无关代码、列假设待办或扩成全仓治理；
 - **意图/不变量歧义**：同一句话有两种改变结果或数据正确性的解释；
 - **不可逆边界**：资金/账务、隐私、鉴权放宽、不可逆迁移/删库或破坏公共契约；
 - **环境损坏**：测试或构建无法运行，需外部凭据或改环境前提；
 - **试图抬高旧债上限**：调大 `escape_hatches`、`anti_patterns` 或 `file_limits` 的 `max_allowed`；
-- **单模块深潜止损**：同一模块连改 2 轮无可见进展，或主线未通想扩成内部重构；
+- **单模块深潜止损**：同一模块连改 2 轮无进展，或主线未通想扩成内部重构；
 - **顺手发现进停放区**：非阻塞旧债只追加一行到 `.guardrails/parking-lot.md`（见 `04`），不散弹深挖。
 
 提问限四行、最多 1–2 个选择题（内部选型由 Agent 选最简可逆方案）：
