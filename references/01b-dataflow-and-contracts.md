@@ -23,7 +23,7 @@
 
 ## 代码级 API 与 Schema 契约（docs/arch/contracts.md）
 
-在 `docs/arch/contracts.md`（`<= 10,000`B；仅索引与契约定义，随切片落入源码后可清理已落地条目）用**选定技术栈的真实类型/Schema 语法**（如 TypeScript/Zod、Python Pydantic/TypedDict、OpenAPI、SQL DDL）写出可直接粘贴进源码的边界契约——覆盖所有跨进程边界、对外 HTTP/RPC/CLI 接口及核心深模块 Seam：
+在 `docs/arch/contracts.md`（`<= 10,000`B；仅索引与契约定义，随切片落入源码后可清理已落地条目）**严格根据已锁定需求（`docs/intent.md`）先于编码定义边界契约**，再用**选定技术栈的真实类型/Schema 语法**（如 TypeScript/Zod、Python Pydantic/TypedDict、OpenAPI、SQL DDL）写出可直接粘贴进源码、**并直接据此编写接口测试**——严禁写代码时为了省事悄悄扭曲或反改接口契约；覆盖所有跨进程边界、对外 HTTP/RPC/CLI 接口及核心深模块 Seam：
 
 每份契约必须钉死五要素：
 1. **输入与输出类型结构**（含必填、枚举、精度单位如分/毫秒）；校验与解析只集中在系统外部边界，内部调用方完全信任已定型契约而不层层复检；
@@ -54,7 +54,7 @@
 
    - **切片 1 铁律（Tracer Bullet）**：切片 1 必须是穿过全部部署单元与风险最高集成点的最薄可演示端到端闭环，其后按最大未知风险降序排列；
    - **禁横向分层切片**：出现 `schema`、`foundation`、`scaffolding`、`engine`、`database migrations` 等无用户可观察产物的切片一律判错；
-   - 目录、契约与对应 `boundary_rules` 由**首次用到它的那个切片**落码创建；队列仅作有序清单，交接后按 `WIP=1` 取队首实现，做完划掉，清空即删。
+   - 目录、契约与对应 `boundary_rules` 由**首次用到它的那个切片**落码创建；队列仅作有序清单，交接后按 `WIP=1` 取队首严格按**锁定切片需求 → 确定接口契约 → 按接口写测试 → 最小实现**顺序推进，做完划掉，清空即删。
 
 2. **生成预编译护栏片段（`docs/arch/guardrails-fragment.json`）**：将 `ARCHITECTURE.md` 中可静检的负不变量预先写成标准 JSON（允许字段：`project_kind`、`prose_files`、`clean_scopes`、`boundary_rules`、`forbidden_primitives`，每条规则的 `message` 须 `>= 15` 字符且写明根因与正确接口）。
 

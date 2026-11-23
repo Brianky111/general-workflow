@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.2 - 2026-11-23
+
+Locked the strict requirement-driven development sequence (`需求 → 接口 → 测试 → 实现`) and aligned `poteto-review` Mode A:
+
+- Updated `SKILL.md` (`Core Principles` #4), `references/01-intent-and-invariants.md`, `references/01b-dataflow-and-contracts.md`, `references/02-codebase-guardrails.md`, and `references/03-verification-and-artifacts.md` to enforce `需求驱动开发`: lock requirements first, define interface contracts directly from requirements, write interface-based tests before implementation, and forbid development-driven requirement warping or backfilling tests to fit code.
+- Added `"需求驱动开发"` anchors in `scripts/check_consistency.py` (`SKILL.md`, `01`, and `03`).
+
 ## 2.5.1 - 2026-11-22
 
 Integrated pragmatic minimalism and anti-overengineering project collaboration conventions directly into the workflow:

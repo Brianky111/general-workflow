@@ -27,7 +27,7 @@
 
 参照 `vendor/pstack/skills/principle-subtract-before-you-add/SKILL.md` 与 `vendor/pstack/skills/principle-minimize-reader-load/SKILL.md`，坚持务实、最小化的工程风格，对以下红线实行零容忍（或旧仓棘轮收敛）：
 
-1. **只做明确需求与必需改动**：只实现明确要求的功能和完成它所必需的改动；禁顺手重构无关代码、禁擅加配置项/开关、禁扩展未要求的兼容性或设计未来功能。每项新增复杂性必须对应当前需求、已确认错误或现有实测瓶颈（“以后可能需要”“这样更稳健”不能单独成为理由）。
+1. **只做明确需求与必需改动，严防开发驱动需求**：严格遵循**需求驱动开发（先定需求 → 根据需求定接口 → 根据接口写测试 → 最小实现）**，禁先写实现再倒推接口、修改需求迁就代码或反凑测试；只实现明确要求的功能和完成它所必需的改动，禁顺手重构无关代码、擅加配置开关、扩展未要求兼容性或设计未来功能。每项新增复杂性必须对应当前需求、已确认错误或现有实测瓶颈（“以后可能需要”“这样更稳健”不能单独成为理由）。
 2. **优先既有能力与最短路径**：不为一次性操作创建通用抽象，不为假想规模设计架构；优先使用现有代码和框架能力，选择最短、最清晰的实现路径。单实现禁套 `IXxx`/`XxxImpl`/Factory，单调用方禁纯透传 Wrapper/Manager，同模式真实重复 **≥ 3 次**才抽复用。遵循 `vendor/pstack/skills/poteto-mode/playbooks/refactoring.md`：重构必须先写特征测试钉死契约再删死码，新读者须在 30 秒内追出值来源与可变点；多步迁移直奔终态不留过渡兼容壳（`vendor/pstack/skills/principle-outcome-oriented-execution/SKILL.md`），非琐碎迁移先建可重跑脚本作交付杠杆（`vendor/pstack/skills/principle-build-the-lever/SKILL.md`），并用 `file_limits`（默认 `max_lines: 600` + 旧仓 `baseline_files` 棘轮）卡死巨石文件。
 3. **边界一次解析，内部完全信任（Parse, Don't Validate）**：必要校验集中在系统外部边界一次性解析成强类型；信任已明确的内部类型、调用约定与框架保证，不在内部各层重复检查，不防御按现有契约不可能出现的状态。
 4. **无明确恢复策略时让错误直接传播（Fail Fast）**：禁止用宽泛 `try/except`（如 `except Exception`、`except: pass`、`suppress(Exception)`）、空 `catch`、`.catch(() => {})` / `.catch(() => null | [])`、静默默认值（`val ?? fallback`）、空结果或多级 fallback 掩盖问题。

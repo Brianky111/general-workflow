@@ -10,7 +10,7 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 2. **直接喂给验证层**：写清“哪些不变量必须永远成立、哪些副作用绝对禁止”，这些句子能直接翻译成属性测试（PBT）、TLA+ 模型或自定义 Lint；
 3. **划出永久人工边界**：把“不可逆操作”在起步时挑出来，后续即使自动化升到最高档，这些边界仍由人把关。
 
-文档只写一页，写完立即进 `02-codebase-guardrails.md` 搭好目录边界和可执行检查，不在文档里反复推演实现细节。
+文档只写一页，严格恪守**需求驱动开发（先定需求 → 需求完成后根据需求定接口 → 根据接口写测试 → 写最小实现）**，写完需求再进入接口契约与目录边界，不在文档里反复推演内部实现细节，也**严禁**反转为开发驱动需求。
 
 ## 意图与不变量模板
 
@@ -52,7 +52,7 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 面向不亲自写代码、靠体验验收的 Vibe Coding 工作方式，必须同时防住“按技术层拆成永不收口的半成品”与“把用户拉进底层技术评审泥潭”（参见 `vendor/pstack/skills/principle-sequence-verifiable-units/SKILL.md`）：
 
-1. **只切端到端可演示的垂直增量（WIP = 1）**：每轮任务动工前先钉死一句话——“这一轮做完，用户打开哪个页面或跑哪个命令，能亲眼看到什么新变化？”严禁按 `schema / foundation / engine` 横向拆层而不交付可用闭环；当前主线垂直切片未交出可看结果前，不得同时开启多个平行分支或皮肤方案，也**严禁**为单一具体切片预建多 Provider/Plugin/Factory 扩展架子。
+1. **只切端到端可演示的垂直增量（WIP = 1），严防开发驱动需求**：每轮按**锁定需求 → 根据需求定接口 → 根据接口写测试 → 写最小实现**推进，动工前先钉死“用户打开哪个页面或跑哪个命令，能亲眼看到什么新变化”。严禁先写实现再倒推接口、凑合测试或改写需求迁就代码；若实现中发现需求冲突，立刻停下显式沟通确认（绝不悄悄缩水需求）。严禁按 `schema / foundation / engine` 横向拆层而不交付可用闭环；主线垂直切片未交出可看结果前，不开启平行分支，也**严禁**为单一具体切片预建多 Provider/Plugin/Factory 扩展架子。
 2. **人看演示、Agent 扛技术；仅收口确认可变项**：内部函数怎么拆、超时设几秒、局部单测怎么组织，由 Agent 选**最简可逆方案**自己拍板并直接推进展示结果（`vendor/pstack/skills/principle-never-block-on-the-human/SKILL.md`），**绝不**抛出几十条内部条目消耗用户注意力；体验与省事冲突时优先用户愉悦度（`vendor/pstack/skills/principle-experience-first/SKILL.md`）。仅在会改变用户可见行为、业务口径或不可逆边界时提 1–2 个通俗选择题。同时**仅将当前需求明确要求可变的 `configurable_params`** 收口进单一配置模块（不变项直接采用现有代码或框架默认，禁虚构扩展开关），严禁散落直读环境变量或写死魔法常量。
 3. **直率反迎合与抛弃式原型特区（Candor & Prototype）**：若提议的范围、抽象或前提不值当或行不通，直接摆证据说“不”（*"No is an acceptable answer"*），不礼貌附和。遇到无法靠空谈拍板的布局、交互手感或经验行为分叉时，按 `vendor/pstack/skills/poteto-mode/playbooks/prototype.md` 与 `vendor/pstack/skills/principle-exhaust-the-design-space/SKILL.md` 在 `source_roots` 之外的隔离临时目录做 2–3 个带切换开关的抛弃式变体（唯一允许反转最小 diff 与测试门槛的场景），选定后再回正规切片实现。
 
@@ -68,8 +68,8 @@ v1.x 的多阶段文档体系在 0→1 阶段能防需求漂移，但把大量�
 
 ## 意图门禁
 
-离开本文件进入 `02-codebase-guardrails.md` 或写业务代码前，必须确认：
+进入接口定义、按接口写测试或业务编码前，必须先锁定需求：
 
-1. 新项目已写出一页可观察的用户结果、核心不变量、至少一条明确的非目标、`configurable_params` 可变配置清单与不可逆边界（写入 `docs/intent.md`）；
+1. 新项目已写出一页可观察的用户结果、核心不变量、至少一条明确的非目标、`configurable_params` 可变配置清单与不可逆边界（写入 `docs/intent.md`），先定需求再定接口与测试；
 2. 已有仓库已完成三步起步：有可跑的 `check_command`、已锁定 `escape_hatches.max_allowed` 初始棘轮值、已列出 `.guardrails/feature-map.md` 或 `verify_skill` 的首批核心入口；
-3. 若涉及**新选技术栈、多模块拓扑切分、多存储/外部副作用数据流或跨边界 API 设计**，下一步加载 `01a-stack-and-architecture.md`（完成后经 `01b-dataflow-and-contracts.md` 并跑 `repo_guard.py --check-arch`）；否则已明确首个垂直切片即可直接进入 `02-codebase-guardrails.md`。
+3. 若涉及**新选技术栈、多模块拓扑切分、多存储/外部副作用数据流或跨边界 API 设计**，下一步加载 `01a-stack-and-architecture.md`（完成后经 `01b-dataflow-and-contracts.md` 并跑 `repo_guard.py --check-arch`）；否则已明确首个垂直切片即可先定接口与测试再进入 `02-codebase-guardrails.md` 编码。

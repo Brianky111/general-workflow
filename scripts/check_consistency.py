@@ -92,6 +92,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
         "3. 运行时与形式化验证",
         "4. 极薄文档与规则",
         "## 核心原则",
+        "需求驱动开发",
         "务实最小化",
         "## 五条工作循环",
         "## 默认响应形状",
@@ -123,6 +124,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "01-intent-and-invariants.md": (
         "## 为什么只留一页意图合同",
+        "需求驱动开发",
         "## 意图与不变量模板",
         "configurable_params",
         "## 前沿追问法（Frontier Grill）",
@@ -185,6 +187,7 @@ POLICY_ANCHORS: dict[str, tuple[str, ...]] = {
     ),
     "03-verification-and-artifacts.md": (
         "## 为什么审行为产物而不是逐行审 diff",
+        "需求驱动开发",
         "验证与改动规模匹配",
         "## 用户视角 Feature Map",
         "## 复用型验证 CLI 与调试通道",
